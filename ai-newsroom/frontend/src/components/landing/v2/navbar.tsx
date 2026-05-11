@@ -13,6 +13,7 @@ type V2NavbarProps = {
 };
 
 const navItems = [
+  { labelKey: "landing.nav.overview", href: "/landing" },
   { labelKey: "landing.nav.panorama", href: "/landing/intelligence-panorama" },
   { labelKey: "landing.nav.workspace", href: "/landing/content-workspace" },
   { labelKey: "landing.nav.network", href: "/landing/intelligence-network" },
