@@ -21,7 +21,7 @@ export function PageTopBar({
   innerClassName,
 }: PageTopBarProps) {
   return (
-    <div className={cn("w-full bg-white/50 dark:bg-transparent backdrop-blur-sm", className)}>
+    <div className={cn("w-full bg-white/50 dark:bg-transparent frosted-bar backdrop-blur-sm", className)}>
       <div
         className={cn(
           "flex justify-between items-center w-full py-4",

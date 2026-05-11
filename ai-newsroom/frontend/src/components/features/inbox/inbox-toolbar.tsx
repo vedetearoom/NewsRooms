@@ -37,7 +37,7 @@ export function InboxToolbar({
   const overflowCount = overflowTags.reduce((sum, [, count]) => sum + count, 0);
 
   return (
-    <header className="sticky top-0 z-[120] bg-white/90 dark:bg-[#0b0c0f]/90 backdrop-blur-xl">
+    <header className="sticky top-0 z-[120] bg-white/90 dark:bg-transparent frosted-bar backdrop-blur-xl">
       <div className="px-8 h-[52px] flex items-center justify-between group">
         <div className="flex items-center gap-5">
           <h1 className="text-[14px] font-semibold tracking-[-0.02em]">{t('inbox.title')}</h1>
@@ -131,7 +131,7 @@ export function InboxToolbar({
 
                 {/* Dropdown */}
                 {moreOpen && (
-                  <div className="absolute top-full left-0 z-[140] mt-1.5 min-w-[160px] rounded-lg border border-zinc-200/60 bg-white py-1.5 shadow-lg shadow-black/10 animate-fade-in dark:border-white/[0.06] dark:bg-[#1a1b1e] dark:shadow-black/30">
+                  <div className="absolute top-full left-0 z-[140] mt-1.5 min-w-[160px] rounded-lg border border-zinc-200/60 bg-white py-1.5 shadow-lg shadow-black/10 animate-fade-in dark:border-white/[0.08] dark:bg-[#111214] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] dark:backdrop-blur-xl">
                     {overflowTags.map(([tag, count]) => (
                       <button
                         key={tag}

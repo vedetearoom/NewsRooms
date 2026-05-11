@@ -172,7 +172,9 @@ export function Sidebar() {
   if (pathname.startsWith("/editor") || pathname.startsWith("/landing")) return null;
 
   return (
-    <aside className="w-[220px] min-w-[220px] h-screen sticky top-0 flex flex-col bg-[var(--sidebar-bg)]">
+    <aside className="w-[220px] min-w-[220px] h-screen sticky top-0 flex flex-col bg-[var(--sidebar-bg)] border-r border-[var(--sidebar-border)] dark:border-white/[0.04]">
+      {/* Subtle top glow in dark mode */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-white/[0.02] to-transparent dark:block hidden" />
       {/* Logo */}
       <div className="px-5 h-[52px] flex items-center gap-2">
         <div className="w-[22px] h-[22px] rounded-md bg-[var(--logo-bg)] flex items-center justify-center">
@@ -201,12 +203,15 @@ export function Sidebar() {
                     }
                   }}
                   className={cn(
-                    "w-full flex items-center gap-2.5 px-2.5 py-[6px] rounded-lg text-[13px] font-medium transition-colors cursor-pointer text-zinc-900 dark:text-zinc-100",
+                    "w-full flex items-center gap-2.5 px-2.5 py-[6px] rounded-lg text-[13px] font-medium transition-all cursor-pointer text-zinc-900 dark:text-zinc-100 relative",
                     isExactActive && !item.subItems
                       ? "bg-[var(--nav-active-bg)]" 
-                      : "hover:bg-[var(--nav-hover-bg)]"
+                      : "hover:bg-[var(--nav-hover-bg)] dark:hover:bg-white/[0.05]"
                   )}
                 >
+                  {isExactActive && !item.subItems && (
+                    <span className="absolute left-0 inset-y-1.5 w-[2px] rounded-full bg-zinc-700 dark:bg-white/60" />
+                  )}
                   <span className={cn(isParentActive ? "text-zinc-900 dark:text-zinc-100" : "text-muted-foreground/80")}>{item.icon}</span>
                   {item.label}
                 </button>

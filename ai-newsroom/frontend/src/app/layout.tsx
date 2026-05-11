@@ -34,7 +34,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <AuthGuard>
             <Sidebar />
-            <main className="flex-1 min-w-0 flex flex-col">
+            <main className="flex-1 min-w-0 flex flex-col ambient-main">
               {children}
             </main>
           </AuthGuard>

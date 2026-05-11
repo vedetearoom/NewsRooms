@@ -54,8 +54,8 @@ export function TaskCard({ task, onClick, onDelete, icon: StatusIcon, iconColor 
   return (
     <div
       onClick={onClick}
-      className="group bg-white dark:bg-[#1c1c1e] rounded-lg px-3 py-3 cursor-pointer
-                 shadow-sm dark:shadow-none transition-all border border-transparent dark:border-white/[0.06] hover:border-zinc-200 dark:hover:border-white/[0.12]"
+      className="group bg-white dark:bg-white/[0.025] rounded-lg px-3 py-3 cursor-pointer
+                 shadow-sm dark:shadow-none transition-all border border-transparent dark:border-white/[0.06] hover:border-zinc-200 dark:hover:border-white/[0.14] dark:hover:bg-white/[0.045] dark:hover:shadow-[0_0_0_1px_rgba(255,255,255,0.03)]"
     >
       {/* Top row: ID + Avatar */}
       <div className="flex items-center justify-between mb-2">

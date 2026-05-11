@@ -138,9 +138,9 @@ export default function VaultPage() {
   });
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-white dark:bg-[#0b0c0f]">
+    <div className="h-screen flex flex-col overflow-hidden bg-white dark:bg-[#08090b]">
       {/* ── Row 1: Header ── */}
-      <div className="shrink-0 h-[52px] px-6 flex items-center justify-between border-b border-zinc-100 dark:border-white/5">
+      <div className="shrink-0 h-[52px] px-6 flex items-center justify-between border-b border-zinc-100 dark:border-white/[0.05] frosted-bar">
         <div className="flex items-center gap-3">
           <span className="text-[14px] font-semibold text-foreground dark:text-zinc-200">{t('vault.title')}</span>
           <span className="text-[11px] text-muted-foreground">{tasks.filter(t => selectedTypes.size === 0 || selectedTypes.has(t.task_type)).length} {t('vault.total')}</span>
@@ -148,7 +148,7 @@ export default function VaultPage() {
       </div>
 
       {/* ── Row 2: Toolbar ── */}
-      <div className="shrink-0 h-[40px] px-6 flex items-center justify-between border-b border-zinc-100 dark:border-white/5 bg-white dark:bg-[#0b0c0f]">
+      <div className="shrink-0 h-[40px] px-6 flex items-center justify-between border-b border-zinc-100 dark:border-white/[0.04] bg-white dark:bg-transparent frosted-bar">
         <div className="relative" ref={filterRef}>
           <button 
             onClick={() => setFilterOpen(!filterOpen)}
@@ -164,7 +164,7 @@ export default function VaultPage() {
           </button>
           
           {filterOpen && (
-            <div className="absolute top-full left-0 mt-1 w-[200px] z-50 bg-white dark:bg-[#1a1b1e] border border-zinc-200 dark:border-white/10 rounded-lg shadow-xl py-2 flex flex-col items-start animate-in fade-in slide-in-from-top-1">
+            <div className="absolute top-full left-0 mt-1 w-[200px] z-50 bg-white dark:bg-[#111214] border border-zinc-200 dark:border-white/[0.08] rounded-lg shadow-xl dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] py-2 flex flex-col items-start animate-in fade-in slide-in-from-top-1 dark:backdrop-blur-xl">
               <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                 {t('vault.filterByType')}
               </div>
@@ -209,7 +209,7 @@ export default function VaultPage() {
           </button>
 
           {displayOpen && (
-            <div className="absolute top-full right-0 mt-1 w-[200px] z-50 bg-white dark:bg-[#1a1b1e] border border-zinc-200 dark:border-white/10 rounded-lg shadow-xl py-2 flex flex-col items-start animate-in fade-in slide-in-from-top-1">
+            <div className="absolute top-full right-0 mt-1 w-[200px] z-50 bg-white dark:bg-[#111214] border border-zinc-200 dark:border-white/[0.08] rounded-lg shadow-xl dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] py-2 flex flex-col items-start animate-in fade-in slide-in-from-top-1 dark:backdrop-blur-xl">
               <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                 {t('vault.visibleColumns')}
               </div>

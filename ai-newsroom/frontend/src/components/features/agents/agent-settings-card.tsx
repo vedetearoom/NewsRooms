@@ -23,7 +23,7 @@ export function AgentSettingsCard({
   return (
     <div
       className={cn(
-        "bg-white dark:bg-[#151618] rounded-xl shadow-sm shadow-black/[0.03] dark:shadow-black/20 ring-1 ring-zinc-950/[0.03] dark:ring-white/[0.04] flex flex-col",
+        "bg-white dark:bg-[#111214] rounded-xl shadow-sm shadow-black/[0.03] dark:shadow-[0_2px_8px_rgba(0,0,0,0.4)] ring-1 ring-zinc-950/[0.03] dark:ring-white/[0.06] flex flex-col dark:hover:ring-white/[0.1] transition-all duration-300",
         className,
       )}
     >
@@ -35,7 +35,7 @@ export function AgentSettingsCard({
         <div className="mt-5">{children}</div>
       </div>
       {(footerLeft || footerRight) && (
-        <div className="flex items-center justify-between px-6 py-3 bg-zinc-50/50 dark:bg-white/[0.015] border-t border-zinc-100/60 dark:border-white/[0.03] rounded-b-xl">
+        <div className="flex items-center justify-between px-6 py-3 bg-zinc-50/50 dark:bg-white/[0.02] border-t border-zinc-100/60 dark:border-white/[0.05] rounded-b-xl">
           <div className="text-[12px] text-muted-foreground">{footerLeft}</div>
           <div>{footerRight}</div>
         </div>

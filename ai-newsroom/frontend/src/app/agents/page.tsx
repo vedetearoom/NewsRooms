@@ -341,7 +341,7 @@ function AgentStudioContent() {
   }, [mutate, mutatePlugins, pluginDeleteTarget, t]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#fbfbfa] dark:bg-[#0b0c0f]">
+    <div className="flex h-screen overflow-hidden bg-[#fbfbfa] dark:bg-[#08090b]">
       <AgentSidebar
         agents={agents}
         isLoading={isLoading}

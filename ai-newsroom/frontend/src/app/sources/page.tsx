@@ -44,7 +44,7 @@ function SourcesContent() {
   const [showCookieDialog, setShowCookieDialog] = React.useState(false);
 
   return (
-    <div className="w-full flex-1 flex flex-col pt-4 min-h-screen bg-white dark:bg-[#0b0c0f]">
+    <div className="w-full flex-1 flex flex-col pt-4 min-h-screen bg-white dark:bg-[#08090b]">
       <PageTopBar
         title={t('sidebar.sourceConfig')}
         badge={<PageTopBarBadge text={`${displayActive}${t('sources.activeCount')}`} />}
@@ -112,7 +112,7 @@ function SourcesContent() {
           <h1 className="text-4xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
             {t('sidebar.sourceConfig')}
           </h1>
-          <div className="text-[14px] text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-2xl flex flex-col gap-1">
+          <div className="text-[14px] text-zinc-500 dark:text-zinc-400/80 leading-relaxed max-w-2xl flex flex-col gap-1">
             <p>{t('sources.desc1')}</p>
             <p>{t('sources.desc2')}</p>
           </div>
@@ -127,7 +127,7 @@ function SourcesContent() {
             type="text" 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full h-12 pl-12 pr-4 text-[14.5px] text-zinc-900 dark:text-zinc-100 bg-zinc-50/80 dark:bg-zinc-800/20 border border-zinc-200/80 dark:border-white/[0.08] rounded-2xl focus:bg-white dark:focus:bg-zinc-900 focus:ring-[3px] focus:ring-zinc-900/5 dark:focus:ring-white/10 focus:border-zinc-400 dark:focus:border-zinc-500 transition-all outline-none placeholder:text-zinc-400 placeholder:font-medium shadow-sm" 
+            className="block w-full h-12 pl-12 pr-4 text-[14.5px] text-zinc-900 dark:text-zinc-100 bg-zinc-50/80 dark:bg-white/[0.03] border border-zinc-200/80 dark:border-white/[0.07] rounded-2xl focus:bg-white dark:focus:bg-white/[0.05] focus:ring-[3px] focus:ring-zinc-900/5 dark:focus:ring-white/[0.08] focus:border-zinc-400 dark:focus:border-white/[0.16] transition-all outline-none placeholder:text-zinc-400 placeholder:font-medium shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]" 
             placeholder={activeTab === "text" ? t('sources.searchTextSources') : t('sources.searchVideoBloggers')}
           />
         </div>

@@ -94,10 +94,10 @@ export function SourcesVideoMonitorGrid({
         return (
           <div
             key={monitor.id}
-            className="group relative flex flex-col items-start gap-3 p-5 rounded-[20px] bg-zinc-50/80 dark:bg-white/[0.02] border border-border/50 hover:bg-zinc-100 dark:hover:bg-white/[0.04] transition-all duration-200"
+            className="group relative flex flex-col items-start gap-3 p-5 rounded-[20px] bg-zinc-50/80 dark:bg-white/[0.02] border border-border/50 dark:border-white/[0.06] hover:bg-zinc-100 dark:hover:bg-white/[0.045] dark:hover:border-white/[0.14] dark:hover:shadow-[0_0_0_1px_rgba(255,255,255,0.03),0_20px_50px_-16px_rgba(0,0,0,0.5)] transition-all duration-300"
           >
             <div className="w-full flex items-start justify-between">
-              <div className="w-11 h-11 rounded-lg flex items-center justify-center shrink-0 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-bold text-lg shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] dark:shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)]">
+              <div className="w-11 h-11 rounded-lg flex items-center justify-center shrink-0 bg-zinc-900 text-white dark:bg-gradient-to-br dark:from-white/[0.15] dark:to-white/[0.06] dark:text-zinc-200 font-bold text-lg dark:ring-1 dark:ring-white/[0.08] dark:shadow-[0_2px_8px_rgba(0,0,0,0.4)]">
                 {monitor.name.charAt(0)}
               </div>
 
@@ -128,7 +128,7 @@ export function SourcesVideoMonitorGrid({
                 </button>
 
                 {openMenuId === monitor.id && (
-                  <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-[#1C1D21] border border-border shadow-xl rounded-lg overflow-hidden py-1 z-10 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-[#111214] border border-border dark:border-white/[0.08] shadow-xl dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] rounded-lg overflow-hidden py-1 z-10 animate-in fade-in zoom-in-95 duration-100">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -207,7 +207,7 @@ export function SourcesVideoMonitorGrid({
               </div>
             )}
 
-            <div className="mt-2 w-full pt-4 border-t border-zinc-200/60 dark:border-white/[0.04]">
+            <div className="mt-2 w-full pt-4 border-t border-zinc-200/60 dark:border-white/[0.06]">
               {(() => {
                 let domain = monitor.homepage_url;
                 try {

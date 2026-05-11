@@ -78,12 +78,12 @@
 }
 
 .dark {
-  --background: #09090b; /* 炭灰色背景 */
+  --background: #08090b; /* 对齐 landing 深黑 */
   --foreground: #e8e6e3;
-  --card: #18181b; /* 深灰卡片 */
+  --card: #111214; /* 稍微提亮的卡片 */
   --card-foreground: #e8e6e3;
-  --sidebar-bg: #09090b;
-  --surface-raised: #18181b;
+  --sidebar-bg: #08090b;
+  --surface-raised: #111214;
 
   --muted: #27272a;
   --muted-foreground: #a1a1aa;
@@ -102,10 +102,10 @@
   --highlight-text: inherit;
   --highlight-active: rgba(250, 204, 21, 0.4);
 
-  --card-border: rgba(255,255,255,0.08);
-  --card-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2);
-  --card-hover-border: rgba(255,255,255,0.15);
-  --card-hover-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+  --card-border: rgba(255,255,255,0.07);
+  --card-shadow: 0 1px 2px rgba(0,0,0,0.5), 0 8px 24px -8px rgba(0,0,0,0.35);
+  --card-hover-border: rgba(255,255,255,0.14);
+  --card-hover-shadow: 0 20px 50px -16px rgba(0,0,0,0.6);
   --skeleton-bg: linear-gradient(90deg, #1e1e1e 25%, #262626 37%, #1e1e1e 63%);
 
   --sidebar-border: rgba(255,255,255,0.04);
@@ -206,6 +206,51 @@ input::placeholder, textarea::placeholder {
   border-color: var(--card-hover-border);
   box-shadow: var(--card-hover-shadow);
   transform: translateY(-2px) scale(1.005);
+}
+:is(.dark) .card-surface {
+  background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012) 60%, transparent);
+}
+:is(.dark) .card-surface:hover {
+  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.018) 60%, transparent);
+}
+
+/* ── Ambient backgrounds ──────────────── */
+.ambient-main {
+  position: relative;
+}
+:is(.dark) .ambient-main::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse at 72% 6%, rgba(255,255,255,0.028), transparent 44%),
+    radial-gradient(ellipse at 14% 44%, rgba(255,255,255,0.018), transparent 36%);
+}
+:is(.dark) .ambient-main > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Glow border utility ──────────────── */
+:is(.dark) .glow-card {
+  border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255,255,255,0.02);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+:is(.dark) .glow-card:hover {
+  border-color: rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.04);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 20px 50px -16px rgba(0,0,0,0.55);
+}
+
+/* ── Frosted header ───────────────────── */
+:is(.dark) .frosted-bar {
+  background: rgba(8,9,11,0.82);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 
 .skeleton {

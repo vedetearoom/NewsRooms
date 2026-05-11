@@ -39,9 +39,9 @@ export function SidebarFooter() {
   }, [t, user]);
 
   return (
-    <div className="group flex items-center justify-between rounded-2xl bg-zinc-100/75 p-2 transition-all dark:bg-white/[0.03] dark:hover:bg-white/[0.05]">
+    <div className="group flex items-center justify-between rounded-2xl bg-zinc-100/75 p-2 transition-all dark:bg-white/[0.03] dark:hover:bg-white/[0.06] dark:border dark:border-white/[0.05] dark:hover:border-white/[0.1]">
       <div className="flex items-center gap-2.5 min-w-0">
-        <div className="w-8 h-8 shrink-0 rounded-lg bg-zinc-200/70 dark:bg-white/10 flex items-center justify-center text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase">
+        <div className="w-8 h-8 shrink-0 rounded-lg bg-zinc-200/70 dark:bg-white/10 dark:ring-1 dark:ring-white/[0.08] flex items-center justify-center text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase">
           {initials || "AD"}
         </div>
           <div className="flex flex-col min-w-0 pr-1">

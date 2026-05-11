@@ -145,7 +145,7 @@ function DiscoverContent() {
     archiveDateFilter,
   });
   return (
-    <div className="h-screen flex flex-col bg-white dark:bg-[#0b0c0f] overflow-hidden">
+    <div className="h-screen flex flex-col bg-white dark:bg-[#08090b] overflow-hidden">
       {/* Header */}
       <InboxToolbar
         contentTab={contentTab}

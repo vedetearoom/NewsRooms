@@ -37,7 +37,7 @@ function PageState({
     >
       <div
         className={cn(
-          "mb-4 flex items-center justify-center rounded-2xl bg-zinc-100 text-zinc-500 dark:bg-white/[0.05] dark:text-zinc-400",
+          "mb-4 flex items-center justify-center rounded-2xl bg-zinc-100 text-zinc-500 dark:bg-white/[0.04] dark:text-zinc-400 dark:ring-1 dark:ring-white/[0.06] dark:shadow-[0_0_20px_rgba(255,255,255,0.03)]",
           compact ? "h-12 w-12" : "h-16 w-16",
         )}
       >
@@ -59,7 +59,7 @@ function PageState({
       {action ? (
         <button
           onClick={action.onClick}
-          className="mt-4 rounded-lg bg-zinc-900 px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+          className="mt-4 rounded-lg bg-zinc-900 px-4 py-2 text-[13px] font-medium text-white transition-all hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100 dark:shadow-[0_1px_0_rgba(255,255,255,0.4)_inset,0_8px_20px_rgba(0,0,0,0.25)]"
         >
           {action.label}
         </button>

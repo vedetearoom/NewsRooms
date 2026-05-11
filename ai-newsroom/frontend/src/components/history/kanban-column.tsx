@@ -54,10 +54,10 @@ export function KanbanColumn({ stage, tasks, loading, onTaskClick, onDeleteTask 
       </div>
 
       {/* Column body */}
-      <div className="flex-1 overflow-y-auto rounded-xl bg-zinc-50 dark:bg-white/[0.02] p-2 space-y-2 custom-scrollbar min-h-0">
+      <div className="flex-1 overflow-y-auto rounded-xl bg-zinc-50 dark:bg-white/[0.015] dark:border dark:border-white/[0.04] p-2 space-y-2 custom-scrollbar min-h-0">
         {loading ? (
           Array.from({ length: 2 }).map((_, i) => (
-            <div key={i} className="bg-white dark:bg-[#1c1c1e] rounded-lg p-3 space-y-2 dark:border dark:border-white/[0.06]">
+            <div key={i} className="bg-white dark:bg-white/[0.03] rounded-lg p-3 space-y-2 dark:border dark:border-white/[0.06]">
               <div className="skeleton h-3 w-16 rounded" />
               <div className="skeleton h-4 w-full rounded" />
               <div className="skeleton h-3 w-24 rounded" />
@@ -65,7 +65,7 @@ export function KanbanColumn({ stage, tasks, loading, onTaskClick, onDeleteTask 
           ))
         ) : tasks.length === 0 ? (
           <div className="h-14 flex items-center justify-center">
-            <span className="text-[11px] text-muted-foreground/30">{t('vault.noTasks')}</span>
+            <span className="text-[11px] text-muted-foreground/30 dark:text-zinc-600">{t('vault.noTasks')}</span>
           </div>
         ) : (
           tasks.map((task) => (
