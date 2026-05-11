@@ -89,10 +89,10 @@ export function ModulePage({
               <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent, boxShadow: `0 0 10px ${accent}` }} />
               {badge}
             </div>
-            <h1 className="max-w-3xl text-[54px] font-semibold leading-[0.96] tracking-[-0.055em] text-[#f4f3ee] sm:text-[74px]">
-              {title} <span className="font-serif italic font-normal" style={{ color: accent }}>{accentTitle}</span>
+            <h1 className={`max-w-3xl font-semibold text-[#f4f3ee] ${zh ? 'text-[44px] leading-[1.15] tracking-[0.02em] sm:text-[60px] text-balance font-serif' : 'text-[54px] leading-[0.96] tracking-[-0.055em] sm:text-[74px] text-balance'}`}>
+              {title}{zh && !/^[A-Za-z]/.test(accentTitle) ? '' : ' '}<span className={zh ? 'font-serif' : 'font-serif italic font-normal'} style={{ color: accent }}>{accentTitle}</span>
             </h1>
-            <p className="mt-7 max-w-xl text-[17px] leading-8 tracking-[-0.005em] text-white/52">{description}</p>
+            <p className={`mt-7 max-w-xl text-white/52 ${zh ? 'text-[17px] leading-[2] tracking-[0.02em] text-pretty' : 'text-[17px] leading-8 tracking-[-0.005em]'}`}>{description}</p>
             <div className="mt-9 flex flex-wrap items-center gap-3">
               <button
                 type="button"
@@ -130,10 +130,10 @@ export function ModulePage({
           <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.75fr_1.25fr] lg:items-start">
             <div className="lg:sticky lg:top-8">
               <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.16em] text-white/35">{zh ? "实际界面映射" : "Interface mapping"}</p>
-              <h2 className="max-w-xl text-[44px] font-semibold leading-[1.04] tracking-[-0.04em] text-[#f4f3ee]">
+              <h2 className={`max-w-xl font-semibold text-[#f4f3ee] ${zh ? 'text-[36px] leading-[1.22] tracking-[-0.015em]' : 'text-[44px] leading-[1.04] tracking-[-0.04em]'}`}>
                 {zh ? "把真实产品能力讲成客户能看懂的页面。" : "Show the real product surface, not a feature checklist."}
               </h2>
-              <p className="mt-5 max-w-md text-[15px] leading-7 text-white/45">
+              <p className={`mt-5 max-w-md text-white/45 ${zh ? 'text-[14px] leading-[1.85] tracking-[0.005em]' : 'text-[15px] leading-7'}`}>
                 {zh ? "每个模块页都对应后台实际工作台：客户先看到清晰的业务故事，再看到和真实界面一致的操作线索。" : "Each module page mirrors the internal workspace: a business story first, then recognizable UI patterns from the product."}
               </p>
             </div>
@@ -150,8 +150,8 @@ export function ModulePage({
                       </div>
                       <span className="font-mono text-[11px] text-white/28">0{index + 1}</span>
                     </div>
-                    <h3 className="relative z-[1] text-[22px] font-semibold tracking-[-0.025em] text-white">{section.title}</h3>
-                    <p className="relative z-[1] mt-4 text-[13.5px] leading-6 tracking-[-0.005em] text-white/48">{section.description}</p>
+                    <h3 className={`relative z-[1] font-semibold text-white ${zh ? 'text-[20px] tracking-[-0.01em] text-balance' : 'text-[22px] tracking-[-0.025em]'}`}>{section.title}</h3>
+                    <p className={`relative z-[1] mt-4 text-white/48 ${zh ? 'text-[13px] leading-[1.72] tracking-[0.005em] text-pretty break-keep' : 'text-[13.5px] leading-6 tracking-[-0.005em]'}`}>{section.description}</p>
                     <div className="relative z-[1] mt-8 space-y-2">
                       <div className="h-1.5 w-[86%] rounded-full bg-white/[0.1]" />
                       <div className="h-1.5 w-[58%] rounded-full" style={{ background: `${accent}55` }} />
@@ -168,9 +168,9 @@ export function ModulePage({
             <div className="mb-12 grid gap-6 lg:grid-cols-[0.7fr_1.3fr] lg:items-end">
               <div>
                 <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.16em] text-white/35">{zh ? "工作流" : "Workflow"}</p>
-                <h2 className="text-[44px] font-semibold leading-[1.04] tracking-[-0.04em] text-[#f4f3ee]">{workflowCta}</h2>
+                <h2 className={`font-semibold text-[#f4f3ee] ${zh ? 'text-[36px] leading-[1.22] tracking-[-0.015em] text-balance break-keep' : 'text-[44px] leading-[1.04] tracking-[-0.04em]'}`}>{workflowCta}</h2>
               </div>
-              <p className="max-w-2xl text-[15px] leading-7 text-white/45 lg:justify-self-end">
+              <p className={`max-w-2xl text-white/45 lg:justify-self-end ${zh ? 'text-[14px] leading-[1.85] tracking-[0.005em] text-pretty break-keep' : 'text-[15px] leading-7'}`}>
                 {zh ? "从进入系统的第一个信号，到整理、分发、生产和复用，模块页需要展示真实编辑团队每天会走的路径。" : "From first signal to organization, dispatch, production, and reuse, the page explains the path an editorial team actually follows."}
               </p>
             </div>
@@ -183,8 +183,8 @@ export function ModulePage({
                     <span className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] bg-[#08090b] font-mono text-[11px]" style={{ color: accent }}>0{index + 1}</span>
                     <Check className="h-4 w-4 text-white/35" />
                   </div>
-                  <h3 className="text-[18px] font-semibold tracking-[-0.018em] text-white">{step.label}</h3>
-                  <p className="mt-3 text-[13px] leading-6 tracking-[-0.005em] text-white/45">{step.detail}</p>
+                  <h3 className={`text-[18px] font-semibold tracking-[-0.018em] text-white ${zh ? 'text-balance' : ''}`}>{step.label}</h3>
+                  <p className={`mt-3 text-[13px] leading-6 tracking-[-0.005em] text-white/45 ${zh ? 'text-pretty break-keep' : ''}`}>{step.detail}</p>
                 </div>
               ))}
             </div>
@@ -337,11 +337,11 @@ function WorkspaceMock({ accent, zh }: { accent: string; zh: boolean }) {
               <div className="space-y-3">
                 {column.cards.map((card, index) => (
                   <div key={card} className="rounded-xl border border-white/[0.06] bg-black/30 p-3">
-                    <div className="mb-6 h-1.5 rounded-full" style={{ background: index === 0 && columnIndex === 1 ? accent : "rgba(255,255,255,0.12)" }} />
-                    <div className="text-[12.5px] font-semibold leading-5 text-white/72">{card}</div>
-                    <div className="mt-3 flex gap-1.5">
-                      <span className="h-5 w-5 rounded-full bg-white/[0.12]" />
-                      <span className="h-5 w-5 rounded-full bg-white/[0.08]" />
+                    <div className="mb-3 font-mono text-[9px] uppercase tracking-[0.1em] text-white/35" style={{ color: index === 0 && columnIndex === 1 ? accent : undefined }}>{zh ? "写入任务" : "Write task"}</div>
+                    <div className="text-[12.5px] font-medium leading-5 text-white/80">{card}</div>
+                    <div className="mt-4 flex gap-2">
+                      <span className="h-3 w-3 rounded-full bg-white/[0.14]" />
+                      <span className="h-3 w-3 rounded-full bg-white/[0.14]" />
                     </div>
                   </div>
                 ))}
@@ -356,11 +356,18 @@ function WorkspaceMock({ accent, zh }: { accent: string; zh: boolean }) {
             <div className="text-[14px] font-semibold text-white/80">{zh ? "素材上下文" : "Source context"}</div>
             <span className="rounded-md px-2 py-1 font-mono text-[10px]" style={{ background: `${accent}18`, color: accent }}>12 refs</span>
           </div>
-          {[zh ? "引用来源" : "Citations", zh ? "标题角度" : "Angles", zh ? "可复用结构" : "Reusable structures"].map((item, index) => (
-            <div key={item} className="mb-3 rounded-xl border border-white/[0.05] bg-white/[0.025] p-3">
-              <div className="mb-2 text-[12.5px] font-semibold text-white/62">{item}</div>
-              <div className="h-1.5 rounded-full bg-white/[0.09]" />
-              <div className="mt-2 h-1.5 rounded-full" style={{ width: `${72 - index * 16}%`, background: `${accent}45` }} />
+          {(zh ? [
+            { label: "引用来源", text: "The Verge: 'OpenAI 新模型架构解析'" },
+            { label: "标题角度", text: "探讨推理能力对复杂任务的提升" },
+            { label: "可复用结构", text: "事实总结 + 技术分析 + 行业影响" }
+          ] : [
+            { label: "Citations", text: "The Verge: 'OpenAI new architecture'" },
+            { label: "Angles", text: "Impact of reasoning on complex tasks" },
+            { label: "Structures", text: "Fact list + tech deep dive + impact" }
+          ]).map((item) => (
+            <div key={item.label} className="mb-3 rounded-xl border border-white/[0.05] bg-white/[0.025] p-3">
+              <div className="mb-1.5 text-[12px] font-medium text-white/40">{item.label}</div>
+              <div className="text-[13px] text-white/75">{item.text}</div>
             </div>
           ))}
         </div>
@@ -393,17 +400,29 @@ function NetworkMock({ accent, zh }: { accent: string; zh: boolean }) {
         </div>
         <div className="mb-4 rounded-xl border border-white/[0.07] bg-white/[0.03] px-3 py-2 text-[12px] text-white/32">{zh ? "搜索 RSS、网站、视频博主" : "Search RSS, sites, creators"}</div>
         <div className="grid gap-3 sm:grid-cols-2">
-          {sources.map((source, index) => (
+          {sources.map((source, index) => {
+            const texts = zh ? [
+              "OpenAI 官方博客更新 (RSS)",
+              "TechCrunch AI 频道 (Web)",
+              "MKBHD 最新评测视频 (Video)",
+              "Ben Evans 每周洞察 (Mail)"
+            ] : [
+              "OpenAI official blog (RSS)",
+              "TechCrunch AI feed (Web)",
+              "MKBHD latest reviews (Video)",
+              "Ben Evans insights (Mail)"
+            ];
+            const text = texts[index];
+            return (
             <div key={source} className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
-              <div className="mb-7 flex items-center justify-between">
+              <div className="mb-5 flex items-center justify-between">
                 <span className="h-2 w-2 rounded-full" style={{ background: index === 2 ? "#fbbf24" : accent }} />
                 <span className="font-mono text-[10px] text-white/28">{index === 2 ? "WARN" : "OK"}</span>
               </div>
               <div className="text-[13.5px] font-semibold text-white/72">{source}</div>
-              <div className="mt-3 h-1.5 w-[78%] rounded-full bg-white/[0.1]" />
-              <div className="mt-2 h-1.5 w-[48%] rounded-full" style={{ background: `${accent}50` }} />
+              <div className="mt-2 text-[12px] text-white/45">{text}</div>
             </div>
-          ))}
+          )})}
         </div>
       </div>
       <div className="space-y-4">
@@ -412,15 +431,26 @@ function NetworkMock({ accent, zh }: { accent: string; zh: boolean }) {
             <div className="text-[14px] font-semibold text-white/80">{zh ? "抓取收件箱" : "Ingestion inbox"}</div>
             <span className="rounded-md border border-white/[0.07] px-2 py-1 font-mono text-[10px] text-white/35">Pipeline</span>
           </div>
-          {inbox.map((item, index) => (
+          {inbox.map((item, index) => {
+            const descriptions = zh ? [
+              "23 篇来源涉及重复主题",
+              "14:20 提取了摘要片段",
+              "来源 fetch_timeout 错误"
+            ] : [
+              "23 items share topics",
+              "Extracted at 14:20",
+              "fetch_timeout error"
+            ];
+            const desc = descriptions[index];
+            return (
             <div key={item} className="mb-3 rounded-xl border border-white/[0.05] bg-white/[0.025] p-3">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-[12.5px] font-semibold text-white/62">{item}</span>
+                <span className="text-[12.5px] font-semibold text-white/75">{item}</span>
                 <span className="font-mono text-[10px]" style={{ color: index === 2 ? "#fbbf24" : accent }}>{index === 0 ? "23" : index === 1 ? "8" : "2"}</span>
               </div>
-              <div className="mt-3 h-1.5 rounded-full bg-white/[0.08]" />
+              <div className="mt-1.5 text-[11px] text-white/40">{desc}</div>
             </div>
-          ))}
+          )})}
         </div>
         <div className="rounded-[24px] border border-white/[0.06] bg-black/25 p-4">
           <div className="grid grid-cols-3 gap-3">
@@ -465,11 +495,15 @@ function StudioMock({ accent, zh }: { accent: string; zh: boolean }) {
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            {[zh ? "模型" : "Model", "API Key", "Prompt", zh ? "知识库" : "Knowledge"].map((field, index) => (
-              <div key={field} className={`rounded-xl border border-white/[0.06] bg-white/[0.025] p-3 ${index > 1 ? "sm:col-span-2" : ""}`}>
-                <div className="mb-3 font-mono text-[10px] uppercase tracking-[0.12em] text-white/28">{field}</div>
-                <div className="h-1.5 w-[88%] rounded-full bg-white/[0.1]" />
-                <div className="mt-2 h-1.5 w-[54%] rounded-full" style={{ background: `${accent}50` }} />
+            {[
+              { field: zh ? "模型" : "Model", text: "GPT-4o / Claude 3.5 Sonnet" },
+              { field: "API Key", text: "sk-proj-8a9b...7c6d" },
+              { field: "Prompt", text: zh ? "作为资深科技编辑，提取文章核心论点并按重要性排序。" : "Act as a senior tech editor. Extract core arguments and rank by importance." },
+              { field: zh ? "知识库" : "Knowledge", text: zh ? "过往爆款文章结构库 (8.4MB)" : "Previous viral structures (8.4MB)" }
+            ].map((item, index) => (
+              <div key={item.field} className={`rounded-xl border border-white/[0.06] bg-white/[0.025] p-3 ${index > 1 ? "sm:col-span-2" : ""}`}>
+                <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.12em] text-white/35">{item.field}</div>
+                <div className="text-[12.5px] text-white/65 leading-relaxed">{item.text}</div>
               </div>
             ))}
           </div>
@@ -488,10 +522,16 @@ function StudioMock({ accent, zh }: { accent: string; zh: boolean }) {
             <div className="mb-4 text-[14px] font-semibold text-white/80">{zh ? "运行结果" : "Run preview"}</div>
             <div className="rounded-xl border border-white/[0.06] bg-white/[0.025] p-3">
               <div className="font-mono text-[10px]" style={{ color: accent }}>PASS · 4 checks</div>
-              <div className="mt-4 space-y-2">
-                <div className="h-1.5 rounded-full bg-white/[0.1]" />
-                <div className="h-1.5 w-[72%] rounded-full bg-white/[0.08]" />
-                <div className="h-1.5 w-[45%] rounded-full" style={{ background: `${accent}50` }} />
+              <div className="mt-3 flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-[12px] text-white/60">
+                  <span className="text-[#34d399]">✓</span> <span>{zh ? "无事实幻觉" : "No hallucination detected"}</span>
+                </div>
+                <div className="flex items-center gap-2 text-[12px] text-white/60">
+                  <span className="text-[#34d399]">✓</span> <span>{zh ? "交叉验证通过" : "Cross-validation passed"}</span>
+                </div>
+                <div className="flex items-center gap-2 text-[12px] text-white/60">
+                  <span className="text-[#34d399]">✓</span> <span>{zh ? "引用来源匹配" : "Citations match sources"}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -510,16 +550,16 @@ function ModuleStorySections({ variant, accent, zh }: { variant: ModuleVariant; 
         <section key={section.kicker} className="relative overflow-hidden border-t border-white/[0.04] px-6 py-20 lg:px-10 lg:py-28">
           <div className="pointer-events-none absolute inset-0 opacity-70" style={{ background: `radial-gradient(circle at ${index % 2 ? "16%" : "84%"} 22%, ${accent}14, transparent 32%), linear-gradient(180deg, rgba(255,255,255,0.018), transparent 42%)` }} />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.14] to-transparent" />
-          <div className={`relative mx-auto grid max-w-[1320px] gap-10 lg:grid-cols-[0.42fr_0.58fr] lg:items-center ${index % 2 ? "lg:[&>*:first-child]:order-2" : ""}`}>
+          <div className={`relative mx-auto grid max-w-[1320px] gap-14 lg:items-center ${index % 2 ? "lg:grid-cols-[0.58fr_0.42fr] lg:[&>*:first-child]:order-2" : "lg:grid-cols-[0.42fr_0.58fr]"}`}>
             <div className="max-w-[520px] lg:sticky lg:top-24">
               <div className="mb-6 flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.2em] text-white/42">
                 <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent, boxShadow: `0 0 12px ${accent}` }} />
                 {String(index + 1).padStart(2, "0")} · {section.kicker}
               </div>
-              <h2 className="text-[42px] font-semibold leading-[1.02] text-[#f4f3ee] sm:text-[56px] lg:text-[64px]">
+              <h2 className={`font-semibold text-[#f4f3ee] ${zh ? 'text-[42px] sm:text-[56px] lg:text-[64px] leading-[1.15] tracking-[0.02em] text-balance font-serif' : 'text-[40px] sm:text-[48px] lg:text-[52px] leading-[1.04] tracking-[-0.03em] text-balance'}`}>
                 {section.title}
               </h2>
-              <p className="mt-6 max-w-[480px] text-[16px] leading-8 text-white/48">{section.body}</p>
+              <p className={`mt-6 max-w-[480px] text-white/48 ${zh ? 'text-[17px] leading-[2] tracking-[0.02em] text-pretty' : 'text-[16px] leading-8'}`}>{section.body}</p>
               <div className="mt-9 grid grid-cols-2 gap-3">
                 {storyStats(variant, index, zh).map((item) => (
                   <div key={item.label} className="border-t border-white/[0.08] pt-4">
@@ -596,9 +636,11 @@ function PanoramaStoryVisual({ scene, accent, zh }: { scene: number; accent: str
           </div>
           <div className="grid gap-3">
             {[86, 92, 77, 81].map((score, index) => (
-              <div key={score} className="grid grid-cols-[42px_1fr_60px] items-center gap-3 rounded-xl bg-white/[0.025] p-3">
+              <div key={score} className="grid grid-cols-[38px_1fr_40px] items-center gap-3 rounded-xl bg-white/[0.025] p-3">
                 <span className="font-mono text-[10px] text-white/30">0{index + 1}</span>
-                <div><div className="h-2 rounded-full bg-white/[0.1]" /><div className="mt-2 h-2 w-[58%] rounded-full" style={{ background: `${accent}50` }} /></div>
+                <div className="truncate text-[12.5px] text-white/70">
+                  {zh ? ["YCombinator W26 趋势分析", "OpenAI o1 模型深度测评", "长视频：Cursor 创始人访谈", "Perplexity 商业模式拆解"][index] : ["YCombinator W26 trends", "OpenAI o1 deep dive", "Video: Cursor founder interview", "Perplexity business model"][index]}
+                </div>
                 <span className="text-right font-mono text-[12px]" style={{ color: accent }}>{score}</span>
               </div>
             ))}
@@ -673,8 +715,8 @@ function WorkspaceStoryVisual({ scene, accent, zh }: { scene: number; accent: st
                   <span>{item}</span>
                   <span className="font-mono text-[10px]" style={{ color: accent }}>0{index + 2}</span>
                 </div>
-                <div className="h-1.5 rounded-full bg-white/[0.08]">
-                  <div className="h-full rounded-full" style={{ width: `${78 - index * 14}%`, background: `${accent}70` }} />
+                <div className="text-[11.5px] text-white/45">
+                  {zh ? ["设定科技报道分析角度", "自动附加来源 URL", "检查客观性和信息来源"][index] : ["Set tech report angles", "Auto-attach source URLs", "Check objectivity and sources"][index]}
                 </div>
               </div>
             ))}
@@ -763,12 +805,18 @@ function StudioStoryVisual({ scene, accent, zh }: { scene: number; accent: strin
         {[zh ? "知识库" : "Knowledge", zh ? "工具权限" : "Tool grants", zh ? "执行模式" : "Execution"].map((title, index) => (
           <div key={title} className="rounded-2xl border border-white/[0.06] bg-black/30 p-5">
             <div className="mb-6 text-[16px] font-semibold text-white/75">{title}</div>
-            {[0, 1, 2, 3].map((row) => (
+            {[0, 1, 2, 3].map((row) => {
+              const texts = index === 0 
+                ? (zh ? ["过往爆款结构库", "行业术语词典", "竞品动态档案", "内部品牌指南"] : ["Viral structures", "Industry glossary", "Competitor archives", "Brand guidelines"])
+                : index === 1
+                ? (zh ? ["联网搜索", "内部数据库查询", "执行代码", "访问向量存储"] : ["Web search", "Internal DB query", "Code execution", "Vector store access"])
+                : (zh ? ["自动运行 (Cron)", "人工审核后发布", "仅生成草稿", "触发器回调"] : ["Auto run (Cron)", "Human-in-the-loop", "Draft only", "Trigger webhook"]);
+              return (
               <div key={row} className="mb-3 flex items-center justify-between rounded-xl bg-white/[0.025] p-3">
-                <div className="h-1.5 w-[62%] rounded-full bg-white/[0.12]" />
+                <div className="text-[12px] text-white/60">{texts[row]}</div>
                 <span className="h-4 w-4 rounded border border-white/[0.12]" style={row <= 2 - index ? { background: accent } : undefined} />
               </div>
-            ))}
+            )})}
           </div>
         ))}
       </div>
@@ -822,17 +870,17 @@ function storySections(variant: ModuleVariant, zh: boolean) {
   const content = {
     panorama: zh
       ? [
-          { kicker: "Signal wall", title: "不是信息流，是编辑能行动的信号墙。", body: "客户看到的不只是文章列表，而是按时间、类型、标签和相关性组织好的情报界面。每条信号都能被打分、勾选、批量送入后续生产。" },
-          { kicker: "Dispatch", title: "从发现到分发，只保留值得跟进的内容。", body: "编辑可以把高价值图文、视频和 newsletter 片段变成情报卡片，带着来源、标签和引用进入内容工作台。" },
+          { kicker: "Signal wall", title: "不是信息流，是编辑能行动的\u00A0信号墙。", body: "客户看到的不只是文章列表，而是按时间、类型、标签和相关性组织好的情报界面。每条信号都能被打分、勾选、批量送入后续生产。" },
+          { kicker: "Dispatch", title: "好的线索不应被孤立，它们可以\u00A0被组合。", body: "单一信息往往不足以成文。全景视图支持把不同来源的信号合并成一个素材包，让智能体在生成时拥有多维度的上下文支持。" },
         ]
       : [
-          { kicker: "Signal wall", title: "Not a feed — an actionable intelligence wall.", body: "The page shows articles and videos organized by time, type, tags, and relevance so editors can score, select, and act on the right signals." },
-          { kicker: "Dispatch", title: "Move only the best signals into production.", body: "High-value articles, videos, and newsletter fragments become workspace cards with sources, tags, and citation context attached." },
+          { kicker: "Signal wall", title: "Not a feed. An actionable signal wall.", body: "The page shows articles and videos organized by time, type, tags, and relevance so editors can score, select, and act on the right signals." },
+          { kicker: "Dispatch", title: "Good leads shouldn't be isolated.", body: "High-value articles, videos, and newsletter fragments become workspace cards with sources, tags, and citation context attached." },
         ],
     workspace: zh
       ? [
-          { kicker: "Production desk", title: "内容工作台要展示生产，而不是只展示收藏。", body: "这里承接资讯全景的发现，把素材变成任务、草稿、审稿上下文和可复用资产，客户能看到编辑团队如何推进内容。" },
-          { kicker: "Asset library", title: "好素材会沉淀成下一次可复用的资产。", body: "灵感、引用、结构模板和案例库被集中管理，避免每次写作都从零开始。" },
+          { kicker: "Production Desk", title: "内容工作台要展示生产，而不只是\u00A0收藏。", body: "这里承接资讯全景的发现，把素材变成任务、草稿、审稿上下文和可复用资产，客户能看到编辑团队如何推进内容。" },
+          { kicker: "Asset Library", title: "好素材会沉淀成下一次可复用的\u00A0资产。", body: "灵感、引用、结构模板和案例库被集中管理，避免每次写作都从零开始。" },
         ]
       : [
           { kicker: "Production desk", title: "Show production, not just saved items.", body: "The workspace turns discoveries into tasks, drafts, review context, and reusable assets so customers see the editorial work moving forward." },
@@ -840,8 +888,8 @@ function storySections(variant: ModuleVariant, zh: boolean) {
         ],
     network: zh
       ? [
-          { kicker: "Pipeline", title: "情报网络要讲清楚内容从哪里来。", body: "RSS、网站、newsletter 和视频博主不是静态列表，而是一条可观测的抓取、清洗、去重和路由流水线。" },
-          { kicker: "Governance", title: "健康状态和凭证边界，是客户信任的关键。", body: "客户需要知道系统如何处理失败、过期、重复、低质量来源，以及私有凭证不会暴露到公开页面。" },
+          { kicker: "Pipeline", title: "让不同类型的数据经过相同的\u00A0流水线。", body: "无论是 YouTube 视频、长文章，还是推文，都在这里被标准化，转化为直接取用的结构化格式。" },
+          { kicker: "Governance", title: "维护一张干净的、持续流动的\u00A0情报网。", body: "网络必须是健康的。监控抓取成功率、解析完整度和凭证有效性，确保流入系统的信息源稳定可靠。" },
         ]
       : [
           { kicker: "Pipeline", title: "Explain where every signal comes from.", body: "RSS, websites, newsletters, and creators are not static lists; they form an observable fetch, clean, dedupe, and routing pipeline." },
@@ -849,8 +897,8 @@ function storySections(variant: ModuleVariant, zh: boolean) {
         ],
     studio: zh
       ? [
-          { kicker: "Workbench", title: "智能体工作室要像一个可运行的控制台。", body: "客户应该看到智能体不只是配置表单，而是有角色、权限、工具、对话和执行结果的工作台。" },
-          { kicker: "Configuration", title: "每个智能体都有边界、有知识、有工具。", body: "模型、Prompt、知识库、插件和执行方式可以按角色配置，让 AI 编辑团队可控地协作。" },
+          { kicker: "Workbench", title: "智能体工作室要像一个可运行的\u00A0控制台。", body: "它不只是一个静态的表单，必须能够展示 Prompt 的最终效果、所调用工具的状态，以及知识库的匹配度。" },
+          { kicker: "Configuration", title: "每个智能体都有边界、有知识、有\u00A0工具。", body: "模型、Prompt、知识库、插件和执行方式可以按角色配置，让 AI 编辑团队可控地协作。" },
         ]
       : [
           { kicker: "Workbench", title: "Agent Studio should feel like a runnable console.", body: "Customers should see agents as role-based workbenches with permissions, tools, conversations, and execution results — not just forms." },

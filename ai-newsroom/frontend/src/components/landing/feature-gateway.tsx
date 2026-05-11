@@ -44,7 +44,8 @@ const featurePages = [
 ];
 
 export function FeatureGateway({ accent = "#c0c0dd" }: FeatureGatewayProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const zh = language === "zh";
   return (
     <section id="features" className="border-t border-white/[0.05] px-6 py-20 sm:px-10 lg:px-24">
       <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.75fr_1.25fr] lg:items-start">
@@ -53,10 +54,10 @@ export function FeatureGateway({ accent = "#c0c0dd" }: FeatureGatewayProps) {
             <Workflow className="h-3.5 w-3.5" style={{ color: accent }} />
             {t("landing.gateway.badge")}
           </div>
-          <h2 className="text-[40px] font-semibold leading-[1.05] text-[#f4f3ee] sm:text-[48px]">
+          <h2 className={`font-semibold text-[#f4f3ee] ${zh ? 'text-[40px] sm:text-[48px] leading-[1.15] tracking-[0.02em] text-balance font-serif' : 'text-[40px] sm:text-[48px] leading-[1.05]'}`}>
             {t("landing.gateway.title")}
           </h2>
-          <p className="mt-5 text-[16px] leading-7 text-white/50">
+          <p className={`mt-5 text-white/50 ${zh ? 'text-[17px] leading-[2] tracking-[0.02em] text-pretty' : 'text-[16px] leading-7'}`}>
             {t("landing.gateway.body")}
           </p>
         </div>
@@ -76,8 +77,8 @@ export function FeatureGateway({ accent = "#c0c0dd" }: FeatureGatewayProps) {
                     </span>
                   </div>
                   <p className="mb-3 font-mono text-[11px] uppercase text-white/35">{t(feature.eyebrowKey)}</p>
-                  <h3 className="text-[21px] font-semibold text-white">{t(feature.titleKey)}</h3>
-                  <p className="mt-4 text-[13.5px] leading-6 text-white/48">{t(feature.descriptionKey)}</p>
+                  <h3 className={`font-semibold text-white ${zh ? 'text-[22px] tracking-[0.01em] text-balance font-serif' : 'text-[21px]'}`}>{t(feature.titleKey)}</h3>
+                  <p className={`mt-4 text-white/48 ${zh ? 'text-[13.5px] leading-[1.85] tracking-[0.01em] text-pretty' : 'text-[13.5px] leading-6'}`}>{t(feature.descriptionKey)}</p>
                 </div>
                 <div className="mt-8 inline-flex items-center gap-2 text-[13px] font-semibold text-white/72">
                   {t("landing.gateway.openPage")}

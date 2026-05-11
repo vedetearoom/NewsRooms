@@ -8,6 +8,8 @@ import { V2Navbar } from "./navbar";
 import { isAuthenticated } from "@/lib/auth";
 import { useTranslation } from "@/hooks/useTranslation";
 
+const isCJK = (s: string) => /[\u4e00-\u9fff]/.test(s);
+
 const accent = "#d6c7a1";
 const signal = "#86efac";
 
@@ -71,10 +73,10 @@ export function SourceManagementPage() {
               <span className="h-1.5 w-1.5 rounded-full" style={{ background: signal, boxShadow: `0 0 10px ${signal}` }} />
               {t("landing.sourceManagement.badge")}
             </div>
-            <h1 className="max-w-2xl text-[54px] font-semibold leading-[0.96] tracking-[-0.055em] text-[#f4f3ee] sm:text-[74px]">
-              {t("landing.sourceManagement.headlineBefore")} <span className="font-serif italic font-normal" style={{ color: accent }}>{t("landing.sourceManagement.headlineAccent")}</span>
+            <h1 className={`max-w-2xl font-semibold leading-[0.96] text-[#f4f3ee] ${isCJK(t("landing.sourceManagement.headlineBefore")) ? 'text-[42px] tracking-[-0.02em] sm:text-[58px]' : 'text-[54px] tracking-[-0.055em] sm:text-[74px]'}`}>
+              {t("landing.sourceManagement.headlineBefore")} <span className={isCJK(t("landing.sourceManagement.headlineAccent")) ? 'font-semibold' : 'font-serif italic font-normal'} style={{ color: accent }}>{t("landing.sourceManagement.headlineAccent")}</span>
             </h1>
-            <p className="mt-7 max-w-xl text-[17px] leading-8 tracking-[-0.005em] text-white/52">
+            <p className={`mt-7 max-w-xl text-white/52 ${isCJK(t("landing.sourceManagement.body")) ? 'text-[16px] leading-[1.9] tracking-[0.01em]' : 'text-[17px] leading-8 tracking-[-0.005em]'}`}>
               {t("landing.sourceManagement.body")}
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-3">

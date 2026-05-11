@@ -11,7 +11,8 @@ type HeroV2Props = {
 };
 
 export function HeroV2({ accent = "#ffffff", onLogin, onRegister }: HeroV2Props) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const zh = language === "zh";
 
   return (
     <div
@@ -97,40 +98,37 @@ export function HeroV2({ accent = "#ffffff", onLogin, onRegister }: HeroV2Props)
           </div>
 
           <h1
-            className="hero-v2-title"
+            className={`hero-v2-title ${zh ? "font-serif text-balance" : ""}`}
             style={{
               fontSize: "clamp(56px, 5.6vw, 84px)",
               fontWeight: 600,
-              letterSpacing: "-0.045em",
-              lineHeight: 0.96,
+              letterSpacing: zh ? "0.02em" : "-0.045em",
+              lineHeight: zh ? 1.15 : 0.96,
               margin: 0,
               color: "rgba(255,255,255,0.98)",
             }}
           >
             {t("landing.hero.titleLine1")}
-            <br />
+            {zh ? "" : <br />}
             {t("landing.hero.titleLine2")}
-            <br />
+            {zh ? "" : <br />}
             <span
-              style={{
-                fontStyle: "italic",
-                fontFamily: "'Instrument Serif', 'Times New Roman', serif",
-                fontWeight: 400,
-                color: accent,
-              }}
+              className={zh ? "font-serif" : "italic font-normal font-serif"}
+              style={{ color: accent }}
             >
               {t("landing.hero.titleAccent")}
             </span>
           </h1>
 
           <p
+            className={zh ? "text-pretty" : ""}
             style={{
               marginTop: 28,
-              fontSize: 17,
-              lineHeight: 1.5,
+              fontSize: zh ? 18 : 17,
+              lineHeight: zh ? 2 : 1.5,
               color: "rgba(255,255,255,0.5)",
-              letterSpacing: "-0.005em",
-              maxWidth: 440,
+              letterSpacing: zh ? "0.02em" : "-0.005em",
+              maxWidth: 460,
             }}
           >
             {t("landing.hero.body")}

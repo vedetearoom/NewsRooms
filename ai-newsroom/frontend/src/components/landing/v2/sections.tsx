@@ -3,6 +3,8 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 
+const isCJK = (s: string) => /[\u4e00-\u9fff]/.test(s);
+
 type AccentProps = {
   accent?: string;
 };
@@ -91,12 +93,14 @@ function SectionShell({ children, eyebrow, eyebrowColor, title, blurb, dense, id
             {title && (
               <h2
                 style={{
-                  fontSize: 52,
+                  fontSize: isCJK(title) ? 44 : 52,
                   fontWeight: 600,
-                  letterSpacing: "-0.035em",
-                  lineHeight: 1.04,
+                  letterSpacing: isCJK(title) ? "0.02em" : "-0.035em",
+                  lineHeight: isCJK(title) ? 1.15 : 1.04,
                   margin: 0,
                   color: "#f4f3ee",
+                  textWrap: isCJK(title) ? "balance" : "auto",
+                  fontFamily: isCJK(title) ? "ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif" : "inherit",
                 }}
               >
                 {title}
@@ -105,12 +109,13 @@ function SectionShell({ children, eyebrow, eyebrowColor, title, blurb, dense, id
             {blurb && (
               <p
                 style={{
-                  fontSize: 17,
-                  lineHeight: 1.55,
+                  fontSize: isCJK(blurb) ? 16 : 17,
+                  lineHeight: isCJK(blurb) ? 2.0 : 1.55,
                   color: "rgba(244,243,238,0.5)",
-                  letterSpacing: "-0.005em",
+                  letterSpacing: isCJK(blurb) ? "0.02em" : "-0.005em",
                   margin: "22px 0 0",
                   maxWidth: 620,
+                  textWrap: isCJK(blurb) ? "pretty" : "auto",
                 }}
               >
                 {blurb}
@@ -536,7 +541,7 @@ function CardTexture({ pattern }: { pattern: string }) {
 }
 
 export function ContentWorkspaceSection({ accent = "#22d3ee" }: AccentProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const cards = [
     { title: t("landing.sections.workspaceCardOneTitle"), desc: t("landing.sections.workspaceCardOneDesc"), color: "#a78bfa" },
     { title: t("landing.sections.workspaceCardTwoTitle"), desc: t("landing.sections.workspaceCardTwoDesc"), color: "#fbbf24" },
@@ -575,17 +580,21 @@ export function ContentWorkspaceSection({ accent = "#22d3ee" }: AccentProps) {
             <ChipBadge color="#34d399">READY</ChipBadge>
           </div>
           <div style={{ position: "relative", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            {["Signal card", "Angle bank", "Draft brief", "Source context"].map((item, index) => (
+            {["Signal card", "Angle bank", "Draft brief", "Source context"].map((item, index) => {
+              const zh = language === "zh";
+              const texts = zh 
+                ? ["提取核心事实与观点", "整理多个关联角度", "生成带有引用标注的初稿", "提供原始信息与对比数据"]
+                : ["Extract core facts and views", "Organize related angles", "Generate draft with citations", "Provide original context"];
+              return (
               <div key={item} style={{ minHeight: index === 0 ? 150 : 118, border: "1px solid rgba(255,255,255,0.06)", background: index === 0 ? "rgba(255,255,255,0.055)" : "rgba(0,0,0,0.22)", borderRadius: 12, padding: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 28 }}>
                   <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "rgba(255,255,255,0.35)" }}>WRK-{index + 1}</span>
                   <span style={{ width: 7, height: 7, borderRadius: "50%", background: ["#a78bfa", "#fbbf24", accent, "#34d399"][index] }} />
                 </div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.9)", letterSpacing: "-0.015em", marginBottom: 8 }}>{item}</div>
-                <div style={{ height: 6, width: "78%", borderRadius: 999, background: "rgba(255,255,255,0.12)", marginBottom: 7 }} />
-                <div style={{ height: 6, width: "54%", borderRadius: 999, background: "rgba(255,255,255,0.08)" }} />
+                <div style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.9)", letterSpacing: "-0.015em", marginBottom: 12 }}>{item}</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", lineHeight: 1.5 }}>{texts[index]}</div>
               </div>
-            ))}
+            )})}
           </div>
         </div>
       </div>
@@ -959,7 +968,7 @@ export function ReviewSection({ accent = "#22d3ee" }: AccentProps) {
           </div>
           <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
             {[
-              { title: "Quantum threat to encryption, Google's Q-Day...", source: "arstechnica.com" },
+              { title: "Google accelerates Q-Day projection to 2029", source: "arstechnica.com" },
               { title: "Post-quantum cryptography deployment", source: "techcrunch.com" },
             ].map((source) => (
               <div key={source.title} style={{ flex: 1, background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 8, padding: "10px 12px" }}>
@@ -989,7 +998,7 @@ export function ReviewSection({ accent = "#22d3ee" }: AccentProps) {
             <span style={{ background: "rgba(248,113,113,0.18)", borderBottom: "1px solid rgba(248,113,113,0.5)", padding: "1px 2px" }}>
               Iran-linked APT clusters have, since March 2026, conducted coordinated
             </span>
-            ...
+            cyber espionage against infrastructure.
           </div>
         </div>
 
@@ -1152,7 +1161,8 @@ export function KanbanSection({ accent = "#22d3ee" }: AccentProps) {
 }
 
 export function ClosingCTA({ accent = "#22d3ee", onRegister }: ClosingCTAProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const zh = language === "zh";
 
   return (
     <section id="cta" style={{ position: "relative", padding: "160px 96px", borderTop: "1px solid rgba(255,255,255,0.04)", overflow: "hidden" }}>
@@ -1190,12 +1200,12 @@ export function ClosingCTA({ accent = "#22d3ee", onRegister }: ClosingCTAProps) 
           <span style={{ width: 5, height: 5, borderRadius: "50%", background: accent, boxShadow: `0 0 8px ${accent}` }} />
           {t("landing.sections.ctaBadge")}
         </div>
-        <h2 style={{ fontSize: 76, fontWeight: 600, letterSpacing: "-0.045em", lineHeight: 1.0, margin: 0, color: "rgba(255,255,255,0.97)" }}>
+        <h2 className={`font-semibold text-[rgba(255,255,255,0.97)] ${zh ? 'text-[56px] leading-[1.15] tracking-[0.02em] text-balance font-serif' : 'text-[76px] leading-[1.0] tracking-[-0.045em]'}`} style={{ margin: 0 }}>
           {t("landing.sections.ctaTitleLine1")}
-          <br />
-          <span style={{ fontStyle: "italic", fontFamily: "'Instrument Serif', 'Times New Roman', serif", fontWeight: 400, color: accent }}>{t("landing.sections.ctaTitleAccent")}</span>
+          {zh ? "" : <br />}
+          <span className={zh ? "font-serif" : "italic font-normal font-serif"} style={{ color: accent }}>{t("landing.sections.ctaTitleAccent")}</span>
         </h2>
-        <p style={{ fontSize: 17, lineHeight: 1.55, color: "rgba(255,255,255,0.5)", letterSpacing: "-0.005em", margin: "28px auto 0", maxWidth: 560 }}>
+        <p className={`mx-auto mt-7 max-w-[560px] text-white/50 ${zh ? 'text-[16px] leading-[2] tracking-[0.02em] text-pretty' : 'text-[17px] leading-[1.55] tracking-[-0.005em]'}`}>
           {t("landing.sections.ctaBody")}
         </p>
         <div style={{ marginTop: 40, display: "flex", justifyContent: "center", gap: 12 }}>
