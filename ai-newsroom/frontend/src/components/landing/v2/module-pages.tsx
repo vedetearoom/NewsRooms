@@ -116,8 +116,8 @@ export function AgentStudioModulePage() {
     <ModulePage
       variant="studio"
       badge={zh ? "智能体工作室" : "Agent Studio"}
-      title={zh ? "配置一支能协作的" : "Configure a collaborative"}
-      accentTitle={zh ? "AI 编辑团队。" : "AI editorial team."}
+      title={zh ? "配置一支能协作的" : "Configure a collaborative AI"}
+      accentTitle={zh ? "AI 编辑团队。" : "editorial team."}
       description={zh ? "智能体工作室用于配置信息抽取、内容写作、审稿校验与配图生成等智能体角色，涵盖模型绑定、Prompt 编排、知识库注入与插件集成。" : "Agent Studio configures extraction, writing, review, and illustration agents: models, prompts, knowledge, plugins, and execution modes."}
       accent="#e0c097"
       appPath="/agents"

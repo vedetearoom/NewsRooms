@@ -89,7 +89,7 @@ export function ModulePage({
               <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent, boxShadow: `0 0 10px ${accent}` }} />
               {badge}
             </div>
-            <h1 className={`max-w-3xl font-semibold text-[#f4f3ee] ${zh ? 'text-[44px] leading-[1.15] tracking-[0.02em] sm:text-[60px] text-balance font-serif' : 'text-[54px] leading-[0.96] tracking-[-0.055em] sm:text-[74px] text-balance'}`}>
+            <h1 className={`max-w-3xl font-semibold text-[#f4f3ee] ${zh ? 'text-[44px] leading-[1.15] tracking-[0.02em] sm:text-[60px] text-balance font-serif' : 'text-[42px] leading-[1.05] tracking-[-0.03em] sm:text-[52px] text-pretty'}`}>
               {title}{zh && !/^[A-Za-z]/.test(accentTitle) ? '' : ' '}<span className={zh ? 'font-serif' : 'font-serif italic font-normal'} style={{ color: accent }}>{accentTitle}</span>
             </h1>
             <p className={`mt-7 max-w-xl text-white/52 ${zh ? 'text-[17px] leading-[2] tracking-[0.02em] text-pretty' : 'text-[17px] leading-8 tracking-[-0.005em]'}`}>{description}</p>
