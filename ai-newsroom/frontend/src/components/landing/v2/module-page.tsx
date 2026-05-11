@@ -556,7 +556,7 @@ function ModuleStorySections({ variant, accent, zh }: { variant: ModuleVariant; 
                 <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent, boxShadow: `0 0 12px ${accent}` }} />
                 {String(index + 1).padStart(2, "0")} · {section.kicker}
               </div>
-              <h2 className={`font-semibold text-[#f4f3ee] ${zh ? 'text-[42px] sm:text-[56px] lg:text-[64px] leading-[1.15] tracking-[0.02em] text-balance font-serif' : 'text-[40px] sm:text-[48px] lg:text-[52px] leading-[1.04] tracking-[-0.03em] text-balance'}`}>
+              <h2 className={`font-semibold text-[#f4f3ee] ${zh ? 'text-[42px] sm:text-[56px] lg:text-[64px] leading-[1.15] tracking-[0.02em] text-balance font-serif' : 'text-[38px] sm:text-[44px] lg:text-[48px] leading-[1.05] tracking-[-0.02em] text-pretty'}`}>
                 {section.title}
               </h2>
               <p className={`mt-6 max-w-[480px] text-white/48 ${zh ? 'text-[17px] leading-[2] tracking-[0.02em] text-pretty' : 'text-[16px] leading-8'}`}>{section.body}</p>
