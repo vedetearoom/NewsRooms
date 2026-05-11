@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 type AccentProps = {
   accent?: string;
@@ -222,10 +223,11 @@ export function MetricsStrip({ accent = "#22d3ee" }: AccentProps) {
 }
 
 export function DiscoverSection({ accent = "#22d3ee" }: AccentProps) {
+  const { t } = useTranslation();
   const bullets = [
-    { title: "Multi-source ingestion", desc: "RSS, newsletters, web pages, video transcripts - unified into one feed." },
-    { title: "Relevance scoring", desc: "Each story scored 0-10 against your editorial rubric. Noise drops below the fold." },
-    { title: "Topic-aware filtering", desc: "Security, AI, Science, Business - auto-categorized at extraction time." },
+    { title: t("landing.sections.discoverBullets.oneTitle"), desc: t("landing.sections.discoverBullets.oneDesc") },
+    { title: t("landing.sections.discoverBullets.twoTitle"), desc: t("landing.sections.discoverBullets.twoDesc") },
+    { title: t("landing.sections.discoverBullets.threeTitle"), desc: t("landing.sections.discoverBullets.threeDesc") },
   ];
 
   return (
@@ -233,8 +235,8 @@ export function DiscoverSection({ accent = "#22d3ee" }: AccentProps) {
       id="discover"
       eyebrow="01 · Discover"
       eyebrowColor={accent}
-      title="A wall of vetted intelligence, refreshed every minute."
-      blurb="Newsroom continuously ingests your feeds, scores each story for relevance, and surfaces only what matters - categorized, deduplicated, and ready to assemble into a brief."
+      title={t("landing.sections.discoverTitle")}
+      blurb={t("landing.sections.discoverBlurb")}
     >
       <div
         style={{
@@ -533,7 +535,66 @@ function CardTexture({ pattern }: { pattern: string }) {
   return null;
 }
 
+export function ContentWorkspaceSection({ accent = "#22d3ee" }: AccentProps) {
+  const { t } = useTranslation();
+  const cards = [
+    { title: t("landing.sections.workspaceCardOneTitle"), desc: t("landing.sections.workspaceCardOneDesc"), color: "#a78bfa" },
+    { title: t("landing.sections.workspaceCardTwoTitle"), desc: t("landing.sections.workspaceCardTwoDesc"), color: "#fbbf24" },
+    { title: t("landing.sections.workspaceCardThreeTitle"), desc: t("landing.sections.workspaceCardThreeDesc"), color: accent },
+  ];
+
+  return (
+    <SectionShell
+      id="workspace"
+      eyebrow="02 · Content Workspace"
+      eyebrowColor={accent}
+      title={t("landing.sections.workspaceTitle")}
+      blurb={t("landing.sections.workspaceBlurb")}
+    >
+      <div style={{ display: "grid", gridTemplateColumns: "0.9fr 1.1fr", gap: 34, alignItems: "stretch" }}>
+        <div style={{ display: "grid", gap: 14 }}>
+          {cards.map((card, index) => (
+            <div key={card.title} style={{ border: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.025)", borderRadius: 16, padding: 22 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: card.color, boxShadow: `0 0 10px ${card.color}` }} />
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "rgba(255,255,255,0.35)" }}>0{index + 1}</span>
+              </div>
+              <h3 style={{ margin: 0, fontSize: 19, fontWeight: 600, color: "white", letterSpacing: "-0.02em" }}>{card.title}</h3>
+              <p style={{ margin: "10px 0 0", fontSize: 13.5, lineHeight: 1.65, color: "rgba(255,255,255,0.48)", letterSpacing: "-0.005em" }}>{card.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ border: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.018)", borderRadius: 18, padding: 22, minHeight: 420, position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", inset: 0, background: `radial-gradient(circle at 72% 18%, ${accent}18, transparent 42%)`, pointerEvents: "none" }} />
+          <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 16, borderBottom: "1px solid rgba(255,255,255,0.06)", marginBottom: 18 }}>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: "white", letterSpacing: "-0.02em" }}>{t("landing.sections.workspaceMockTitle")}</div>
+              <div style={{ marginTop: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, color: "rgba(255,255,255,0.35)" }}>{t("landing.sections.workspaceMockSubtitle")}</div>
+            </div>
+            <ChipBadge color="#34d399">READY</ChipBadge>
+          </div>
+          <div style={{ position: "relative", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            {["Signal card", "Angle bank", "Draft brief", "Source context"].map((item, index) => (
+              <div key={item} style={{ minHeight: index === 0 ? 150 : 118, border: "1px solid rgba(255,255,255,0.06)", background: index === 0 ? "rgba(255,255,255,0.055)" : "rgba(0,0,0,0.22)", borderRadius: 12, padding: 14 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 28 }}>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "rgba(255,255,255,0.35)" }}>WRK-{index + 1}</span>
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: ["#a78bfa", "#fbbf24", accent, "#34d399"][index] }} />
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.9)", letterSpacing: "-0.015em", marginBottom: 8 }}>{item}</div>
+                <div style={{ height: 6, width: "78%", borderRadius: 999, background: "rgba(255,255,255,0.12)", marginBottom: 7 }} />
+                <div style={{ height: 6, width: "54%", borderRadius: 999, background: "rgba(255,255,255,0.08)" }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </SectionShell>
+  );
+}
+
 export function AgentStudioSection({ accent = "#22d3ee" }: AccentProps) {
+  const { t } = useTranslation();
   const groups: StudioGroup[] = [
     { kind: "EXTRACTOR AGENTS", color: "#fbbf24", agents: [{ name: "Default Extractor", type: "System", active: true }] },
     {
@@ -554,8 +615,8 @@ export function AgentStudioSection({ accent = "#22d3ee" }: AccentProps) {
       id="agents"
       eyebrow="02 · Agent Studio"
       eyebrowColor={accent}
-      title="Compose your own editorial team."
-      blurb="Four agent classes - Extractor, Writer, Reviewer, Illustrator - each with its own system prompt, tool access, and workbench. Mix system defaults with custom agents tuned to your house style."
+      title={t("landing.sections.agentTitle")}
+      blurb={t("landing.sections.agentBlurb")}
     >
       <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 28, alignItems: "stretch" }}>
         <div style={{ background: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: 18 }}>
@@ -788,6 +849,7 @@ export function AgentStudioSection({ accent = "#22d3ee" }: AccentProps) {
 }
 
 export function PipelineSection({ accent = "#22d3ee" }: AccentProps) {
+  const { t } = useTranslation();
   const stages = [
     { number: "01", label: "Sources", desc: "RSS · Newsletters · Web · Video", color: "rgba(255,255,255,0.5)" },
     { number: "02", label: "Discover", desc: "Score · Classify · Dedupe", color: "#fbbf24" },
@@ -802,8 +864,8 @@ export function PipelineSection({ accent = "#22d3ee" }: AccentProps) {
       id="pipeline"
       eyebrow="03 · Editorial Pipeline"
       eyebrowColor={accent}
-      title="Six stages, fully observable, fully overridable."
-      blurb="Every stage exposes its intermediate state. Pause, inspect, edit, or hand off to a human at any point - the pipeline runs as far as you let it."
+      title={t("landing.sections.pipelineTitle")}
+      blurb={t("landing.sections.pipelineBlurb")}
     >
       <div style={{ background: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: 36, position: "relative" }}>
         <div style={{ display: "grid", gridTemplateColumns: `repeat(${stages.length}, 1fr)`, gap: 0, position: "relative" }}>
@@ -866,13 +928,15 @@ export function PipelineSection({ accent = "#22d3ee" }: AccentProps) {
 }
 
 export function ReviewSection({ accent = "#22d3ee" }: AccentProps) {
+  const { t } = useTranslation();
+
   return (
     <SectionShell
       id="review"
       eyebrow="04 · Editorial Review"
       eyebrowColor={accent}
-      title="A second opinion that never gets tired."
-      blurb="The Reviewer agent grades every draft on structure, sourcing, hyperbole, and tone. It flags issues inline, proposes rewrites, and re-scores after your edits - until the report is ready to ship."
+      title={t("landing.sections.reviewTitle")}
+      blurb={t("landing.sections.reviewBlurb")}
     >
       <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 32, alignItems: "stretch" }}>
         <div style={{ background: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: 28, position: "relative", overflow: "hidden" }}>
@@ -1005,6 +1069,7 @@ function ScoreGauge({ value, max, accent }: { value: number; max: number; accent
 }
 
 export function KanbanSection({ accent = "#22d3ee" }: AccentProps) {
+  const { t } = useTranslation();
   const columns: KanbanColumn[] = [
     { name: "Backlog", count: 0, dot: "rgba(255,255,255,0.4)", tasks: [] },
     { name: "Todo", count: 1, dot: "#9ca3af", tasks: [{ id: "TSK-6", title: "Executive Summary", agent: "Default Writer", refs: 1, dot: "rgba(255,255,255,0.4)" }] },
@@ -1026,8 +1091,8 @@ export function KanbanSection({ accent = "#22d3ee" }: AccentProps) {
       id="kanban"
       eyebrow="05 · Task Kanban"
       eyebrowColor={accent}
-      title="Long-running agent jobs, tracked like engineering tickets."
-      blurb="Every Writer or Reviewer task gets a TSK ID, a column, and a state. Watch your editorial backlog drain in real time, retry failed runs, or hand a stuck task to a human."
+      title={t("landing.sections.kanbanTitle")}
+      blurb={t("landing.sections.kanbanBlurb")}
     >
       <div style={{ background: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: 22 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 14, marginBottom: 18, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
@@ -1087,6 +1152,8 @@ export function KanbanSection({ accent = "#22d3ee" }: AccentProps) {
 }
 
 export function ClosingCTA({ accent = "#22d3ee", onRegister }: ClosingCTAProps) {
+  const { t } = useTranslation();
+
   return (
     <section id="cta" style={{ position: "relative", padding: "160px 96px", borderTop: "1px solid rgba(255,255,255,0.04)", overflow: "hidden" }}>
       <div
@@ -1121,15 +1188,15 @@ export function ClosingCTA({ accent = "#22d3ee", onRegister }: ClosingCTAProps) 
           }}
         >
           <span style={{ width: 5, height: 5, borderRadius: "50%", background: accent, boxShadow: `0 0 8px ${accent}` }} />
-          Now in private beta
+          {t("landing.sections.ctaBadge")}
         </div>
         <h2 style={{ fontSize: 76, fontWeight: 600, letterSpacing: "-0.045em", lineHeight: 1.0, margin: 0, color: "rgba(255,255,255,0.97)" }}>
-          Ship sharper intelligence,
+          {t("landing.sections.ctaTitleLine1")}
           <br />
-          <span style={{ fontStyle: "italic", fontFamily: "'Instrument Serif', 'Times New Roman', serif", fontWeight: 400, color: accent }}>without the burnout.</span>
+          <span style={{ fontStyle: "italic", fontFamily: "'Instrument Serif', 'Times New Roman', serif", fontWeight: 400, color: accent }}>{t("landing.sections.ctaTitleAccent")}</span>
         </h2>
         <p style={{ fontSize: 17, lineHeight: 1.55, color: "rgba(255,255,255,0.5)", letterSpacing: "-0.005em", margin: "28px auto 0", maxWidth: 560 }}>
-          Newsroom is currently invite-only. We&apos;re onboarding intelligence teams, editorial desks, and analyst groups one by one.
+          {t("landing.sections.ctaBody")}
         </p>
         <div style={{ marginTop: 40, display: "flex", justifyContent: "center", gap: 12 }}>
           <button
@@ -1148,7 +1215,7 @@ export function ClosingCTA({ accent = "#22d3ee", onRegister }: ClosingCTAProps) 
               boxShadow: "0 1px 0 rgba(255,255,255,0.4) inset, 0 8px 24px rgba(0,0,0,0.4)",
             }}
           >
-            Request access
+            {t("landing.sections.requestAccess")}
           </button>
           <a
             href="#pipeline"
@@ -1165,7 +1232,7 @@ export function ClosingCTA({ accent = "#22d3ee", onRegister }: ClosingCTAProps) 
               textDecoration: "none",
             }}
           >
-            Read the docs &rarr;
+            {t("landing.sections.readDocs")}
           </a>
         </div>
       </div>
@@ -1174,11 +1241,40 @@ export function ClosingCTA({ accent = "#22d3ee", onRegister }: ClosingCTAProps) 
 }
 
 export function LandingFooter({ accent = "#22d3ee" }: AccentProps) {
+  const { t } = useTranslation();
   const columns = [
-    { heading: "Product", links: ["Discover", "Agent Studio", "Pipeline", "Editorial Review", "Task Kanban"] },
-    { heading: "Resources", links: ["Documentation", "Changelog", "API Reference", "Integrations"] },
-    { heading: "Company", links: ["About", "Customers", "Careers", "Contact"] },
-    { heading: "Legal", links: ["Terms", "Privacy", "Security", "Status"] },
+    {
+      heading: "Product",
+      links: [
+        { label: "Discover", href: "/landing#discover" },
+        { label: "Source Management", href: "/landing/source-management" },
+        { label: "Agent Studio", href: "/landing#agents" },
+        { label: "Pipeline", href: "/landing#pipeline" },
+        { label: "Task Kanban", href: "/landing#kanban" },
+      ],
+    },
+    {
+      heading: "Resources",
+      links: [
+        { label: "Feature pages", href: "/landing#features" },
+        { label: "Editorial Review", href: "/landing#review" },
+        { label: "Request access", href: "/landing#cta" },
+      ],
+    },
+    {
+      heading: "Company",
+      links: [
+        { label: "Overview", href: "/landing" },
+        { label: "Customer path", href: "/landing/source-management#customer-path" },
+      ],
+    },
+    {
+      heading: "Legal",
+      links: [
+        { label: "Security", href: "/landing/source-management#capabilities" },
+        { label: "Status", href: "/landing#cta" },
+      ],
+    },
   ];
 
   return (
@@ -1191,7 +1287,7 @@ export function LandingFooter({ accent = "#22d3ee" }: AccentProps) {
               <span style={{ fontSize: 16, fontWeight: 600, color: "white", letterSpacing: "-0.02em" }}>Newsroom</span>
             </div>
             <p style={{ fontSize: 12.5, lineHeight: 1.6, color: "rgba(255,255,255,0.4)", letterSpacing: "-0.005em", maxWidth: 280, margin: 0 }}>
-              The editorial pipeline for modern intelligence teams. Built for analysts who write for a living.
+              {t("landing.sections.footerTagline")}
             </p>
           </div>
 
@@ -1199,8 +1295,8 @@ export function LandingFooter({ accent = "#22d3ee" }: AccentProps) {
             <div key={column.heading}>
               <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace", marginBottom: 16 }}>{column.heading}</div>
               {column.links.map((link) => (
-                <a key={link} href={`#${link.toLowerCase().replaceAll(" ", "-")}`} style={{ display: "block", fontSize: 13, color: "rgba(255,255,255,0.65)", letterSpacing: "-0.005em", marginBottom: 9, textDecoration: "none" }}>
-                  {link}
+                <a key={link.label} href={link.href} style={{ display: "block", fontSize: 13, color: "rgba(255,255,255,0.65)", letterSpacing: "-0.005em", marginBottom: 9, textDecoration: "none" }}>
+                  {link.label}
                 </a>
               ))}
             </div>
@@ -1211,7 +1307,7 @@ export function LandingFooter({ accent = "#22d3ee" }: AccentProps) {
           <span>© 2026 Newsroom Labs · v2.4.1</span>
           <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: accent, boxShadow: `0 0 6px ${accent}` }} />
-            All systems operational
+            {t("landing.sections.statusOperational")}
           </span>
         </div>
       </div>

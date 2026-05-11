@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/hooks/useTranslation";
 import { PipelineDiagram } from "./pipeline-diagram";
 import { V2Navbar } from "./navbar";
 
@@ -10,6 +11,8 @@ type HeroV2Props = {
 };
 
 export function HeroV2({ accent = "#ffffff", onLogin, onRegister }: HeroV2Props) {
+  const { t } = useTranslation();
+
   return (
     <div
       style={{
@@ -89,7 +92,7 @@ export function HeroV2({ accent = "#ffffff", onLogin, onRegister }: HeroV2Props)
               }}
             />
             <span style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", letterSpacing: "-0.005em" }}>
-              3 agents working in lockstep
+              {t("landing.hero.badge")}
             </span>
           </div>
 
@@ -104,9 +107,9 @@ export function HeroV2({ accent = "#ffffff", onLogin, onRegister }: HeroV2Props)
               color: "rgba(255,255,255,0.98)",
             }}
           >
-            Intelligence
+            {t("landing.hero.titleLine1")}
             <br />
-            that writes
+            {t("landing.hero.titleLine2")}
             <br />
             <span
               style={{
@@ -116,7 +119,7 @@ export function HeroV2({ accent = "#ffffff", onLogin, onRegister }: HeroV2Props)
                 color: accent,
               }}
             >
-              itself.
+              {t("landing.hero.titleAccent")}
             </span>
           </h1>
 
@@ -130,8 +133,7 @@ export function HeroV2({ accent = "#ffffff", onLogin, onRegister }: HeroV2Props)
               maxWidth: 440,
             }}
           >
-            Three specialized agents - Extract, Writer, Assassin - chained into one editorial
-            pipeline. From RSS to publish-ready report in under a minute.
+            {t("landing.hero.body")}
           </p>
 
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 36 }}>
@@ -151,7 +153,7 @@ export function HeroV2({ accent = "#ffffff", onLogin, onRegister }: HeroV2Props)
                 boxShadow: "0 1px 0 rgba(255,255,255,0.4) inset, 0 8px 24px rgba(0,0,0,0.4)",
               }}
             >
-              Start building
+              {t("landing.hero.primaryCta")}
             </button>
             <a
               href="#pipeline"
@@ -171,7 +173,7 @@ export function HeroV2({ accent = "#ffffff", onLogin, onRegister }: HeroV2Props)
                 textDecoration: "none",
               }}
             >
-              View architecture
+              {t("landing.hero.secondaryCta")}
               <span style={{ opacity: 0.5 }}>-&gt;</span>
             </a>
           </div>
@@ -186,7 +188,7 @@ export function HeroV2({ accent = "#ffffff", onLogin, onRegister }: HeroV2Props)
                 marginBottom: 14,
               }}
             >
-              Trusted by analysts at
+              {t("landing.hero.trustedBy")}
             </div>
             <div
               style={{
