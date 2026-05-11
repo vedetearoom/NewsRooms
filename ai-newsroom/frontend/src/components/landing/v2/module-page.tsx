@@ -85,31 +85,31 @@ export function ModulePage({
       <main className="relative z-[1]">
         <section className="mx-auto grid max-w-7xl gap-12 px-6 py-20 lg:grid-cols-[0.78fr_1.22fr] lg:px-10 lg:py-24 xl:px-0">
           <div className="pt-6">
-            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-white/55">
-              <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent, boxShadow: `0 0 10px ${accent}` }} />
+            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-white/55 animate-landing-fade-up">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent, boxShadow: `0 0 10px ${accent}`, animation: "v2HeroPulse 1.6s ease-in-out infinite" }} />
               {badge}
             </div>
-            <h1 className={`max-w-3xl font-semibold text-[#f4f3ee] ${zh ? 'text-[44px] leading-[1.15] tracking-[0.02em] sm:text-[60px] text-balance font-serif' : 'text-[42px] leading-[1.05] tracking-[-0.03em] sm:text-[52px] text-pretty'}`}>
+            <h1 className={`max-w-3xl font-semibold text-[#f4f3ee] animate-landing-fade-up delay-100 ${zh ? 'text-[44px] leading-[1.15] tracking-[0.02em] sm:text-[60px] text-balance font-serif' : 'text-[42px] leading-[1.05] tracking-[-0.03em] sm:text-[52px] text-pretty'}`}>
               {title}{zh && !/^[A-Za-z]/.test(accentTitle) ? '' : ' '}<span className={zh ? 'font-serif' : 'font-serif italic font-normal'} style={{ color: accent }}>{accentTitle}</span>
             </h1>
-            <p className={`mt-7 max-w-xl text-white/52 ${zh ? 'text-[17px] leading-[2] tracking-[0.02em] text-pretty' : 'text-[17px] leading-8 tracking-[-0.005em]'}`}>{description}</p>
-            <div className="mt-9 flex flex-wrap items-center gap-3">
+            <p className={`mt-7 max-w-xl text-white/52 animate-landing-fade-up delay-200 ${zh ? 'text-[17px] leading-[2] tracking-[0.02em] text-pretty' : 'text-[17px] leading-8 tracking-[-0.005em]'}`}>{description}</p>
+            <div className="mt-9 flex flex-wrap items-center gap-3 animate-landing-fade-up delay-300">
               <button
                 type="button"
                 onClick={goToModuleOrRegister}
-                className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-[14px] font-semibold tracking-[-0.005em] text-[#08090b] shadow-[0_1px_0_rgba(255,255,255,0.4)_inset,0_18px_48px_rgba(0,0,0,0.35)] transition-colors hover:bg-white/90"
+                className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-[14px] font-semibold tracking-[-0.005em] text-[#08090b] shadow-[0_1px_0_rgba(255,255,255,0.4)_inset,0_18px_48px_rgba(0,0,0,0.35)] transition-colors hover:bg-white/90 hover:scale-[1.02] active:scale-95"
               >
                 {authed ? appCta : guestCta}
                 <ArrowRight className="h-4 w-4" />
               </button>
-              <a href="#workflow" className="inline-flex items-center gap-2 rounded-lg border border-white/[0.08] px-4 py-3 text-[14px] font-semibold tracking-[-0.005em] text-white/72 no-underline transition-colors hover:bg-white/[0.04] hover:text-white">
+              <a href="#workflow" className="inline-flex items-center gap-2 rounded-lg border border-white/[0.08] px-4 py-3 text-[14px] font-semibold tracking-[-0.005em] text-white/72 no-underline transition-all hover:bg-white/[0.04] hover:text-white hover:border-white/[0.16]">
                 {workflowCta}
               </a>
             </div>
 
-            <div className="mt-14 grid max-w-xl grid-cols-3 gap-3 border-t border-white/[0.06] pt-6">
+            <div className="mt-14 grid max-w-xl grid-cols-3 gap-3 border-t border-white/[0.06] pt-6 animate-landing-fade-up delay-400">
               {heroStats(variant, zh).map((item) => (
-                <div key={item.label} className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
+                <div key={item.label} className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4 transition-colors hover:bg-white/[0.04]">
                   <div className="font-mono text-[18px] font-semibold" style={{ color: accent }}>{item.value}</div>
                   <div className="mt-2 text-[12px] leading-5 text-white/40">{item.label}</div>
                 </div>
@@ -117,10 +117,12 @@ export function ModulePage({
             </div>
           </div>
 
-          <div className="lg:-mr-10 xl:-mr-20">
-            <MockShell accent={accent} title={mockTitle} subtitle={mockSubtitle}>
-              <ProductMock variant={variant} accent={accent} zh={zh} />
-            </MockShell>
+          <div className="lg:-mr-10 xl:-mr-20 animate-landing-fade-up delay-200">
+            <div className="animate-float-gentle">
+              <MockShell accent={accent} title={mockTitle} subtitle={mockSubtitle}>
+                <ProductMock variant={variant} accent={accent} zh={zh} />
+              </MockShell>
+            </div>
           </div>
         </section>
 
@@ -178,7 +180,7 @@ export function ModulePage({
             <div className="relative grid gap-3 lg:grid-cols-5">
               <div className="pointer-events-none absolute left-0 right-0 top-8 hidden h-px bg-gradient-to-r from-transparent via-white/[0.16] to-transparent lg:block" />
               {workflow.map((step, index) => (
-                <div key={step.label} className="relative rounded-2xl border border-white/[0.06] bg-[#0d0e11]/88 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.22)]">
+                <div key={step.label} className="relative rounded-2xl border border-white/[0.06] bg-[#0d0e11]/88 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.22)] animate-landing-fade-up transition-transform hover:-translate-y-1" style={{ animationDelay: `${(index + 1) * 150}ms` }}>
                   <div className="mb-10 flex items-center justify-between">
                     <span className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] bg-[#08090b] font-mono text-[11px]" style={{ color: accent }}>0{index + 1}</span>
                     <Check className="h-4 w-4 text-white/35" />
@@ -551,7 +553,7 @@ function ModuleStorySections({ variant, accent, zh }: { variant: ModuleVariant; 
           <div className="pointer-events-none absolute inset-0 opacity-70" style={{ background: `radial-gradient(circle at ${index % 2 ? "16%" : "84%"} 22%, ${accent}14, transparent 32%), linear-gradient(180deg, rgba(255,255,255,0.018), transparent 42%)` }} />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.14] to-transparent" />
           <div className={`relative mx-auto grid max-w-[1320px] gap-14 lg:items-center ${index % 2 ? "lg:grid-cols-[0.58fr_0.42fr] lg:[&>*:first-child]:order-2" : "lg:grid-cols-[0.42fr_0.58fr]"}`}>
-            <div className="max-w-[520px] lg:sticky lg:top-24">
+            <div className="max-w-[520px] lg:sticky lg:top-24 animate-landing-fade-up">
               <div className="mb-6 flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.2em] text-white/42">
                 <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent, boxShadow: `0 0 12px ${accent}` }} />
                 {String(index + 1).padStart(2, "0")} · {section.kicker}
@@ -569,8 +571,10 @@ function ModuleStorySections({ variant, accent, zh }: { variant: ModuleVariant; 
                 ))}
               </div>
             </div>
-            <div className={index % 2 ? "lg:-ml-8" : "lg:-mr-8"}>
-              <StoryVisual variant={variant} scene={index} accent={accent} zh={zh} />
+            <div className={`animate-landing-fade-up delay-200 ${index % 2 ? "lg:-ml-8" : "lg:-mr-8"}`}>
+              <div className="animate-float-subtle">
+                <StoryVisual variant={variant} scene={index} accent={accent} zh={zh} />
+              </div>
             </div>
           </div>
         </section>
