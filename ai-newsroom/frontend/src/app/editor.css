@@ -1,0 +1,313 @@
+/* ── TipTap Editor Styles ───────────────────── */
+.tiptap-editor .ProseMirror {
+  outline: none;
+  min-height: 500px;
+  color: var(--foreground);
+}
+
+/* ── Headings: Strong hierarchy with breathing room ── */
+.tiptap-editor .ProseMirror h1 { 
+  font-size: 1.875rem; /* 30px — slightly smaller, more editorial */
+  font-weight: 700; 
+  line-height: 1.2;
+  margin-top: 0;
+  margin-bottom: 1.25rem; 
+  letter-spacing: -0.025em; 
+  color: var(--foreground);
+}
+.tiptap-editor .ProseMirror h2 { 
+  font-size: 1.375rem; /* 22px */
+  font-weight: 650; 
+  line-height: 1.3;
+  margin-top: 2.5rem; /* Big breathing gap above sections */
+  margin-bottom: 0.75rem; 
+  letter-spacing: -0.02em; 
+  color: var(--foreground);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+.dark .tiptap-editor .ProseMirror h2 {
+  border-bottom-color: rgba(255,255,255,0.04);
+}
+.tiptap-editor .ProseMirror h3 { 
+  font-size: 1.125rem; /* 18px */
+  font-weight: 600; 
+  line-height: 1.4;
+  margin-top: 2rem; 
+  margin-bottom: 0.5rem; 
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+
+/* ── Body Text: Softened for readability ── */
+.tiptap-editor .ProseMirror p {
+  font-size: 0.9375rem; /* 15px — slightly tighter than 16 */
+  line-height: 1.8;
+  margin-bottom: 1rem;
+  color: #3f3f46; /* zinc-700: soft, non-fatiguing */
+  letter-spacing: -0.005em;
+}
+.dark .tiptap-editor .ProseMirror p {
+  color: #d4d4d8; /* zinc-300 */
+}
+
+/* ── Lists: Clean & subtle ── */
+.tiptap-editor .ProseMirror ul,
+.tiptap-editor .ProseMirror ol {
+  padding-left: 1.25rem;
+  margin-bottom: 1rem;
+}
+.tiptap-editor .ProseMirror li {
+  margin-bottom: 0.375rem;
+  line-height: 1.75;
+  font-size: 0.9375rem;
+  color: #3f3f46;
+  letter-spacing: -0.005em;
+}
+.dark .tiptap-editor .ProseMirror li {
+  color: #d4d4d8;
+}
+.tiptap-editor .ProseMirror li::marker { 
+  color: #a1a1aa; /* zinc-400 */
+  opacity: 0.5;
+}
+
+/* ── Inline: Bold as anchors, Italic as editorial lede ── */
+.tiptap-editor .ProseMirror strong {
+  font-weight: 600;
+  color: var(--foreground);
+}
+.tiptap-editor .ProseMirror em { 
+  font-style: italic;
+  color: #71717a; /* zinc-500 — distinct editorial lede tone */
+}
+.dark .tiptap-editor .ProseMirror em {
+  color: #a1a1aa;
+}
+
+/* ── Blockquote: The "Insight Callout" ── */
+.tiptap-editor .ProseMirror blockquote {
+  border-left: 3px solid #3f3f46; /* zinc-700 accent bar */
+  padding: 0.875rem 1.25rem;
+  margin: 1.25rem 0;
+  background: rgba(0,0,0,0.02); /* barely-there tint */
+  border-radius: 0 6px 6px 0;
+  font-style: normal; /* NOT italic — keep it readable */
+}
+.tiptap-editor .ProseMirror blockquote p {
+  color: #27272a; /* zinc-800 — slightly darker than body for emphasis */
+  margin-bottom: 0;
+  font-size: 0.9375rem;
+  line-height: 1.75;
+}
+.dark .tiptap-editor .ProseMirror blockquote {
+  border-left-color: #a1a1aa; /* zinc-400 */
+  background: rgba(255,255,255,0.03);
+}
+.dark .tiptap-editor .ProseMirror blockquote p {
+  color: #e4e4e7; /* zinc-200 */
+}
+
+/* ── Horizontal Rule: Delicate section break ── */
+.tiptap-editor .ProseMirror hr {
+  border: none;
+  height: 0;
+  border-top: 1px solid rgba(0,0,0,0.06);
+  margin: 2.5rem 0;
+}
+.dark .tiptap-editor .ProseMirror hr {
+  border-top-color: rgba(255,255,255,0.06);
+}
+
+/* ── Images: Responsive + Upload Feedback ── */
+.tiptap-editor .ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1.75rem auto;
+  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: all 0.3s ease-in-out;
+}
+.dark .tiptap-editor .ProseMirror img {
+  border-color: rgba(255,255,255,0.08);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+/* Upload-in-progress state: pulsing, greyed out */
+.tiptap-editor .ProseMirror img[alt="uploading"] {
+  opacity: 0.45;
+  filter: grayscale(80%);
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.7; }
+}
+/* AI Image Generation placeholder — clean skeleton shimmer */
+.tiptap-editor .ProseMirror img[alt="generating..."] {
+  border: 1px dashed rgba(0,0,0,0.12);
+  box-shadow: none;
+  border-radius: 10px;
+  animation: imgGenShimmer 2s ease-in-out infinite;
+}
+.dark .tiptap-editor .ProseMirror img[alt="generating..."] {
+  border-color: rgba(255,255,255,0.1);
+}
+@keyframes imgGenShimmer {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 0.95; }
+}
+/* Selected image ring */
+.tiptap-editor .ProseMirror img.ProseMirror-selectednode {
+  outline: none;
+  border-color: transparent;
+  box-shadow: 0 0 0 2px var(--foreground);
+}
+
+/* ── Code ── */
+.tiptap-editor .ProseMirror code {
+  background: var(--muted);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-family: var(--font-mono, monospace);
+  color: var(--foreground);
+}
+.tiptap-editor .ProseMirror pre {
+  background: #18181b;
+  color: #e4e4e7;
+  padding: 1.25rem 1.5rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.tiptap-editor .ProseMirror pre code {
+  background: none; padding: 0; color: inherit;
+}
+.tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
+  color: #444;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* ── Highlight annotations ───────────────── */
+.tiptap-editor .ProseMirror mark {
+  background-color: var(--highlight);
+  color: var(--highlight-text);
+  border-radius: 4px;
+  padding: 0.1em 0.25em;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.tiptap-editor .ProseMirror mark:hover {
+  background-color: var(--highlight-active);
+  box-shadow: none;
+}
+.tiptap-editor .ProseMirror mark.active-quote {
+  background-color: var(--highlight-active);
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.4);
+  filter: none;
+}
+.dark .tiptap-editor .ProseMirror mark.active-quote {
+  filter: none;
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.3);
+}
+
+/* ── Critique Mark (custom inline marks for annotations) ─── */
+.tiptap-editor .ProseMirror .critique-mark {
+  background-color: var(--highlight);
+  color: var(--highlight-text);
+  border-radius: 4px;
+  padding: 0.1em 0.2em;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  border-bottom: 2px solid rgba(250, 204, 21, 0.35);
+}
+
+.tiptap-editor .ProseMirror .critique-mark:hover {
+  background-color: var(--highlight-active);
+}
+
+.tiptap-editor .ProseMirror .critique-mark-active {
+  background-color: var(--highlight-active);
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.4);
+  border-bottom-color: rgba(250, 204, 21, 0.6);
+}
+.dark .tiptap-editor .ProseMirror .critique-mark-active {
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.3);
+}
+
+/* ── Selection Persist ─────────────────────────────────────── */
+.tiptap-editor .ProseMirror .selection-persist {
+  background-color: rgba(180, 213, 255, 0.4);
+}
+.dark .tiptap-editor .ProseMirror .selection-persist {
+  background-color: rgba(38, 98, 171, 0.5);
+}
+
+/* Modified by user — faded out */
+.tiptap-editor .ProseMirror .critique-mark.critique-mark-modified {
+  background-color: rgba(161, 161, 170, 0.12);
+  border-bottom-color: transparent;
+  color: var(--muted-foreground);
+}
+.dark .tiptap-editor .ProseMirror .critique-mark.critique-mark-modified {
+  background-color: rgba(161, 161, 170, 0.08);
+}
+
+/* ── Annotation card states ────────────────────────────────── */
+@keyframes card-modified-in {
+  from { opacity: 0.6; transform: scale(0.98); }
+  to   { opacity: 1;   transform: scale(1); }
+}
+.annotation-card-modified {
+  animation: card-modified-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Re-run review banner entrance */
+@keyframes rerun-banner-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.rerun-banner {
+  animation: rerun-banner-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Diff ─────────────────────────────────── */
+.diff-add { background-color: var(--diff-add); color: var(--foreground); text-decoration: none; padding: 0.05rem 0; }
+.diff-del { background-color: var(--diff-del); color: var(--foreground); text-decoration: line-through; opacity: 0.6; }
+
+@keyframes typewriter-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.typewriter-cursor .ProseMirror > *:last-child::after {
+  content: "▊";
+  animation: typewriter-cursor 1s infinite;
+  color: var(--foreground);
+  margin-left: 2px;
+  font-size: 0.85em;
+  opacity: 0.5;
+  display: inline-block;
+  vertical-align: baseline;
+}
+
+/* Smooth content appearance during streaming */
+.typewriter-cursor .ProseMirror > * {
+  animation: content-appear 0.3s ease-out both;
+}
+@keyframes content-appear {
+  from { opacity: 0.4; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}

@@ -1,0 +1,99 @@
+services:
+  backend:
+    image: ${AI_NEWSROOM_BACKEND_IMAGE:-ai-newsroom-backend:local}
+    build:
+      context: ../../ai-newsroom/backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment: &backend-env
+      AI_NEWSROOM_SETTINGS_FILE: /run/config/backend.env
+      ENABLE_SCHEDULER: "true"
+    volumes:
+      - ..:/opt/infra/docker
+      - ./config:/run/config:ro
+      - ${AI_NEWSROOM_TENANT_ROOT_HOST:-../../ai-newsroom/.tenant-data}:/var/lib/newsroom
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - app
+      - infra
+    ports:
+      - "${AI_NEWSROOM_BACKEND_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  celery:
+    image: ${AI_NEWSROOM_BACKEND_IMAGE:-ai-newsroom-backend:local}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=${AI_NEWSROOM_CELERY_CONCURRENCY:-2} -n newsroom@%h
+    environment:
+      <<: *backend-env
+      ENABLE_SCHEDULER: "false"
+    volumes:
+      - ..:/opt/infra/docker
+      - ./config:/run/config:ro
+      - ${AI_NEWSROOM_TENANT_ROOT_HOST:-../../ai-newsroom/.tenant-data}:/var/lib/newsroom
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - app
+      - infra
+
+  frontend:
+    image: ${AI_NEWSROOM_FRONTEND_IMAGE:-ai-newsroom-frontend:local}
+    build:
+      context: ../../ai-newsroom/frontend
+      dockerfile: Dockerfile
+      args:
+        INTERNAL_API_URL: ${AI_NEWSROOM_INTERNAL_API_URL:-http://backend:8000}
+        INTERNAL_ASSET_URL: ${AI_NEWSROOM_INTERNAL_ASSET_URL:-http://backend:8000}
+        MINIO_BUCKET: ${AI_NEWSROOM_MINIO_BUCKET:-newsroom-images}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+      INTERNAL_API_URL: ${AI_NEWSROOM_INTERNAL_API_URL:-http://backend:8000}
+      INTERNAL_ASSET_URL: ${AI_NEWSROOM_INTERNAL_ASSET_URL:-http://backend:8000}
+      MINIO_BUCKET: ${AI_NEWSROOM_MINIO_BUCKET:-newsroom-images}
+    ports:
+      - "${AI_NEWSROOM_FRONTEND_PORT:-3000}:3000"
+    networks:
+      - app
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "${AI_NEWSROOM_HTTP_PORT:-8080}:80"
+    networks:
+      - app
+      - infra
+
+networks:
+  app:
+    driver: bridge
+  infra:
+    external: true
+    name: ${AI_NEWSROOM_INFRA_NETWORK:-metalm-base-net}

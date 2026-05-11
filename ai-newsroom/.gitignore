@@ -1,0 +1,17 @@
+# Python cache artifacts
+__pycache__/
+*.py[cod]
+
+# macOS metadata
+.DS_Store
+
+# Local backend runtime artifacts
+backend/.venv/
+backend/*.db
+.tenant-data/
+
+# Legacy root-level local databases
+/*.db
+
+# Local Docker build artifacts
+dist/docker/

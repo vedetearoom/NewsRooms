@@ -1,0 +1,83 @@
+services:
+  metalm-base-redis:
+    image: dswr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/redis:6.2.20-alpine-linuxarm64
+    # image: registry.xuelangyun.com/shuzhi-amd64/metalm/redis:6.2.20
+    container_name: metalm-base-redis
+    restart: always
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/redis/data/redis:/data
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/configdata/conf/redis.conf:/etc/redis.conf
+    networks:
+      - metalm-base-net
+    command: redis-server --requirepass metalm2024
+    ports:
+      - "23013:6379"
+
+  metalm-base-pg:
+    image: docker.io/library/postgres:15
+    container_name: metalm-base-pg
+    restart: always
+    networks:
+      - metalm-base-net
+    environment:
+      POSTGRES_DB: metalm
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${METALM_SVC_PG_PASS:-metalm2024}
+      PGDATA: /var/lib/postgresql/data/pgdata
+      TZ: Asia/Shanghai
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/pg:/var/lib/postgresql/data
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/configdata/pg/init-scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "23012:5432"
+
+  metalm-base-minio-sse:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z-cpuv1
+    restart: always
+    networks:
+      - metalm-base-net
+    container_name: metalm-base-minio-sse
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "23016:9000"
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/minio/data:/minio_data
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/minio/root/minio:/root/.minio
+    command: minio server /minio_data --console-address ":9001"
+    healthcheck:
+      test: [ "CMD", "mc", "ready", "local" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  minio-init:
+    image: minio/mc
+    container_name: metalm-minio-init
+    networks:
+      - metalm-base-net
+    depends_on:
+      metalm-base-minio-sse:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c " /usr/bin/mc alias set myminio http://metalm-base-minio-sse:9000 minioadmin minioadmin; /usr/bin/mc mb myminio/newsroom-images --ignore-existing; /usr/bin/mc anonymous set public myminio/newsroom-images; exit 0; "
+
+  rsshub:
+    image: diygod/rsshub:chromium-bundled
+    container_name: metalm-rsshub
+    restart: always
+    networks:
+      - metalm-base-net
+    ports:
+      - "23017:1200"
+    env_file:
+      - rsshub.env
+    environment:
+      NODE_ENV: production
+      CACHE_TYPE: memory
+      CACHE_EXPIRE: 300
+
+networks:
+  metalm-base-net:
+    external: true

@@ -1,0 +1,271 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@import "./editor.css";
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-ring: var(--ring);
+  --color-diff-add: var(--diff-add);
+  --color-diff-del: var(--diff-del);
+  --color-highlight: var(--highlight);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+/* ═══════════════════════════════════════════════
+   THEMING
+   ═══════════════════════════════════════════════ */
+:root {
+  --background: #f9fafb; /* Lighter slightly cool gray background */
+  --foreground: #09090b;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --sidebar-bg: #f9f9f9; /* 侧边栏和背景同步 */
+  --surface-raised: #ffffff;
+
+  --muted: #e4e4e7;
+  --muted-foreground: #52525b; /* 稍微深一点的正文灰 */
+  --border: #e4e4e7;
+
+  --primary: #18181b;
+  --primary-foreground: #ffffff;
+  --accent: #f4f4f5;
+  --accent-foreground: #09090b;
+  --destructive: #ef4444;
+  --ring: rgba(9, 9, 11, 0.1);
+
+  --diff-add: #dcfce7;
+  --diff-del: #fee2e2;
+  --highlight: rgba(250, 204, 21, 0.3); /* Softer yellow with opacity */
+  --highlight-text: inherit;
+  --highlight-active: rgba(250, 204, 21, 0.5);
+
+  --card-border: rgba(0,0,0,0.06);
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.02), 0 4px 12px -2px rgba(0,0,0,0.04);
+  --card-hover-border: rgba(0,0,0,0.1);
+  --card-hover-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01);
+  --skeleton-bg: linear-gradient(90deg, #f4f4f5 25%, #e4e4e7 37%, #f4f4f5 63%);
+  
+  --sidebar-border: #e4e4e7;
+  --nav-active-bg: rgba(0,0,0,0.04);
+  --nav-hover-bg: rgba(0,0,0,0.02);
+  --nav-icon: #000000;
+  --nav-icon-bg: #ffffff;
+  --pill-bg: rgba(0,0,0,0.06);
+  --pill-hover-bg: rgba(0,0,0,0.04);
+  --logo-bg: #18181b;
+  --logo-color: #ffffff;
+  --tab-container-bg: #e4e4e7;
+  --tab-active-bg: #ffffff;
+  --tab-active-text: #000000;
+  --tab-inactive-text: #71717a;
+}
+
+.dark {
+  --background: #09090b; /* 炭灰色背景 */
+  --foreground: #e8e6e3;
+  --card: #18181b; /* 深灰卡片 */
+  --card-foreground: #e8e6e3;
+  --sidebar-bg: #09090b;
+  --surface-raised: #18181b;
+
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --border: rgba(255,255,255,0.06);
+
+  --primary: #e8e6e3;
+  --primary-foreground: #0a0a0a;
+  --accent: #27272a;
+  --accent-foreground: #e8e6e3;
+  --destructive: #e5484d;
+  --ring: rgba(255,255,255,0.15);
+
+  --diff-add: #13361f;
+  --diff-del: #3c1618;
+  --highlight: rgba(250, 204, 21, 0.2);
+  --highlight-text: inherit;
+  --highlight-active: rgba(250, 204, 21, 0.4);
+
+  --card-border: rgba(255,255,255,0.08);
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2);
+  --card-hover-border: rgba(255,255,255,0.15);
+  --card-hover-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+  --skeleton-bg: linear-gradient(90deg, #1e1e1e 25%, #262626 37%, #1e1e1e 63%);
+
+  --sidebar-border: rgba(255,255,255,0.04);
+  --nav-active-bg: rgba(255,255,255,0.06);
+  --nav-hover-bg: rgba(255,255,255,0.04);
+  --nav-icon: #ffffff;
+  --nav-icon-bg: #18181b;
+  --pill-bg: rgba(255,255,255,0.08);
+  --pill-hover-bg: rgba(255,255,255,0.04);
+  --logo-bg: #ffffff;
+  --logo-color: #000000;
+  --tab-container-bg: #121212;
+  --tab-active-bg: #222222;
+  --tab-active-text: #ffffff;
+  --tab-inactive-text: #888888;
+}
+
+/* ═══════════════════════════════════════════════ */
+* { box-sizing: border-box; }
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans, "Inter", system-ui, -apple-system, sans-serif);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.011em;
+}
+
+/* ── Scrollbar ─────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: transparent; border-radius: 10px; }
+*:hover > ::-webkit-scrollbar-thumb,
+::-webkit-scrollbar-thumb:hover { background: rgba(128,128,128,0.2); }
+
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: transparent; border-radius: 4px; }
+.custom-scrollbar:hover::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.2); }
+
+*:focus-visible {
+  outline: 2px solid rgba(255,255,255,0.1);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+input, select, textarea { font-family: inherit; }
+input::placeholder, textarea::placeholder {
+  color: var(--muted-foreground);
+  opacity: 0.5;
+}
+
+/* Removed TipTap styles — see editor.css */
+
+/* ═══════════════════════════════════════════════
+   Animations
+   ═══════════════════════════════════════════════ */
+@keyframes slide-in-right {
+  from { transform: translateX(16px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-slide-in-right { animation: slide-in-right 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
+.animate-fade-in { animation: fade-in 0.2s ease-out; }
+.animate-fade-up { animation: fade-up 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
+.animate-scale-in { animation: scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+/* Removed typewriter styles — see editor.css */
+
+/* ═══════════════════════════════════════════════
+   Utility
+   ═══════════════════════════════════════════════ */
+.card-surface {
+  background: var(--surface-raised);
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+}
+.card-surface:hover {
+  border-color: var(--card-hover-border);
+  box-shadow: var(--card-hover-shadow);
+  transform: translateY(-2px) scale(1.005);
+}
+
+.skeleton {
+  background: var(--skeleton-bg);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+.score-label {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ═══════════════════════════════════════════════
+   Bento Grid layout via CSS Grid
+   ═══════════════════════════════════════════════ */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-auto-rows: 200px;
+  gap: 16px;
+  grid-auto-flow: dense;
+}
+@media (max-width: 1536px) {
+  .bento-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 1280px) {
+  .bento-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 1024px) {
+  .bento-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .bento-grid { 
+    grid-template-columns: repeat(1, 1fr); 
+    grid-auto-rows: auto;
+    min-height: 200px;
+  }
+}
+
+/* ── Card visual cover gradients ───────────── */
+.cover-gradient-ai {
+  background: linear-gradient(135deg, #1a1033 0%, #2d1b69 40%, #4c1d95 100%);
+}
+.cover-gradient-tech {
+  background: linear-gradient(135deg, #0c1a2e 0%, #1e3a5f 40%, #1d4ed8 100%);
+}
+.cover-gradient-business {
+  background: linear-gradient(135deg, #0f1f17 0%, #14532d 40%, #15803d 100%);
+}
+.cover-gradient-policy {
+  background: linear-gradient(135deg, #1f1306 0%, #78350f 40%, #b45309 100%);
+}
+.cover-gradient-science {
+  background: linear-gradient(135deg, #0b1e2c 0%, #155e75 40%, #0891b2 100%);
+}
+.cover-gradient-security {
+  background: linear-gradient(135deg, #1c0c0c 0%, #7f1d1d 40%, #dc2626 100%);
+}
+.cover-gradient-default {
+  background: linear-gradient(135deg, #171717 0%, #262626 40%, #404040 100%);
+}

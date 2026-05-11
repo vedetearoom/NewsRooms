@@ -1,0 +1,231 @@
+"use client";
+
+import { PipelineDiagram } from "./pipeline-diagram";
+import { V2Navbar } from "./navbar";
+
+type HeroV2Props = {
+  accent?: string;
+  onLogin?: () => void;
+  onRegister?: () => void;
+};
+
+export function HeroV2({ accent = "#ffffff", onLogin, onRegister }: HeroV2Props) {
+  return (
+    <div
+      style={{
+        width: "100%",
+        minHeight: "100vh",
+        background: "#08090b",
+        color: "white",
+        fontFamily: "'Inter Tight', 'Inter', system-ui, sans-serif",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* Dot grid background */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage: "radial-gradient(rgba(255,255,255,0.025) 1px, transparent 1px)",
+          backgroundSize: "24px 24px",
+          WebkitMaskImage: "radial-gradient(ellipse 80% 60% at 70% 50%, black 30%, transparent 80%)",
+          maskImage: "radial-gradient(ellipse 80% 60% at 70% 50%, black 30%, transparent 80%)",
+        }}
+      />
+
+      {/* Accent glow */}
+      <div
+        style={{
+          position: "absolute",
+          top: "10%",
+          right: "0%",
+          width: "60%",
+          height: "70%",
+          background: `radial-gradient(ellipse at center, ${accent}1f 0%, ${accent}06 35%, transparent 70%)`,
+          filter: "blur(80px)",
+          pointerEvents: "none",
+        }}
+      />
+
+      <V2Navbar accent={accent} onLogin={onLogin} onRegister={onRegister} />
+
+      {/* Main hero content */}
+      <div
+        className="hero-v2-content"
+        style={{
+          position: "relative",
+          zIndex: 5,
+          display: "flex",
+          alignItems: "flex-start",
+          padding: "72px 64px 64px",
+          gap: 48,
+          maxWidth: 1600,
+          margin: "0 auto",
+        }}
+      >
+        {/* Left column — text */}
+        <div style={{ flex: "0 1 520px", minWidth: 360, paddingTop: 28 }}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.07)",
+              borderRadius: 999,
+              padding: "6px 12px 6px 10px",
+              marginBottom: 32,
+            }}
+          >
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                background: accent,
+                boxShadow: `0 0 10px ${accent}, 0 0 4px ${accent}`,
+                animation: "v2HeroPulse 1.6s ease-in-out infinite",
+              }}
+            />
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", letterSpacing: "-0.005em" }}>
+              3 agents working in lockstep
+            </span>
+          </div>
+
+          <h1
+            className="hero-v2-title"
+            style={{
+              fontSize: "clamp(56px, 5.6vw, 84px)",
+              fontWeight: 600,
+              letterSpacing: "-0.045em",
+              lineHeight: 0.96,
+              margin: 0,
+              color: "rgba(255,255,255,0.98)",
+            }}
+          >
+            Intelligence
+            <br />
+            that writes
+            <br />
+            <span
+              style={{
+                fontStyle: "italic",
+                fontFamily: "'Instrument Serif', 'Times New Roman', serif",
+                fontWeight: 400,
+                color: accent,
+              }}
+            >
+              itself.
+            </span>
+          </h1>
+
+          <p
+            style={{
+              marginTop: 28,
+              fontSize: 17,
+              lineHeight: 1.5,
+              color: "rgba(255,255,255,0.5)",
+              letterSpacing: "-0.005em",
+              maxWidth: 440,
+            }}
+          >
+            Three specialized agents - Extract, Writer, Assassin - chained into one editorial
+            pipeline. From RSS to publish-ready report in under a minute.
+          </p>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 36 }}>
+            <button
+              type="button"
+              onClick={onRegister}
+              style={{
+                background: "white",
+                color: "#08090b",
+                fontSize: 14,
+                fontWeight: 600,
+                padding: "11px 18px",
+                borderRadius: 8,
+                border: "none",
+                cursor: "pointer",
+                letterSpacing: "-0.005em",
+                boxShadow: "0 1px 0 rgba(255,255,255,0.4) inset, 0 8px 24px rgba(0,0,0,0.4)",
+              }}
+            >
+              Start building
+            </button>
+            <a
+              href="#pipeline"
+              style={{
+                background: "transparent",
+                color: "rgba(255,255,255,0.7)",
+                fontSize: 14,
+                fontWeight: 500,
+                padding: "11px 16px",
+                borderRadius: 8,
+                border: "1px solid rgba(255,255,255,0.08)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                letterSpacing: "-0.005em",
+                textDecoration: "none",
+              }}
+            >
+              View architecture
+              <span style={{ opacity: 0.5 }}>-&gt;</span>
+            </a>
+          </div>
+
+          <div style={{ marginTop: 64, paddingTop: 24, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+            <div
+              style={{
+                fontSize: 11,
+                color: "rgba(255,255,255,0.3)",
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                marginBottom: 14,
+              }}
+            >
+              Trusted by analysts at
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 28,
+                fontSize: 14,
+                fontWeight: 500,
+                color: "rgba(255,255,255,0.4)",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              <span style={{ fontStyle: "italic", fontFamily: "Georgia, serif" }}>Bloomberg</span>
+              <span style={{ fontWeight: 700 }}>STRATECHERY</span>
+              <span>The Information</span>
+              <span style={{ fontWeight: 800, letterSpacing: "-0.05em" }}>Pitchbook</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right column — pipeline diagram */}
+        <div style={{ flex: "1 1 0%", position: "relative", marginTop: 0, minWidth: 0 }}>
+          <PipelineDiagram accent={accent} />
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes v2HeroPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(0.85); }
+        }
+        @media (max-width: 960px) {
+          .hero-v2-content {
+            flex-direction: column !important;
+            padding: 48px 24px 48px !important;
+            gap: 32px !important;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}

@@ -1,0 +1,27 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+asyncpg
+psycopg[binary]
+alembic
+pydantic
+pydantic-settings
+httpx
+feedparser
+redis[hiredis]
+apscheduler
+google-genai
+python-dotenv
+sse-starlette
+beautifulsoup4
+lxml
+curl-cffi
+boto3
+openai
+python-multipart
+greenlet
+celery[redis]
+yt-dlp
+cryptography
+playwright
+hermes-agent @ git+https://github.com/NousResearch/hermes-agent.git@v2026.4.16

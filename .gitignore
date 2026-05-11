@@ -1,0 +1,20 @@
+# Docker runtime data
+docker/volumes/
+docker/ai-newsroom/config/backend.env
+docker/rsshub.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# Node
+node_modules/
+.next/
+
+# Environment
+.env
+
+# OS
+.DS_Store
