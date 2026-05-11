@@ -118,11 +118,9 @@ export function ModulePage({
           </div>
 
           <div className="lg:-mr-10 xl:-mr-20 animate-landing-fade-up delay-200">
-            <div className="animate-float-gentle">
-              <MockShell accent={accent} title={mockTitle} subtitle={mockSubtitle}>
-                <ProductMock variant={variant} accent={accent} zh={zh} />
-              </MockShell>
-            </div>
+            <MockShell accent={accent} title={mockTitle} subtitle={mockSubtitle}>
+              <ProductMock variant={variant} accent={accent} zh={zh} />
+            </MockShell>
           </div>
         </section>
 
@@ -572,9 +570,7 @@ function ModuleStorySections({ variant, accent, zh }: { variant: ModuleVariant; 
               </div>
             </div>
             <div className={`animate-landing-fade-up delay-200 ${index % 2 ? "lg:-ml-8" : "lg:-mr-8"}`}>
-              <div className="animate-float-subtle">
-                <StoryVisual variant={variant} scene={index} accent={accent} zh={zh} />
-              </div>
+              <StoryVisual variant={variant} scene={index} accent={accent} zh={zh} />
             </div>
           </div>
         </section>
