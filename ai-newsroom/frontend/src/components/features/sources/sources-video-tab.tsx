@@ -8,7 +8,6 @@ import { toast } from "@/components/ui/use-toast";
 import { SourcesVideoMonitorGrid } from "@/components/features/sources/sources-video-monitor-grid";
 import { SourcesVideoDialogs } from "@/components/features/sources/sources-video-dialogs";
 import { MONITOR_PLATFORM_META } from "@/lib/monitor-video-ui";
-import { useMonitorJobStatusPolling } from "@/hooks/useMonitorJobStatusPolling";
 
 function detectPlatform(url: string): string | null {
   if (url.includes("bilibili")) return "bilibili";
@@ -17,11 +16,8 @@ function detectPlatform(url: string): string | null {
   return null;
 }
 
-function normalizeDiscoveryMode(
-  platform: string | null,
-  mode: MonitorDiscoveryMode,
-): MonitorDiscoveryMode {
-  if (platform === "bilibili") return mode;
+function normalizeDiscoveryMode(platform: string | null): MonitorDiscoveryMode {
+  if (platform === "bilibili") return "cookie";
   if (platform === "xiaohongshu") return "cookie";
   return "rsshub";
 }
@@ -52,7 +48,7 @@ export function SourcesVideoTab({
   
   const [addUrl, setAddUrl] = React.useState("");
   const [addName, setAddName] = React.useState("");
-  const [addDiscoveryMode, setAddDiscoveryMode] = React.useState<MonitorDiscoveryMode>("rsshub");
+  const [addDiscoveryMode, setAddDiscoveryMode] = React.useState<MonitorDiscoveryMode>("cookie");
   const [adding, setAdding] = React.useState(false);
   const [addError, setAddError] = React.useState("");
 
@@ -70,7 +66,7 @@ export function SourcesVideoTab({
   const [editTarget, setEditTarget] = React.useState<MonitorTarget | null>(null);
   const [editName, setEditName] = React.useState("");
   const [editUrl, setEditUrl] = React.useState("");
-  const [editDiscoveryMode, setEditDiscoveryMode] = React.useState<MonitorDiscoveryMode>("rsshub");
+  const [editDiscoveryMode, setEditDiscoveryMode] = React.useState<MonitorDiscoveryMode>("cookie");
   const [editing, setEditing] = React.useState(false);
   const [editError, setEditError] = React.useState("");
 
@@ -80,14 +76,6 @@ export function SourcesVideoTab({
   const [cookieInputs, setCookieInputs] = React.useState<Record<string, string>>({});
   const [savingCookie, setSavingCookie] = React.useState(false);
   const [cookieSaveMsg, setCookieSaveMsg] = React.useState("");
-
-  const fetchMonitorsRef = React.useRef<() => Promise<void>>(async () => {});
-
-  const { setVideoStatus } = useMonitorJobStatusPolling({
-    monitors,
-    t,
-    onAnyCompleted: () => fetchMonitorsRef.current(),
-  });
 
   const fetchMonitors = React.useCallback(async () => {
     try {
@@ -112,22 +100,12 @@ export function SourcesVideoTab({
         const next: Record<number, DiscoveredVideo[]> = {};
         data.forEach(m => {
           next[m.id] = m.cached_videos || [];
-          // Also set visual status for active jobs
-          if (m.active_jobs) {
-            for (const url of Object.keys(m.active_jobs)) {
-              setVideoStatus(s => ({ ...s, [url]: 'submitting' }));
-            }
-          }
         });
         return next;
       });
     } catch { /* ignore */ }
     finally { setLoading(false); }
-  }, [setVideoStatus]);
-
-  React.useEffect(() => {
-    fetchMonitorsRef.current = fetchMonitors;
-  }, [fetchMonitors]);
+  }, []);
 
   const fetchCookieConfig = React.useCallback(async () => {
     try {
@@ -198,11 +176,11 @@ export function SourcesVideoTab({
       await api.createMonitor({
         url: addUrl.trim(),
         name: addName.trim() || undefined,
-        discovery_mode: normalizeDiscoveryMode(detectPlatform(addUrl), addDiscoveryMode),
+        discovery_mode: normalizeDiscoveryMode(detectPlatform(addUrl)),
       });
       setAddUrl("");
       setAddName("");
-      setAddDiscoveryMode("rsshub");
+      setAddDiscoveryMode("cookie");
       onCloseAddModal();
       await fetchMonitors();
       api.getQuota().then(setQuota).catch(() => {});
@@ -262,7 +240,7 @@ export function SourcesVideoTab({
       await api.updateMonitor(editTarget.id, { 
         name: editName.trim() || undefined, 
         url: editUrl.trim() || undefined,
-        discovery_mode: normalizeDiscoveryMode(detectPlatform(editUrl), editDiscoveryMode),
+        discovery_mode: normalizeDiscoveryMode(detectPlatform(editUrl)),
       });
       setEditTarget(null);
       await fetchMonitors();
@@ -303,11 +281,11 @@ export function SourcesVideoTab({
   const detectedPlatform = detectPlatform(addUrl);
 
   React.useEffect(() => {
-    setAddDiscoveryMode((prev) => normalizeDiscoveryMode(detectedPlatform, prev));
+    setAddDiscoveryMode(normalizeDiscoveryMode(detectedPlatform));
   }, [detectedPlatform]);
 
   React.useEffect(() => {
-    setEditDiscoveryMode((prev) => normalizeDiscoveryMode(detectPlatform(editUrl), prev));
+    setEditDiscoveryMode(normalizeDiscoveryMode(detectPlatform(editUrl)));
   }, [editUrl]);
 
   return (
@@ -340,7 +318,7 @@ export function SourcesVideoTab({
               setEditTarget(monitor);
               setEditName(monitor.name);
               setEditUrl(monitor.homepage_url);
-              setEditDiscoveryMode(normalizeDiscoveryMode(monitor.platform, monitor.discovery_mode || "rsshub"));
+              setEditDiscoveryMode(normalizeDiscoveryMode(monitor.platform));
             }}
             onDelete={setDeleteTarget}
           />

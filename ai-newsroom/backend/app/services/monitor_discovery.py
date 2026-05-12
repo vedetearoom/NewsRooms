@@ -26,16 +26,16 @@ from app.services.video.url_utils import canonicalize_video_source_url
 
 logger = logging.getLogger(__name__)
 
-RSSHUB_DISCOVERY_PLATFORMS = {"bilibili", "youtube"}
+RSSHUB_DISCOVERY_PLATFORMS = {"youtube"}
 COOKIE_DISCOVERY_PLATFORMS = {"bilibili", "xiaohongshu"}
 BROWSER_DISCOVERY_PLATFORMS = {"xiaohongshu"}
 DEFAULT_DISCOVERY_MODE_BY_PLATFORM = {
-    "bilibili": "rsshub",
+    "bilibili": "cookie",
     "youtube": "rsshub",
     "xiaohongshu": "cookie",
 }
 SUPPORTED_DISCOVERY_MODES_BY_PLATFORM = {
-    "bilibili": ("rsshub", "cookie"),
+    "bilibili": ("cookie",),
     "youtube": ("rsshub",),
     "xiaohongshu": ("cookie",),
 }
@@ -212,8 +212,6 @@ async def _discover_via_rsshub(target: MonitorTarget) -> list[dict[str, Any]]:
         return await rss_monitor.fetch_videos(rss_url=rss_url)
     except httpx.HTTPStatusError as exc:
         status_code = exc.response.status_code if exc.response is not None else None
-        if target.platform == "bilibili" and status_code in {403, 429, 503}:
-            raise MonitorDiscoveryError(BILIBILI_RSSHUB_FALLBACK_ERROR) from exc
         if status_code is None:
             raise MonitorDiscoveryError("RSSHub 拉取失败，请稍后重试。") from exc
         raise MonitorDiscoveryError(f"RSSHub 拉取失败: HTTP {status_code}") from exc

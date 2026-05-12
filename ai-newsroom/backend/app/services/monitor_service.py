@@ -19,7 +19,7 @@ from app.services.credential_service import (
     list_monitor_credentials,
     upsert_monitor_credential,
 )
-from app.services.job_dispatcher import dispatch_monitor_check_job, dispatch_video_analysis_job
+from app.services.job_dispatcher import dispatch_monitor_check_job
 from app.services.job_manager import job_manager
 from app.services.monitor_discovery import (
     build_monitor_rss_url,
@@ -28,18 +28,14 @@ from app.services.monitor_discovery import (
 from app.services.rss_monitor import parse_homepage_url
 from app.services.quota_service import (
     DAILY_MONITOR_CHECKS,
-    DAILY_VIDEO_ANALYSES,
-    VIDEO_CARDS,
     VIDEO_MONITORS,
     consume_daily_quota,
     ensure_resource_quota,
-    get_resource_remaining,
 )
 from app.services.video.url_utils import canonicalize_video_source_url, get_video_source_identity
 
 logger = logging.getLogger(__name__)
 
-MAX_DURATION_SECONDS = 35 * 60
 MISSING_ANALYSIS_JOB_ERROR = "后台任务状态已丢失，请重新执行解构。"
 
 
@@ -126,7 +122,7 @@ async def create_monitor_target(db: AsyncSession, data: MonitorTargetCreate, use
         platform=platform,
         platform_id=platform_id,
         homepage_url=data.url.strip(),
-        rss_url=build_monitor_rss_url(platform, platform_id),
+        rss_url=build_monitor_rss_url(platform, platform_id) if discovery_mode == "rsshub" else None,
         discovery_mode=discovery_mode,
     )
     db.add(target)
@@ -170,10 +166,14 @@ async def update_monitor_target(
         target.homepage_url = data.url.strip()
         target.platform = platform
         target.platform_id = platform_id
-        target.rss_url = build_monitor_rss_url(platform, platform_id)
         target.discovery_mode = normalize_monitor_discovery_mode(
             platform,
             data.discovery_mode or target.discovery_mode,
+        )
+        target.rss_url = (
+            build_monitor_rss_url(platform, platform_id)
+            if target.discovery_mode == "rsshub"
+            else None
         )
         target.cached_videos = []
         target.active_jobs = {}
@@ -493,64 +493,12 @@ async def dispatch_monitor_analysis(
     req: DispatchAnalysisRequest,
     user_id: int,
 ) -> dict:
+    from app.services.manual_video_inbox_service import enqueue_monitor_videos_to_inbox
+
     target = await get_monitor_or_404(db, monitor_id, user_id, for_update=True)
-    active_jobs = target.active_jobs or {}
-    cached_videos = target.cached_videos or []
-    duration_map = {
-        video["url"]: video["duration_seconds"]
-        for video in cached_videos
-        if video.get("duration_seconds")
-    }
-    thumbnail_map = {
-        video["url"]: str(video.get("thumbnail", "")).strip()
-        for video in cached_videos
-        if video.get("url")
-    }
-    dispatched = []
-    skipped = []
-    analyzed_video_meta = await _build_analyzed_video_meta(db, user_id)
-    remaining_video_cards = await get_resource_remaining(db, user_id, VIDEO_CARDS)
-
-    for url in req.urls:
-        resolved_url = _resolve_monitor_video_url(url, cached_videos)
-        if resolved_url != url:
-            logger.info("[Monitor] Resolved analysis URL %s -> %s", url, resolved_url)
-        duration = duration_map.get(resolved_url)
-        if duration and duration > MAX_DURATION_SECONDS:
-            skipped.append({"url": resolved_url, "reason": f"视频时长 {duration // 60} 分钟，超过 35 分钟上限"})
-            continue
-        is_reanalysis = _lookup_analyzed_video_meta(analyzed_video_meta, resolved_url) is not None
-        if not is_reanalysis:
-            if remaining_video_cards == 0:
-                skipped.append({"url": resolved_url, "reason": "当前套餐的视频情报额度已用完，请删除旧内容或联系管理员升级套餐。"})
-                continue
-            if remaining_video_cards is not None:
-                remaining_video_cards -= 1
-
-        try:
-            await consume_daily_quota(db, user_id, DAILY_VIDEO_ANALYSES)
-        except HTTPException as exc:
-            detail = exc.detail if isinstance(exc.detail, dict) else {}
-            skipped.append({"url": resolved_url, "reason": str(detail.get("message") or exc.detail)})
-            continue
-
-        try:
-            job_id = await dispatch_video_analysis_job(
-                resolved_url,
-                user_id,
-                preferred_thumbnail=thumbnail_map.get(resolved_url),
-            )
-        except Exception as exc:
-            logger.exception("[Monitor] Failed to dispatch analysis for %s", resolved_url)
-            skipped.append({"url": resolved_url, "reason": f"视频解构提交失败：{exc}"})
-            continue
-        active_jobs[resolved_url] = job_id
-        dispatched.append({"url": resolved_url, "job_id": job_id})
-
-    target.active_jobs = dict(active_jobs)
-    flag_modified(target, "active_jobs")
+    result = await enqueue_monitor_videos_to_inbox(db, target, req.urls, user_id)
     await db.commit()
-    return {"ok": True, "dispatched": dispatched, "skipped": skipped}
+    return result
 
 
 async def delete_monitor_cached_videos(

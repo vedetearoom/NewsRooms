@@ -1,6 +1,6 @@
 import type { DiscoveredVideo } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { Bookmark, Check, Eye, Loader2, Pin, Play, RotateCw, Sparkles, ThumbsUp, Upload } from "lucide-react";
+import { Bookmark, Check, Eye, Inbox, Loader2, Pin, Play, RotateCw, ThumbsUp, Upload } from "lucide-react";
 
 export const MAX_MONITOR_VIDEO_DURATION_SECONDS = 35 * 60;
 
@@ -173,7 +173,7 @@ export function MonitorVideoCard({
         {!isTooLong && !isAnalyzed && !status && (
           <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] opacity-0 group-hover/card:opacity-100 transition-opacity duration-200 flex items-center justify-center">
             <button className="flex items-center gap-2 px-4 py-1.5 bg-white text-zinc-900 rounded-full text-[13px] font-medium tracking-wide shadow-xl transform translate-y-2 group-hover/card:translate-y-0 transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95">
-              <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
+              <Inbox className="w-3.5 h-3.5 text-zinc-400" />
               {deconstructLabel}
             </button>
           </div>

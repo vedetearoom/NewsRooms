@@ -227,7 +227,11 @@ async def _process_unprocessed_async(owner_user_id: int):
 
 def run_process_job(owner_user_id: int):
     logger.info("[Celery] Starting process job")
-    count = run_async(_process_unprocessed_async(owner_user_id))
+    try:
+        count = run_async(_process_unprocessed_async(owner_user_id))
+    except Exception as exc:
+        logger.exception("[Celery] Processing failed")
+        return job_failure("process_all", str(exc))
     logger.info("[Celery] Processing completed: %s cards", count)
     return job_success("process_all", cards_created=count)
 
@@ -252,7 +256,15 @@ async def _process_selected_async(article_ids: list[int], owner_user_id: int):
                 articles_processed=0,
                 message="All selected articles already processed",
             )
-        count = await processor.process_articles(db, articles, owner_user_id)
+        try:
+            count = await processor.process_articles(db, articles, owner_user_id)
+        except Exception as exc:
+            logger.exception("[Celery] Selected article processing failed")
+            return job_failure(
+                "process_selected",
+                str(exc),
+                articles_processed=len(articles),
+            )
         return job_success(
             "process_selected",
             cards_created=count,

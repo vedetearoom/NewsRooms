@@ -18,7 +18,7 @@ const DEFAULT_PLATFORM_META: Record<string, MonitorDialogPlatformMeta> = {
 };
 
 function getAvailableDiscoveryModes(platform: string | null): MonitorDiscoveryMode[] {
-  if (platform === "bilibili") return ["rsshub", "cookie"];
+  if (platform === "bilibili") return ["cookie"];
   if (platform === "xiaohongshu") return ["cookie"];
   if (platform === "youtube") return ["rsshub"];
   return [];
@@ -144,7 +144,7 @@ export function MonitorAddDialog({
             </div>
             <p className="mt-2 text-[11px] text-muted-foreground">
               {detectedPlatform === "bilibili"
-                ? t("monitors.discoveryModeBilibiliHint", "B站默认走 RSSHub；若失败，可切换为 Cookie 方式。")
+                ? t("monitors.discoveryModeBilibiliHint", "B站仅支持 Cookie 拉取，请先配置 B站 Cookie。")
                 : t("monitors.discoveryModeLockedHint", "该平台当前仅支持这一种拉取方式。")}
             </p>
           </div>
@@ -282,7 +282,7 @@ export function MonitorEditDialog({
               </div>
               <p className="mt-2 text-[11px] text-muted-foreground">
                 {editPlatform === "bilibili"
-                  ? t("monitors.discoveryModeBilibiliHint", "B站默认走 RSSHub；若失败，可切换为 Cookie 方式。")
+                  ? t("monitors.discoveryModeBilibiliHint", "B站仅支持 Cookie 拉取，请先配置 B站 Cookie。")
                   : t("monitors.discoveryModeLockedHint", "该平台当前仅支持这一种拉取方式。")}
               </p>
             </div>

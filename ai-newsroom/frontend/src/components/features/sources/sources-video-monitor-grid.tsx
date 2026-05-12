@@ -192,7 +192,7 @@ export function SourcesVideoMonitorGrid({
             {checkError && (
               <div className="w-full bg-red-500/10 px-2 py-1.5 rounded-md mt-1">
                 <div className="text-[11px] text-red-500 leading-relaxed line-clamp-2">{checkError}</div>
-                {monitor.platform === "bilibili" && monitor.discovery_mode === "rsshub" && (
+                {monitor.platform === "bilibili" && (
                   <button
                     type="button"
                     onClick={(event) => {

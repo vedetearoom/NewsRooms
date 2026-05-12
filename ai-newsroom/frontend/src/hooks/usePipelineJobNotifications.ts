@@ -63,14 +63,19 @@ export function usePipelineJobNotifications({
 
       if (isProcessJob) {
         if (job.status === "completed") {
-          const result = job.result as { cards_created?: number } | null;
+          const result = job.result as { cards_created?: number; message?: string; articles_processed?: number } | null;
           const count = result?.cards_created ?? 0;
+          const articlesProcessed = result?.articles_processed;
           const detail =
             count > 0
               ? (count === 1
                   ? t("pipeline.processingGenerated_one")
                   : t("pipeline.processingGenerated_other").replace("{count}", String(count)))
-              : t("pipeline.processingNoNewCards");
+              : result?.message || (
+                  articlesProcessed === 0
+                    ? t("pipeline.processingNoPendingArticles", "没有可处理的未处理文章。")
+                    : t("pipeline.processingNoNewCards")
+                );
           toast.success(t("pipeline.processingCompleteTitle"), detail);
         } else {
           toast.error(t("pipeline.processingFailedTitle"), job.error || t("pipeline.processingFailedDesc"));

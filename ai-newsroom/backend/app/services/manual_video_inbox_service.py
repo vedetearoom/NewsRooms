@@ -8,7 +8,7 @@ from fastapi import HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import IntelligenceCard, ManualVideoInboxItem
+from app.models import IntelligenceCard, ManualVideoInboxItem, MonitorTarget
 from app.schemas import (
     ManualVideoInboxDeleteRequest,
     ManualVideoImportRequest,
@@ -27,6 +27,7 @@ from app.services.quota_service import (
 from app.services.upload_service import s3_client, settings
 from app.services.video.downloader import detect_platform, fetch_video_metadata
 from app.services.video.local_video import store_uploaded_manual_video
+from app.services.video.url_utils import canonicalize_video_source_url, get_video_source_identity
 
 logger = logging.getLogger(__name__)
 
@@ -228,6 +229,107 @@ async def import_manual_video_urls(
     await db.flush()
     card_index = await _build_video_card_index(db, user_id)
     return [_serialize_manual_item(item, card_index) for item in created_or_updated]
+
+
+def _manual_item_match_keys(raw_url: str) -> set[str]:
+    normalized_url = canonicalize_video_source_url(raw_url)
+    if not normalized_url:
+        return set()
+    identity = get_video_source_identity(normalized_url)
+    return {key for key in {normalized_url, identity} if key}
+
+
+def _manual_item_matches_url(item: ManualVideoInboxItem, match_keys: set[str]) -> bool:
+    item_keys = _manual_item_match_keys(item.normalized_url)
+    if item.original_url:
+        item_keys.update(_manual_item_match_keys(item.original_url))
+    return bool(item_keys & match_keys)
+
+
+async def enqueue_monitor_videos_to_inbox(
+    db: AsyncSession,
+    target: MonitorTarget,
+    urls: list[str],
+    user_id: int,
+) -> dict:
+    cached_videos = target.cached_videos or []
+    requested_keys = set().union(*[_manual_item_match_keys(url) for url in urls]) if urls else set()
+    selected_videos = [
+        video
+        for video in cached_videos
+        if not requested_keys or _manual_item_match_keys(str(video.get("url", ""))) & requested_keys
+    ]
+
+    if not selected_videos:
+        return {"ok": True, "dispatched": [], "skipped": [{"reason": "未找到可加入待处理的视频。"}]}
+
+    existing_result = await db.execute(
+        select(ManualVideoInboxItem).where(ManualVideoInboxItem.owner_user_id == user_id)
+    )
+    existing_items = existing_result.scalars().all()
+    card_index = await _build_video_card_index(db, user_id)
+    created_or_updated: list[ManualVideoInboxItem] = []
+    skipped: list[dict[str, str]] = []
+
+    for video in selected_videos:
+        raw_url = str(video.get("url", "")).strip()
+        normalized_url = canonicalize_video_source_url(raw_url)
+        if not normalized_url:
+            skipped.append({"url": raw_url, "reason": "视频链接无效。"})
+            continue
+
+        match_keys = _manual_item_match_keys(normalized_url)
+        item = next((existing for existing in existing_items if _manual_item_matches_url(existing, match_keys)), None)
+        if item is None:
+            await ensure_resource_quota(db, user_id, MANUAL_VIDEO_ITEMS)
+            item = ManualVideoInboxItem(
+                owner_user_id=user_id,
+                source_kind="url",
+                original_url=raw_url,
+                normalized_url=normalized_url,
+                platform=target.platform,
+                author=target.name,
+                title=str(video.get("title") or normalized_url),
+                published=str(video.get("published") or "") or None,
+                thumbnail=str(video.get("thumbnail") or ""),
+                duration_seconds=video.get("duration_seconds"),
+                view_count=video.get("view_count"),
+                like_count=video.get("like_count"),
+                favorite_count=video.get("favorite_count"),
+                status="pending",
+            )
+            db.add(item)
+            existing_items.append(item)
+        else:
+            item.source_kind = "url"
+            item.original_url = raw_url
+            item.normalized_url = normalized_url
+            item.platform = target.platform
+            item.author = item.author or target.name
+            item.title = str(video.get("title") or item.title or normalized_url)
+            item.published = str(video.get("published") or "") or item.published
+            item.thumbnail = str(video.get("thumbnail") or item.thumbnail or "")
+            item.duration_seconds = video.get("duration_seconds")
+            item.view_count = video.get("view_count")
+            item.like_count = video.get("like_count")
+            item.favorite_count = video.get("favorite_count")
+            if item.active_job_id is None and item.status != "error":
+                item.status = "pending"
+
+        created_or_updated.append(item)
+
+    await db.flush()
+    serialized = [_serialize_manual_item(item, card_index) for item in created_or_updated]
+    return {
+        "ok": True,
+        "dispatched": [
+            {"url": item.normalized_url, "item_id": item.id, "status": item.status}
+            for item in serialized
+        ],
+        "skipped": skipped,
+        "queued_count": len(serialized),
+        "skipped_count": len(skipped),
+    }
 
 
 async def import_manual_video_file(

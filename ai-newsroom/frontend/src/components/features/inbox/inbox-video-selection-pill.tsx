@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Sparkles, Trash2, X } from "lucide-react";
+import { Inbox, Loader2, Trash2, X } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 
 interface InboxVideoSelectionPillProps {
@@ -45,7 +45,7 @@ export function InboxVideoSelectionPill({
           </>
         ) : (
           <>
-            <Sparkles className="w-3.5 h-3.5 text-current" />
+            <Inbox className="w-3.5 h-3.5 text-current" />
             {t("monitors.batchDeconstruct")}
           </>
         )}

@@ -65,7 +65,7 @@ class Processor:
             )
             cards_data = parse_cards_response(text)
             if cards_data is None:
-                return 0
+                raise ValueError("提取智能体返回的卡片 JSON 无法解析，请检查模型输出或提示词配置。")
             cards_data = await enforce_cards_output_language(
                 extractor=extractor,
                 target_model=target_model,
@@ -122,5 +122,5 @@ class Processor:
             return len(cards_data)
 
         except Exception as e:
-            logger.error("Processing error: %s", e)
-            return 0
+            logger.exception("Processing error")
+            raise RuntimeError(str(e) or "文章处理失败，请检查提取智能体配置。") from e

@@ -11,7 +11,6 @@ import { toast } from "@/components/ui/use-toast";
 import { InboxSourceTabs } from "./inbox-source-tabs";
 import { InboxVideoSelectionPill } from "./inbox-video-selection-pill";
 import { useGroupedSelectableSet } from "@/hooks/useGroupedSelectableSet";
-import { useMonitorJobStatusPolling } from "@/hooks/useMonitorJobStatusPolling";
 import { MONITOR_PLATFORM_META, getMonitorRelativeTime } from "@/lib/monitor-video-ui";
 import { PageEmptyState, PageStateBoundary } from "@/components/shared/page-states";
 import { showMonitorSkippedToast } from "@/lib/async-feedback";
@@ -19,9 +18,6 @@ import { InboxVideoListCard } from "./inbox-video-list-card";
 import { InboxVideoImportBar, type InboxVideoImportMode } from "./inbox-video-import-bar";
 import { useUrlTab } from "@/hooks/useUrlTab";
 import { useTabsStore } from "@/store/tabs";
-
-const MAX_MANUAL_VIDEO_SIZE_BYTES = 200 * 1024 * 1024;
-const MANUAL_VIDEO_ALLOWED_EXTENSIONS = [".mp4", ".mov", ".m4v", ".webm"];
 
 type VideoInboxEntry = {
   video: DiscoveredVideo;
@@ -67,11 +63,6 @@ function reconcileSelectedUrls(urls: string[], availableVideos: DiscoveredVideo[
   );
 }
 
-function isSupportedManualVideoFile(file: File): boolean {
-  const lowerName = file.name.toLowerCase();
-  return MANUAL_VIDEO_ALLOWED_EXTENSIONS.some((ext) => lowerName.endsWith(ext));
-}
-
 export function InboxVideoTab({
   onCountChange,
   showImportBar = false,
@@ -85,7 +76,6 @@ export function InboxVideoTab({
   const [loading, setLoading] = React.useState(true);
   const [importMode, setImportMode] = React.useState<InboxVideoImportMode>("url");
   const [importUrl, setImportUrl] = React.useState("");
-  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
   const [importError, setImportError] = React.useState("");
   const [importing, setImporting] = React.useState(false);
   const setVideoSourceIdAction = useTabsStore(s => s.setInboxVideoSourceId);
@@ -112,18 +102,37 @@ export function InboxVideoTab({
   const { selectedByGroup: selectedVideos, toggle: toggleVideo, clear: clearSelectedVideos, totalSelected } = useGroupedSelectableSet<string, string>();
   const [analyzing, setAnalyzing] = React.useState<Record<string, boolean>>({});
   const [deleting, setDeleting] = React.useState(false);
-  const fetchMonitorsRef = React.useRef<() => Promise<void>>(async () => {});
-  const manualActiveUrls = React.useMemo(
-    () => manualItems.filter(item => item.active_job_id).map(item => item.normalized_url),
-    [manualItems],
-  );
+  const [videoStatus, setVideoStatus] = React.useState<Record<string, "queued" | "submitting" | "done" | "error">>({});
 
-  const { videoStatus, markSubmitting, markError } = useMonitorJobStatusPolling({
-    monitors,
-    manualJobUrls: manualActiveUrls,
-    t,
-    onAnyCompleted: () => fetchMonitorsRef.current(),
-  });
+  const markSubmitting = React.useCallback((urls: string[]) => {
+    setVideoStatus((prev) => {
+      const next = { ...prev };
+      urls.forEach((url) => {
+        next[url] = "submitting";
+      });
+      return next;
+    });
+  }, []);
+
+  const markQueued = React.useCallback((urls: string[]) => {
+    setVideoStatus((prev) => {
+      const next = { ...prev };
+      urls.forEach((url) => {
+        if (next[url] !== "error") next[url] = "queued";
+      });
+      return next;
+    });
+  }, []);
+
+  const markError = React.useCallback((urls: string[]) => {
+    setVideoStatus((prev) => {
+      const next = { ...prev };
+      urls.forEach((url) => {
+        if (url) next[url] = "error";
+      });
+      return next;
+    });
+  }, []);
 
   const fetchMonitors = React.useCallback(async () => {
     try {
@@ -133,7 +142,6 @@ export function InboxVideoTab({
       ]);
       setMonitors(monitorData);
       setManualItems(manualData);
-      const activeJobUrls: string[] = [];
       // Populate videos from cache
       setVideos(() => {
         const next: Record<number, DiscoveredVideo[]> = {};
@@ -141,29 +149,12 @@ export function InboxVideoTab({
           if (m.cached_videos && m.cached_videos.length > 0) {
             next[m.id] = m.cached_videos;
           }
-          if (m.active_jobs) {
-            for (const url of Object.keys(m.active_jobs)) {
-              activeJobUrls.push(url);
-            }
-          }
         });
         return next;
       });
-      manualData.forEach((item) => {
-        if (item.active_job_id) {
-          activeJobUrls.push(item.normalized_url);
-        }
-      });
-      if (activeJobUrls.length > 0) {
-        markSubmitting(activeJobUrls);
-      }
     } catch { /* ignore */ }
     finally { setLoading(false); }
-  }, [markSubmitting]);
-
-  React.useEffect(() => {
-    fetchMonitorsRef.current = fetchMonitors;
-  }, [fetchMonitors]);
+  }, []);
 
   React.useEffect(() => {
     fetchMonitors();
@@ -304,9 +295,10 @@ export function InboxVideoTab({
         if (res.skipped?.length) {
           for (const s of res.skipped) {
             showMonitorSkippedToast(s.reason, t);
-            markError([s.url]);
+            if (s.url) markError([s.url]);
           }
         }
+        markQueued(urls);
       } catch (e) {
         console.error("Dispatch failed", e);
         markError(urls);
@@ -316,22 +308,9 @@ export function InboxVideoTab({
     }
 
     if (manualSelections.length > 0) {
-      setAnalyzing(prev => ({ ...prev, manual: true }));
-      markSubmitting(manualSelections);
-      try {
-        for (const url of manualSelections) {
-          const item = manualItemByUrl.get(url);
-          if (!item) continue;
-          await api.analyzeManualVideoInboxItem(item.id);
-        }
-      } catch (error) {
-        console.error("Manual video analysis dispatch failed", error);
-        markError(manualSelections);
-      } finally {
-        setAnalyzing(prev => ({ ...prev, manual: false }));
-      }
+      markQueued(manualSelections);
     }
-    
+
     clearSelectedVideos();
     await fetchMonitors();
   };
@@ -419,22 +398,6 @@ export function InboxVideoTab({
     }
   };
 
-  const handleAnalyzeManualItem = async (itemId: number, url: string) => {
-    setAnalyzing(prev => ({ ...prev, manual: true }));
-    markSubmitting([url]);
-
-    try {
-      await api.analyzeManualVideoInboxItem(itemId);
-    } catch (error) {
-      console.error("Manual video dispatch failed", error);
-      markError([url]);
-    } finally {
-      setAnalyzing(prev => ({ ...prev, manual: false }));
-    }
-
-    fetchMonitors();
-  };
-
   const handleImportManualVideo = async () => {
     const value = importUrl.trim();
     if (!value) return;
@@ -447,52 +410,6 @@ export function InboxVideoTab({
       await fetchMonitors();
     } catch (error) {
       console.error("Manual video import failed", error);
-      const message = error instanceof Error ? error.message : t("monitors.manualImportFailedDesc");
-      setImportError(message);
-      toast.error(t("monitors.manualImportFailedTitle"), message);
-    } finally {
-      setImporting(false);
-    }
-  };
-
-  const handleSelectManualFile = (file: File | null) => {
-    if (!file) {
-      setSelectedFile(null);
-      setImportError("");
-      return;
-    }
-
-    if (!isSupportedManualVideoFile(file)) {
-      const message = t("monitors.manualImportInvalidFile");
-      setSelectedFile(null);
-      setImportError(message);
-      toast.error(t("monitors.manualImportFailedTitle"), message);
-      return;
-    }
-
-    if (file.size > MAX_MANUAL_VIDEO_SIZE_BYTES) {
-      const message = t("monitors.manualImportFileTooLarge");
-      setSelectedFile(null);
-      setImportError(message);
-      toast.error(t("monitors.manualImportFailedTitle"), message);
-      return;
-    }
-
-    setSelectedFile(file);
-    setImportError("");
-  };
-
-  const handleImportManualFile = async () => {
-    if (!selectedFile) return;
-
-    setImporting(true);
-    setImportError("");
-    try {
-      await api.uploadManualVideo(selectedFile);
-      setSelectedFile(null);
-      await fetchMonitors();
-    } catch (error) {
-      console.error("Manual video file upload failed", error);
       const message = error instanceof Error ? error.message : t("monitors.manualImportFailedDesc");
       setImportError(message);
       toast.error(t("monitors.manualImportFailedTitle"), message);
@@ -523,7 +440,7 @@ export function InboxVideoTab({
               <InboxVideoImportBar
                 mode={importMode}
                 urlValue={importUrl}
-                selectedFile={selectedFile}
+                selectedFile={null}
                 loading={importing}
                 errorMessage={importError}
                 onModeChange={(mode) => {
@@ -535,8 +452,8 @@ export function InboxVideoTab({
                   if (importError) setImportError("");
                 }}
                 onUrlSubmit={handleImportManualVideo}
-                onFileSelect={handleSelectManualFile}
-                onFileSubmit={handleImportManualFile}
+                onFileSelect={() => {}}
+                onFileSubmit={() => {}}
               />
             </motion.div>
           </motion.div>
@@ -664,13 +581,9 @@ export function InboxVideoTab({
                               isAnalyzed={isAnalyzed}
                               vStatus={vStatus}
                               onToggle={() => toggleVideo(section.id, video.url)}
-                              onReanalyze={() => {
-                                if (entry.manualItem) {
-                                  void handleAnalyzeManualItem(entry.manualItem.id, entry.manualItem.normalized_url);
-                                } else if (section.kind === "monitor") {
-                                  void handleReanalyzeMonitor(section.monitor.id, video.url);
-                                }
-                              }}
+                              onReanalyze={section.kind === "monitor" ? () => {
+                                void handleReanalyzeMonitor(section.monitor.id, video.url);
+                              } : undefined}
                             />
                           );
                         })}
