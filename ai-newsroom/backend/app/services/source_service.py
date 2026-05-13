@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import RawArticle, Source
 from app.schemas import SourceCreate, SourceOut
 from app.services.job_dispatcher import dispatch_manual_scrape_job
-from app.services.quota_service import DAILY_SCRAPES, TEXT_SOURCES, consume_daily_quota, ensure_resource_quota
+from app.services.quota_service import ACTIVE_BACKGROUND_JOBS, DAILY_SCRAPES, TEXT_SOURCES, consume_daily_quota, ensure_resource_quota
 
 
 async def list_sources(db: AsyncSession, user_id: int) -> list[SourceOut]:
@@ -83,6 +83,7 @@ async def toggle_source(db: AsyncSession, user_id: int, source_id: int) -> dict:
 
 async def trigger_source_scrape(db: AsyncSession, user_id: int, source_id: int) -> dict:
     await get_source_or_404(db, user_id, source_id)
+    await ensure_resource_quota(db, user_id, ACTIVE_BACKGROUND_JOBS)
     await consume_daily_quota(db, user_id, DAILY_SCRAPES)
     job_id = await dispatch_manual_scrape_job(source_id, user_id)
     return {"ok": True, "job_id": job_id}

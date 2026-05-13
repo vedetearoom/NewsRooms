@@ -18,11 +18,13 @@ from app.services.credential_service import get_decrypted_monitor_cookie
 from app.services.job_dispatcher import dispatch_video_metadata_analysis_job
 from app.services.job_manager import job_manager
 from app.services.quota_service import (
+    ACTIVE_BACKGROUND_JOBS,
     DAILY_VIDEO_ANALYSES,
     MANUAL_VIDEO_ITEMS,
     VIDEO_CARDS,
     consume_daily_quota,
     ensure_resource_quota,
+    get_resource_remaining,
 )
 from app.services.video.metadata_analyzer import get_configured_video_extractor_or_raise
 from app.services.upload_service import s3_client, settings
@@ -421,6 +423,7 @@ async def analyze_manual_video_inbox_item(db: AsyncSession, item_id: int, user_i
             return {"ok": True, "job_id": item.active_job_id, "url": item.normalized_url, "status": job_status["status"]}
 
     await get_configured_video_extractor_or_raise(db, user_id)
+    await ensure_resource_quota(db, user_id, ACTIVE_BACKGROUND_JOBS)
     await ensure_resource_quota(db, user_id, VIDEO_CARDS)
     await consume_daily_quota(db, user_id, DAILY_VIDEO_ANALYSES)
 
@@ -492,6 +495,14 @@ async def analyze_manual_video_inbox_items(db: AsyncSession, item_ids: list[int]
                 continue
 
         dispatch_candidates.append(item)
+
+    if dispatch_candidates:
+        jobs_remaining = await get_resource_remaining(db, user_id, ACTIVE_BACKGROUND_JOBS)
+        if jobs_remaining is not None and jobs_remaining < len(dispatch_candidates):
+            excess = dispatch_candidates[jobs_remaining:]
+            dispatch_candidates = dispatch_candidates[:jobs_remaining]
+            for excess_item in excess:
+                skipped.append({"item_id": excess_item.id, "url": excess_item.normalized_url, "reason": "进行中的后台任务已达上限，已跳过该视频。"})
 
     await ensure_resource_quota(db, user_id, VIDEO_CARDS, increment=len(dispatch_candidates))
     await consume_daily_quota(db, user_id, DAILY_VIDEO_ANALYSES, amount=len(dispatch_candidates))

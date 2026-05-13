@@ -39,6 +39,7 @@ from app.services.agent_workbench_service import (
     list_agent_threads,
     reject_agent_action,
     stream_agent_thread_chat,
+    validate_agent_thread_chat_ready,
 )
 
 router = APIRouter(prefix="/api/agents", tags=["agents"])
@@ -176,6 +177,7 @@ async def post_agent_thread_chat(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(require_permission("agents.view")),
 ):
+    await validate_agent_thread_chat_ready(db, current_user.id, agent_id, thread_id)
     await consume_daily_quota(db, current_user.id, DAILY_AGENT_MESSAGES)
     await db.commit()
     return StreamingResponse(

@@ -7,6 +7,7 @@ from app.models import Task, Draft, Critique, IntelligenceCard, Agent
 from app.services.execution_log_service import get_job_run_events_since
 from app.services.job_dispatcher import dispatch_plugin_prepare_write_job
 from app.services.job_manager import JobStatus, job_manager
+from app.services.quota_service import ACTIVE_BACKGROUND_JOBS, ensure_resource_quota
 from app.services.plugin_runtime import load_bound_plugins
 from app.services.writer_agent import WriterAgent
 from app.services.assassin_agent import AssassinAgent
@@ -91,6 +92,7 @@ class AgentOrchestrator:
                 ),
             }
 
+            await ensure_resource_quota(self.db, owner_user_id, ACTIVE_BACKGROUND_JOBS)
             job_id = await dispatch_plugin_prepare_write_job(task_id, owner_user_id, writer_agent_model.id)
             last_seq = 0
             job_status = None

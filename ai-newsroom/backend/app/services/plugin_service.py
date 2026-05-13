@@ -23,6 +23,7 @@ from app.schemas import (
 )
 from app.services.execution_log_service import append_run_event_sync
 from app.services.job_dispatcher import dispatch_plugin_install_job
+from app.services.quota_service import INSTALLED_PLUGINS, ensure_resource_quota
 from app.services.plugin_runtime import sync_agent_plugin_state
 from app.services.plugin_source import (
     install_snapshot_from_github,
@@ -170,6 +171,7 @@ async def queue_plugin_install(
     db: AsyncSession,
     owner_user_id: int,
 ) -> PluginInstallQueuedOut:
+    await ensure_resource_quota(db, owner_user_id, INSTALLED_PLUGINS)
     source = parse_github_plugin_source(request.source_url)
     plugin = CustomPlugin(
         owner_user_id=owner_user_id,

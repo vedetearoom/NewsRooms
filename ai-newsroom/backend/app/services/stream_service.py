@@ -9,6 +9,7 @@ from app.database import async_session
 from app.models import Critique, Draft, Task
 from app.services.job_dispatcher import dispatch_review_job
 from app.services.orchestrator import AgentOrchestrator
+from app.services.quota_service import ACTIVE_BACKGROUND_JOBS, ensure_resource_quota
 from app.task_status import TaskStatus
 
 
@@ -46,6 +47,7 @@ async def ensure_review_job(task_id: int, owner_user_id: int, reviewer_id: int |
                 return
             if task.status == TaskStatus.REVIEWING.value:
                 return
+            await ensure_resource_quota(db, owner_user_id, ACTIVE_BACKGROUND_JOBS)
             previous_status = task.status
             task.status = TaskStatus.REVIEWING.value
             await db.commit()

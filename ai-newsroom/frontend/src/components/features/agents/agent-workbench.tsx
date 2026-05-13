@@ -712,8 +712,17 @@ export function AgentWorkbench({ activeAgent }: AgentWorkbenchProps) {
       if (!response.ok || !response.body) {
         let message = `${response.status} ${response.statusText}`;
         try {
-          const payload = await response.json() as { detail?: string };
-          if (payload?.detail) message = payload.detail;
+          const payload = await response.json() as { detail?: unknown };
+          if (payload?.detail !== undefined && payload.detail !== null) {
+            const detail = payload.detail;
+            if (typeof detail === "string") {
+              message = detail;
+            } else if (typeof detail === "object" && "message" in detail && typeof (detail as Record<string, unknown>).message === "string") {
+              message = (detail as Record<string, unknown>).message as string;
+            } else if (typeof detail === "object") {
+              try { message = JSON.stringify(detail); } catch { /* keep default */ }
+            }
+          }
         } catch {
           // ignore
         }
@@ -1173,6 +1182,12 @@ export function AgentWorkbench({ activeAgent }: AgentWorkbenchProps) {
               <textarea
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    void handleSend();
+                  }
+                }}
                 placeholder={activeAgent.role === "extractor" ? t("agents.workbench.placeholder.extractor") : t("agents.workbench.placeholder.writer")}
                 className="h-[20px] max-h-[20px] w-full resize-none overflow-y-auto bg-transparent pr-9 text-[12px] leading-5 text-foreground outline-none placeholder:text-muted-foreground/45 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
               />

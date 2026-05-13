@@ -8,6 +8,9 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
+    Agent,
+    AgentThread,
+    CustomPlugin,
     IntelligenceCard,
     ManualVideoInboxItem,
     MonitorTarget,
@@ -28,6 +31,10 @@ INSPIRATIONS = "inspirations"
 ARTICLE_CARDS = "article_cards"
 VIDEO_CARDS = "video_cards"
 MANUAL_VIDEO_ITEMS = "manual_video_items"
+CUSTOM_AGENTS = "custom_agents"
+INSTALLED_PLUGINS = "installed_plugins"
+AGENT_THREADS = "agent_threads"
+ACTIVE_BACKGROUND_JOBS = "active_background_jobs"
 
 DAILY_SCRAPES = "daily_scrapes"
 DAILY_MONITOR_CHECKS = "daily_monitor_checks"
@@ -46,6 +53,10 @@ RESOURCE_QUOTA_KEYS = [
     ARTICLE_CARDS,
     VIDEO_CARDS,
     MANUAL_VIDEO_ITEMS,
+    CUSTOM_AGENTS,
+    INSTALLED_PLUGINS,
+    AGENT_THREADS,
+    ACTIVE_BACKGROUND_JOBS,
 ]
 
 DAILY_QUOTA_KEYS = [
@@ -69,6 +80,10 @@ DEFAULT_ROLE_QUOTA_LIMITS: dict[str, int | None] = {
     ARTICLE_CARDS: 30,
     VIDEO_CARDS: 5,
     MANUAL_VIDEO_ITEMS: 5,
+    CUSTOM_AGENTS: 3,
+    INSTALLED_PLUGINS: 3,
+    AGENT_THREADS: 20,
+    ACTIVE_BACKGROUND_JOBS: 3,
     DAILY_SCRAPES: 5,
     DAILY_MONITOR_CHECKS: 5,
     DAILY_ARTICLE_PROCESSES: 3,
@@ -87,6 +102,10 @@ QUOTA_LABELS: dict[str, str] = {
     ARTICLE_CARDS: "图文情报",
     VIDEO_CARDS: "视频情报",
     MANUAL_VIDEO_ITEMS: "手动视频素材",
+    CUSTOM_AGENTS: "自定义智能体",
+    INSTALLED_PLUGINS: "插件",
+    AGENT_THREADS: "工作台对话",
+    ACTIVE_BACKGROUND_JOBS: "进行中的后台任务",
     DAILY_SCRAPES: "抓取",
     DAILY_MONITOR_CHECKS: "监控检查",
     DAILY_ARTICLE_PROCESSES: "文章处理",
@@ -229,6 +248,30 @@ async def get_quota_limit(db: AsyncSession, user_id: int, quota_key: str) -> int
     return limits.get(quota_key)
 
 
+_ACTIVE_JOB_STATUSES = {"pending", "queued", "started", "running", "retry"}
+
+
+async def _count_active_background_jobs(user_id: int) -> int:
+    try:
+        from app.services.job_manager import job_manager
+
+        jobs = await job_manager.get_all_jobs()
+    except Exception:
+        return 0
+    count = 0
+    for job in jobs:
+        meta = job.get("meta") or {}
+        if isinstance(meta, str):
+            import json as _json
+            try:
+                meta = _json.loads(meta)
+            except Exception:
+                meta = {}
+        if meta.get("owner_user_id") == user_id and job.get("status") in _ACTIVE_JOB_STATUSES:
+            count += 1
+    return count
+
+
 async def count_resource_usage(db: AsyncSession, user_id: int, quota_key: str) -> int:
     if quota_key == TEXT_SOURCES:
         query = select(func.count(Source.id)).where(Source.owner_user_id == user_id)
@@ -252,6 +295,20 @@ async def count_resource_usage(db: AsyncSession, user_id: int, quota_key: str) -
         )
     elif quota_key == MANUAL_VIDEO_ITEMS:
         query = select(func.count(ManualVideoInboxItem.id)).where(ManualVideoInboxItem.owner_user_id == user_id)
+    elif quota_key == CUSTOM_AGENTS:
+        query = select(func.count(Agent.id)).where(
+            Agent.owner_user_id == user_id,
+            Agent.is_system == False,
+        )
+    elif quota_key == INSTALLED_PLUGINS:
+        query = select(func.count(CustomPlugin.id)).where(
+            CustomPlugin.owner_user_id == user_id,
+            CustomPlugin.install_status.in_(["queued", "installing", "installed"]),
+        )
+    elif quota_key == AGENT_THREADS:
+        query = select(func.count(AgentThread.id)).where(AgentThread.owner_user_id == user_id)
+    elif quota_key == ACTIVE_BACKGROUND_JOBS:
+        return await _count_active_background_jobs(user_id)
     else:
         raise ValueError(f"Unsupported resource quota key: {quota_key}")
     return int((await db.execute(query)).scalar() or 0)

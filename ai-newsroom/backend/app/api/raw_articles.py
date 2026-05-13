@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.services.auth_service import require_permission
-from app.services.quota_service import ARTICLE_CARDS, DAILY_ARTICLE_PROCESSES, consume_daily_quota, ensure_resource_quota
+from app.services.quota_service import ACTIVE_BACKGROUND_JOBS, ARTICLE_CARDS, DAILY_ARTICLE_PROCESSES, consume_daily_quota, ensure_resource_quota
 from app.services.raw_article_service import (
     delete_raw_article as delete_raw_article_service,
     has_unprocessed_articles,
@@ -50,6 +50,7 @@ async def process_selected(
         return await process_selected_articles(article_ids, current_user.id)
     if not await has_unprocessed_articles(db, current_user.id, article_ids):
         raise HTTPException(status_code=400, detail="没有可处理的未处理文章。")
+    await ensure_resource_quota(db, current_user.id, ACTIVE_BACKGROUND_JOBS)
     await ensure_resource_quota(db, current_user.id, ARTICLE_CARDS)
     await consume_daily_quota(db, current_user.id, DAILY_ARTICLE_PROCESSES)
     return await process_selected_articles(article_ids, current_user.id)

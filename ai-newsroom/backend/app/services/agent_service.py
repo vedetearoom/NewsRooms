@@ -13,6 +13,7 @@ from app.models import Agent, InspirationAsset
 from app.schemas import AgentChatRequest, AgentCreate, AgentRewriteRequest, AgentUpdate
 from app.services.agent_skill_service import get_default_system_skills_for_role, normalize_agent_system_skills
 from app.services.plugin_service import build_agent_output, build_agent_outputs
+from app.services.quota_service import CUSTOM_AGENTS, ensure_resource_quota
 from app.services.writer_agent import TASK_PROMPTS
 
 REWRITE_SYSTEM_PROMPT = (
@@ -141,6 +142,7 @@ async def list_agents(db: AsyncSession, user_id: int):
 
 
 async def create_agent_record(agent_in: AgentCreate, db: AsyncSession, user_id: int):
+    await ensure_resource_quota(db, user_id, CUSTOM_AGENTS)
     payload = agent_in.model_dump()
     payload["is_system"] = False
     payload["execution_mode"] = "native"

@@ -7,6 +7,9 @@ from sqlalchemy import delete
 
 from app.database import async_session, engine, init_db
 from app.models import (
+    Agent,
+    AgentThread,
+    CustomPlugin,
     IntelligenceCard,
     InspirationAsset,
     ManualVideoInboxItem,
@@ -145,8 +148,14 @@ class QuotaEnforcementIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 InspirationAsset,
                 IntelligenceCard,
                 Task,
+                AgentThread,
+                Agent,
+                CustomPlugin,
             ):
-                await db.execute(delete(model).where(model.owner_user_id == self.user_id))
+                if model in (Agent,):
+                    await db.execute(delete(model).where(model.owner_user_id == self.user_id, model.is_system == False))
+                else:
+                    await db.execute(delete(model).where(model.owner_user_id == self.user_id))
             await db.execute(delete(user_roles).where(user_roles.c.user_id == self.user_id))
             await db.execute(delete(Role).where(Role.id == self.role_id))
             await db.execute(delete(User).where(User.id == self.user_id))
@@ -193,6 +202,35 @@ class QuotaEnforcementIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 platform="youtube",
                 title=marker,
             )
+        if quota_key == quota_service.CUSTOM_AGENTS:
+            return Agent(
+                owner_user_id=self.user_id,
+                name=marker,
+                role="writer",
+                system_prompt="test",
+                is_system=False,
+            )
+        if quota_key == quota_service.INSTALLED_PLUGINS:
+            return CustomPlugin(
+                owner_user_id=self.user_id,
+                name=marker,
+                source_url=f"https://github.com/test/{marker}",
+                github_owner="test",
+                github_repo=marker,
+                git_ref="main",
+                install_status="queued",
+            )
+        if quota_key == quota_service.AGENT_THREADS:
+            # AGENT_THREADS has a FK to agents.id; the test must create a
+            # helper agent and flush before using its id.  We store a
+            # sentinel attribute so the integration test knows to do that.
+            thread = AgentThread(
+                owner_user_id=self.user_id,
+                agent_id=0,  # placeholder; caller must set real id after flush
+                title=marker,
+            )
+            thread._needs_agent_fk = True
+            return thread
         raise AssertionError(f"Unsupported quota key in test: {quota_key}")
 
     async def _delete_resource_row(self, db, quota_key: str) -> None:
@@ -220,13 +258,33 @@ class QuotaEnforcementIntegrationTests(unittest.IsolatedAsyncioTestCase):
             )
         elif quota_key == quota_service.MANUAL_VIDEO_ITEMS:
             await db.execute(delete(ManualVideoInboxItem).where(ManualVideoInboxItem.owner_user_id == self.user_id))
+        elif quota_key == quota_service.CUSTOM_AGENTS:
+            await db.execute(delete(Agent).where(Agent.owner_user_id == self.user_id, Agent.is_system == False))
+        elif quota_key == quota_service.INSTALLED_PLUGINS:
+            await db.execute(delete(CustomPlugin).where(CustomPlugin.owner_user_id == self.user_id))
+        elif quota_key == quota_service.AGENT_THREADS:
+            await db.execute(delete(AgentThread).where(AgentThread.owner_user_id == self.user_id))
 
     async def test_resource_number_limits_block_new_rows_and_delete_releases_slot(self):
-        for quota_key in quota_service.RESOURCE_QUOTA_KEYS:
+        # ACTIVE_BACKGROUND_JOBS is Redis-backed, not DB-backed; skip it here.
+        db_backed_keys = [k for k in quota_service.RESOURCE_QUOTA_KEYS if k != quota_service.ACTIVE_BACKGROUND_JOBS]
+        for quota_key in db_backed_keys:
             with self.subTest(quota_key=quota_key):
                 async with async_session() as db:
                     await quota_service.ensure_resource_quota(db, self.user_id, quota_key)
-                    db.add(self._resource_row(quota_key))
+                    row = self._resource_row(quota_key)
+                    if getattr(row, "_needs_agent_fk", False):
+                        helper_agent = Agent(
+                            owner_user_id=self.user_id,
+                            name=f"{self.suffix}-helper-agent",
+                            role="writer",
+                            system_prompt="helper",
+                            is_system=False,
+                        )
+                        db.add(helper_agent)
+                        await db.flush()
+                        row.agent_id = helper_agent.id
+                    db.add(row)
                     await db.commit()
 
                     with self.assertRaises(HTTPException) as ctx:

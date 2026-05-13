@@ -33,6 +33,7 @@ from app.schemas import (
     TaskCreate,
 )
 from app.services.agent_service import build_agent_preference_sections, get_agent_or_404
+from app.services.quota_service import AGENT_THREADS, ensure_resource_quota
 from app.services.agent_skill_service import (
     get_default_system_skills_for_role,
     get_skill_catalog_item,
@@ -59,6 +60,7 @@ SOURCE_SCRAPE_TERMS = ["抓取", "拉取", "采集", "更新", "同步", "scrape
 SOURCE_DELETE_TERMS = ["删除", "移除", "删掉", "取消订阅"]
 SOURCE_REFERENCE_TERMS = ["来源", "rss", "feed", "source", "数据源"]
 SOURCE_LIST_TERMS = ["信号源管理", "信号源", "来源列表", "数据源", "source management", "source list"]
+PLUGIN_QUERY_TERMS = ["插件", "plugin", "扩展", "extension", "拓展", "add-on", "addon", "额外的插件", "已绑定插件", "plugin list"]
 
 
 def _serialize_sse(event: str, data: dict[str, Any]) -> str:
@@ -158,6 +160,7 @@ async def create_agent_thread(
     data: AgentThreadCreate,
 ) -> AgentThreadOut:
     await get_agent_or_404(agent_id, db, owner_user_id)
+    await ensure_resource_quota(db, owner_user_id, AGENT_THREADS)
     title = (data.title or "").strip() or PLACEHOLDER_THREAD_TITLE
     thread = AgentThread(
         owner_user_id=owner_user_id,
@@ -347,6 +350,19 @@ async def reject_agent_action(
     return AgentActionProposalOut.model_validate(action)
 
 
+async def validate_agent_thread_chat_ready(
+    db: AsyncSession,
+    owner_user_id: int,
+    agent_id: int,
+    thread_id: int,
+) -> None:
+    agent = await get_agent_or_404(agent_id, db, owner_user_id)
+    await get_agent_thread_or_404(db, owner_user_id, agent_id, thread_id)
+    _ensure_workbench_agent_supported(agent)
+    if not (agent.api_key or "").strip():
+        raise HTTPException(status_code=400, detail="当前 Agent 尚未配置 API Key")
+
+
 async def stream_agent_thread_chat(
     req: AgentThreadChatRequest,
     db: AsyncSession,
@@ -357,8 +373,6 @@ async def stream_agent_thread_chat(
     agent = await get_agent_or_404(agent_id, db, owner_user_id)
     thread = await get_agent_thread_or_404(db, owner_user_id, agent_id, thread_id)
     _ensure_workbench_agent_supported(agent)
-    if not (agent.api_key or "").strip():
-        raise HTTPException(status_code=400, detail="当前 Agent 尚未配置 API Key")
     prompt_text = req.prompt.strip()
     is_smalltalk = _is_smalltalk_prompt(prompt_text)
 
@@ -418,6 +432,23 @@ async def stream_agent_thread_chat(
         yield _serialize_sse("done", {})
         return
 
+    if _is_plugin_query_prompt(prompt_text):
+        assistant_text = PLUGIN_QUERY_REPLY
+        db.add(
+            AgentMessage(
+                owner_user_id=owner_user_id,
+                thread_id=thread.id,
+                role="assistant",
+                content_md=assistant_text,
+            )
+        )
+        thread.last_message_at = datetime.now(UTC)
+        await db.commit()
+        for chunk in _chunk_text(assistant_text):
+            yield _serialize_sse("chunk", {"text": chunk})
+        yield _serialize_sse("done", {})
+        return
+
     history = await _load_conversation_for_prompt(db, owner_user_id, thread.id)
 
     try:
@@ -430,8 +461,10 @@ async def stream_agent_thread_chat(
         )
         if _is_source_mutation_intent(req.prompt):
             # Mutating source intents must surface a confirmation card first; avoid
-            # "read recent articles" looking like an implicit scrape already ran.
-            read_tool_calls = [call for call in read_tool_calls if call["skill"] == "sources.list"]
+            # implicit state changes.  Keep read-only queries that don't trigger
+            # scrapes so the LLM still has article data for its response.
+            _SAFE_READ_SKILLS = {"sources.list", "sources.read_recent_articles"}
+            read_tool_calls = [call for call in read_tool_calls if call["skill"] in _SAFE_READ_SKILLS]
         read_tool_calls = _apply_read_tool_hints(
             req.prompt,
             read_tool_calls,
@@ -664,7 +697,9 @@ async def _generate_read_plan(
         "根据下面对话，决定回答前需要先读取哪些只读 skills。\n"
         "只返回 JSON，格式为:\n"
         "{\"read_tool_calls\":[{\"skill\":\"cards.list\",\"args\":{\"limit\":5}}],\"thread_title\":\"...\"}\n"
-        "没有需要读取的工具时返回空数组。\n\n"
+        "没有需要读取的工具时返回空数组。\n"
+        "如果用户的问题不在下方可用 skills 的能力范围内（例如询问插件、扩展、系统设置等），"
+        "也请返回空数组，让回复阶段直接作答。\n\n"
         f"可用只读 skills: {json.dumps(read_only_skills, ensure_ascii=False)}\n"
         f"最近对话: {json.dumps(history, ensure_ascii=False)}"
     )
@@ -686,8 +721,11 @@ async def _generate_response_plan(
         "只返回 JSON，格式为:\n"
         "{\"assistant_markdown\":\"...\",\"action_proposals\":[{\"action_type\":\"create_article_task\",\"title\":\"...\",\"summary\":\"...\",\"primary_cta_label\":\"创建任务\",\"payload\":{\"task_type\":\"summary\"}}]}\n"
         "如果没有需要确认的动作，action_proposals 返回空数组。\n"
+        "⚠ 重要：如果用户的问题是在询问能力、技能、是否支持某功能（例如'可以创建信息源吗'、'你有哪些skills'），"
+        "这是提问，不是指令，必须直接回答问题，action_proposals 必须返回空数组。\n"
         "如果用户只是询问已读取列表中有哪些项目，可以简洁列出名称或标题；不要复制完整长摘要或正文。\n"
-        "当用户想“加来源并抓取”时，优先返回 create_source 动作；如果还需要后续抓取，请在 payload 里带上 follow_up_scrape=true。\n"
+        "当用户明确要求执行某操作（例如'帮我创建一个写作任务'、'把这篇文章写成摘要'）时，才给出对应的 action proposal。\n"
+        "当用户想'加来源并抓取'时，优先返回 create_source 动作；如果还需要后续抓取，请在 payload 里带上 follow_up_scrape=true。\n"
         "当用户想删除来源时，返回 delete_source 动作；系统配置、服务器管理、批量设置修改不在工作台支持范围内。\n"
         f"可用确认型 skills: {json.dumps(actionable_skills, ensure_ascii=False)}\n"
         f"最近对话: {json.dumps(history, ensure_ascii=False)}\n"
@@ -951,6 +989,20 @@ def _is_source_mutation_intent(text: str) -> bool:
     return _is_source_create_intent(text) or _is_source_scrape_intent(text) or _is_source_delete_intent(text)
 
 
+def _is_interrogative_prompt(text: str) -> bool:
+    return bool(re.search(r"[？?]|可以.*吗|是否|有没有|哪些|几个|什么|怎样|如何|吗\s*[。.!！]?\s*$", text or "", re.IGNORECASE))
+
+
+def _is_plugin_query_prompt(text: str) -> bool:
+    return _contains_any(text, PLUGIN_QUERY_TERMS)
+
+
+PLUGIN_QUERY_REPLY = (
+    "工作台对话中不支持插件查询。"
+    "插件的绑定与管理，请前往**智能体工作室**，在对应智能体的配置中操作。"
+)
+
+
 def _extract_first_url(text: str) -> str:
     url_match = re.search(r"https?://\S+", text or "")
     return url_match.group(0).rstrip(".,)，。") if url_match else ""
@@ -1041,7 +1093,7 @@ def _extract_source_name_from_text(text: str, url: str) -> str:
     for pattern in patterns:
         match = re.search(pattern, text or "", re.IGNORECASE)
         if match:
-            name = match.group(1).strip().strip("\"'“”")
+            name = match.group(1).strip().strip("\"'""")
             if name:
                 return name
     return _guess_source_name(url)
@@ -1120,6 +1172,9 @@ async def _infer_fallback_action_proposals(
     if _contains_any(prompt, ["系统配置", "服务器管理", "用户管理", "角色管理", "权限配置", "环境变量", "重启服务"]):
         return [], "系统配置、服务器管理和权限类操作暂不支持在工作台里执行。你可以到系统管理页面手动处理。"
 
+    if _is_interrogative_prompt(prompt):
+        return [], None
+
     raw_actions: list[dict[str, Any]] = []
     if agent.role == "extractor":
         if _is_source_delete_intent(prompt):
@@ -1137,7 +1192,7 @@ async def _infer_fallback_action_proposals(
                 {
                     "action_type": "delete_source",
                     "title": f"删除来源：{source_ref['source_name']}",
-                    "summary": f"将删除“{source_ref['source_name']}”及其已抓取的原始文章，执行前需要你确认。",
+                    "summary": f"将删除「{source_ref['source_name']}」及其已抓取的原始文章，执行前需要你确认。",
                     "primary_cta_label": "确认删除",
                     "payload": source_ref,
                 }
@@ -1157,7 +1212,7 @@ async def _infer_fallback_action_proposals(
                 {
                     "action_type": "scrape_source",
                     "title": f"抓取来源：{source_ref['source_name']}",
-                    "summary": f"将抓取“{source_ref['source_name']}”并导入最新文章，执行前需要你确认。",
+                    "summary": f"将抓取「{source_ref['source_name']}」并导入最新文章，执行前需要你确认。",
                     "primary_cta_label": "开始抓取",
                     "payload": source_ref,
                 }
@@ -1490,11 +1545,11 @@ async def _execute_action(
         followup = None
         if data.get("follow_up_scrape"):
             followup = {
-                "message": f"来源“{source.name}”已创建。如果你现在就想抓取它，请确认下面这个动作。",
+                "message": f"来源「{source.name}」已创建。如果你现在就想抓取它，请确认下面这个动作。",
                 "action_type": "scrape_source",
                 "payload_json": {
                     "title": "抓取新来源",
-                    "summary": f"立即抓取来源“{source.name}”并导入最新文章。",
+                    "summary": f"立即抓取来源「{source.name}」并导入最新文章。",
                     "requires_confirmation": True,
                     "action_type": "scrape_source",
                     "primary_cta_label": "开始抓取",
@@ -1515,7 +1570,7 @@ async def _execute_action(
             "source_url": source.url,
             "job_id": result["job_id"],
             "redirect_path": "/sources",
-        }, f"已为来源“{source.name}”（#{source_id}）发起抓取任务。", None
+        }, f"已为来源「{source.name}」（#{source_id}）发起抓取任务。", None
 
     if action.action_type == "delete_source":
         source_id = _safe_int(data.get("source_id"))

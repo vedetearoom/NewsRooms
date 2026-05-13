@@ -27,12 +27,14 @@ from app.services.monitor_discovery import (
 )
 from app.services.rss_monitor import parse_homepage_url
 from app.services.quota_service import (
+    ACTIVE_BACKGROUND_JOBS,
     DAILY_MONITOR_CHECKS,
     DAILY_VIDEO_ANALYSES,
     VIDEO_CARDS,
     VIDEO_MONITORS,
     consume_daily_quota,
     ensure_resource_quota,
+    get_resource_remaining,
 )
 from app.services.video.metadata_analyzer import get_configured_video_extractor_or_raise
 from app.services.video.url_utils import canonicalize_video_source_url, get_video_source_identity
@@ -496,6 +498,7 @@ async def request_monitor_check(db: AsyncSession, monitor_id: int, user_id: int)
                 await db.commit()
                 return {"ok": True, "job_id": target.last_check_job_id, "status": status}
 
+    await ensure_resource_quota(db, user_id, ACTIVE_BACKGROUND_JOBS)
     await consume_daily_quota(db, user_id, DAILY_MONITOR_CHECKS)
     job_id = await dispatch_monitor_check_job(target.id, user_id, target.platform)
     target.last_check_job_id = job_id
@@ -589,6 +592,14 @@ async def dispatch_monitor_analysis(
             continue
 
         videos_to_dispatch.append((video, video_url))
+
+    if videos_to_dispatch:
+        jobs_remaining = await get_resource_remaining(db, user_id, ACTIVE_BACKGROUND_JOBS)
+        if jobs_remaining is not None and jobs_remaining < len(videos_to_dispatch):
+            excess = videos_to_dispatch[jobs_remaining:]
+            videos_to_dispatch = videos_to_dispatch[:jobs_remaining]
+            for excess_video, excess_url in excess:
+                skipped.append({"url": excess_url, "reason": "进行中的后台任务已达上限，已跳过该视频。"})
 
     await ensure_resource_quota(db, user_id, VIDEO_CARDS, increment=len(videos_to_dispatch))
     await consume_daily_quota(db, user_id, DAILY_VIDEO_ANALYSES, amount=len(videos_to_dispatch))

@@ -14,6 +14,7 @@ from app.services.job_service import (
 from app.services.raw_article_service import has_unprocessed_articles
 from app.services.auth_service import require_permission, resolve_current_user
 from app.services.quota_service import (
+    ACTIVE_BACKGROUND_JOBS,
     ARTICLE_CARDS,
     DAILY_ARTICLE_PROCESSES,
     DAILY_SCRAPES,
@@ -32,6 +33,7 @@ async def trigger_scrape(
     current_user=Depends(require_permission("network.view")),
 ):
     """Manually trigger a scrape job via Celery (returns immediately)."""
+    await ensure_resource_quota(db, current_user.id, ACTIVE_BACKGROUND_JOBS)
     await consume_daily_quota(db, current_user.id, DAILY_SCRAPES)
     return await trigger_scrape_job(current_user.id)
 
@@ -44,6 +46,7 @@ async def trigger_process(
     """Manually trigger article processing via Celery (returns immediately)."""
     if not await has_unprocessed_articles(db, current_user.id):
         raise HTTPException(status_code=400, detail="没有可处理的未处理文章。")
+    await ensure_resource_quota(db, current_user.id, ACTIVE_BACKGROUND_JOBS)
     await ensure_resource_quota(db, current_user.id, ARTICLE_CARDS)
     await consume_daily_quota(db, current_user.id, DAILY_ARTICLE_PROCESSES)
     return await trigger_process_job(current_user.id)
@@ -72,6 +75,7 @@ async def analyze_video(
 ):
     """Submit a video URL for deconstruction analysis (async via Celery)."""
     ensure_video_analysis_supported(req.url)
+    await ensure_resource_quota(db, current_user.id, ACTIVE_BACKGROUND_JOBS)
     await ensure_resource_quota(db, current_user.id, VIDEO_CARDS)
     await consume_daily_quota(db, current_user.id, DAILY_VIDEO_ANALYSES)
     return await analyze_video_job(req.url, current_user.id)
