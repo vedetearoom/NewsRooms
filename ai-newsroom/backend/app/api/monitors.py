@@ -1,11 +1,12 @@
 """Video blogger monitoring routes."""
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.schemas import (
     DispatchAnalysisRequest,
+    ManualVideoAnalyzeBatchRequest,
     ManualVideoInboxDeleteRequest,
     ManualVideoImportRequest,
     ManualVideoInboxItemOut,
@@ -17,10 +18,12 @@ from app.schemas import (
     MonitorTargetCreate,
     MonitorTargetOut,
     MonitorTargetUpdate,
+    VideoAnalyzeRequest,
 )
 from app.services.auth_service import require_permission
 from app.services.manual_video_inbox_service import (
     analyze_manual_video_inbox_item,
+    analyze_manual_video_inbox_items,
     delete_manual_video_inbox_items,
     get_manual_video_job_status_payload,
     import_manual_video_file,
@@ -121,14 +124,35 @@ async def upload_manual_video(
     return await import_manual_video_file(db, file, current_user.id)
 
 
-@router.post("/manual-videos/{item_id}/analyze")
-async def analyze_manual_video(
-    item_id: int,
+@router.post("/manual-videos/analyze-batch")
+async def analyze_manual_video_batch(
+    data: ManualVideoAnalyzeBatchRequest,
     db: AsyncSession = Depends(get_db),
     current_user=Depends(require_permission("network.view")),
 ):
-    """Analyze a manually imported inbox video."""
-    return await analyze_manual_video_inbox_item(db, item_id, current_user.id)
+    """Dispatch metadata-only Agent analysis jobs for selected inbox videos."""
+    try:
+        return await analyze_manual_video_inbox_items(db, data.item_ids, current_user.id)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"视频卡片生成失败：{exc}") from exc
+
+
+@router.post("/manual-videos/{item_id}/analyze")
+async def analyze_manual_video(
+    item_id: int,
+    data: VideoAnalyzeRequest | None = None,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("network.view")),
+):
+    """Dispatch a metadata-only Agent analysis job for one inbox video."""
+    try:
+        return await analyze_manual_video_inbox_item(db, item_id, current_user.id, force=bool(data and data.force))
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"视频卡片生成失败：{exc}") from exc
 
 
 @router.post("/manual-videos/delete")

@@ -6,19 +6,22 @@ import { useTranslation } from "@/hooks/useTranslation";
 
 interface InspirationDetailTabsProps {
   isText: boolean;
+  hasTranscript?: boolean;
   effectiveTab: "summary" | "structure" | "transcript" | "fulltext";
   onSelectTab: (tab: "summary" | "structure" | "transcript" | "fulltext") => void;
 }
 
 export function InspirationDetailTabs({
   isText,
+  hasTranscript = true,
   effectiveTab,
   onSelectTab,
 }: InspirationDetailTabsProps) {
   const { t } = useTranslation();
+  const tabs = isText ? ["summary", "fulltext"] as const : (hasTranscript ? ["summary", "structure", "transcript"] as const : ["summary", "structure"] as const);
   return (
     <div className="flex items-center gap-6 border-b border-zinc-200 dark:border-white/10 mb-10">
-      {(isText ? ["summary", "fulltext"] as const : ["summary", "structure", "transcript"] as const).map((tab) => {
+      {tabs.map((tab) => {
         const isActive = effectiveTab === tab;
         return (
           <button

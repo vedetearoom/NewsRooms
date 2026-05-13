@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import IntelligenceCard, MonitorTarget
+from app.models import IntelligenceCard, ManualVideoInboxItem, MonitorTarget
 from app.repositories.card_repository import CardRepository
 from app.schemas import CardOut
 from app.services.video.thumbnail_utils import choose_better_thumbnail
@@ -104,8 +104,57 @@ async def toggle_card_archive(db: AsyncSession, user_id: int, card_id: int) -> d
     return {"ok": True}
 
 
+async def _clear_video_card_references(db: AsyncSession, user_id: int, card: IntelligenceCard) -> None:
+    if card.content_type != "video":
+        return
+
+    source_keys = {
+        key
+        for source_url in (card.source_urls or [])
+        for key in {str(source_url).strip(), get_video_source_identity(str(source_url))}
+        if key
+    }
+    if not source_keys:
+        return
+
+    monitor_result = await db.execute(
+        select(MonitorTarget).where(MonitorTarget.owner_user_id == user_id)
+    )
+    for target in monitor_result.scalars().all():
+        changed = False
+        cached_videos = target.cached_videos or []
+        for video in cached_videos:
+            video_url = str(video.get("url", "")).strip()
+            if video.get("analyzed_card_id") == card.id or video_url in source_keys or get_video_source_identity(video_url) in source_keys:
+                video["already_analyzed"] = False
+                video["analyzed_card_id"] = None
+                video["last_analyzed_at"] = None
+                changed = True
+        if changed:
+            target.cached_videos = list(cached_videos)
+            flag_modified(target, "cached_videos")
+
+    manual_result = await db.execute(
+        select(ManualVideoInboxItem).where(
+            ManualVideoInboxItem.owner_user_id == user_id,
+            ManualVideoInboxItem.linked_card_id == card.id,
+        )
+    )
+    for item in manual_result.scalars().all():
+        item.linked_card_id = None
+        item.last_analyzed_at = None
+        if item.status == "done":
+            item.status = "pending"
+
+
 async def delete_card(db: AsyncSession, user_id: int, card_id: int) -> dict:
-    success = await CardRepository(db, user_id).delete(card_id)
+    repo = CardRepository(db, user_id)
+    card = await repo.get_by_id(card_id)
+    if not card:
+        return {"ok": False, "detail": "not found"}
+
+    await _clear_video_card_references(db, user_id, card)
+    success = await repo.delete(card_id)
     if success:
         return {"ok": True}
     return {"ok": False, "detail": "not found"}

@@ -56,6 +56,7 @@ export function VideoCard({ card, isSelected, onToggle, onClick, isFeatured = fa
   const templateSkeleton = (meta.template_skeleton as string) || "";
   const videoUrl = (meta.video_url as string) || "";
   const thumbnailUrl = (meta.thumbnail_url as string) || card.cover_image || "";
+  const isMetadataOnly = meta.metadata_only === true || meta.analysis_mode === "metadata_only";
   const pInfo = platformInfo(platform);
 
   const [isSavedInspiration, setIsSavedInspiration] = React.useState(false);
@@ -183,6 +184,12 @@ export function VideoCard({ card, isSelected, onToggle, onClick, isFeatured = fa
             )}
           >
             <span>{pInfo.label}</span>
+            {isMetadataOnly && (
+              <>
+                <span className="text-white/40">·</span>
+                <span>{language === "zh" ? "元信息分析" : "Metadata"}</span>
+              </>
+            )}
             {duration > 0 && (
               <>
                 <span className="text-white/40">·</span>

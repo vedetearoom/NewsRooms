@@ -19,7 +19,7 @@ from app.services.credential_service import (
     list_monitor_credentials,
     upsert_monitor_credential,
 )
-from app.services.job_dispatcher import dispatch_monitor_check_job
+from app.services.job_dispatcher import dispatch_monitor_check_job, dispatch_video_metadata_analysis_job
 from app.services.job_manager import job_manager
 from app.services.monitor_discovery import (
     build_monitor_rss_url,
@@ -28,10 +28,13 @@ from app.services.monitor_discovery import (
 from app.services.rss_monitor import parse_homepage_url
 from app.services.quota_service import (
     DAILY_MONITOR_CHECKS,
+    DAILY_VIDEO_ANALYSES,
+    VIDEO_CARDS,
     VIDEO_MONITORS,
     consume_daily_quota,
     ensure_resource_quota,
 )
+from app.services.video.metadata_analyzer import get_configured_video_extractor_or_raise
 from app.services.video.url_utils import canonicalize_video_source_url, get_video_source_identity
 
 logger = logging.getLogger(__name__)
@@ -70,9 +73,12 @@ async def list_monitor_targets(db: AsyncSession, user_id: int) -> list[MonitorTa
         .order_by(MonitorTarget.created_at.desc())
     )
     targets = result.scalars().all()
+    analyzed_video_meta = await _build_analyzed_video_meta(db, user_id)
     dirty = False
     for target in targets:
         if await _sync_monitor_check_state(db, target):
+            dirty = True
+        if _sync_cached_video_analysis_state(target, analyzed_video_meta):
             dirty = True
     if dirty:
         await db.commit()
@@ -317,6 +323,35 @@ def _resolve_missing_monitor_job_status(
     return "failed", MISSING_ANALYSIS_JOB_ERROR
 
 
+def _sync_cached_video_analysis_state(
+    target: MonitorTarget,
+    analyzed_video_meta: dict[str, dict[str, object]],
+) -> bool:
+    cached_videos = list(target.cached_videos or [])
+    dirty = False
+    for video in cached_videos:
+        if not isinstance(video, dict):
+            continue
+        url = str(video.get("url") or "").strip()
+        meta = _lookup_analyzed_video_meta(analyzed_video_meta, url)
+        next_already_analyzed = meta is not None
+        next_card_id = int(meta["card_id"]) if meta and meta.get("card_id") is not None else None
+        next_last_analyzed_at = str(meta.get("last_analyzed_at")) if meta and meta.get("last_analyzed_at") else None
+        if video.get("already_analyzed") != next_already_analyzed:
+            video["already_analyzed"] = next_already_analyzed
+            dirty = True
+        if video.get("analyzed_card_id") != next_card_id:
+            video["analyzed_card_id"] = next_card_id
+            dirty = True
+        if video.get("last_analyzed_at") != next_last_analyzed_at:
+            video["last_analyzed_at"] = next_last_analyzed_at
+            dirty = True
+    if dirty:
+        target.cached_videos = cached_videos
+        flag_modified(target, "cached_videos")
+    return dirty
+
+
 async def build_discovered_videos(
     db: AsyncSession,
     user_id: int,
@@ -487,18 +522,93 @@ async def get_monitor_check_status_payload(db: AsyncSession, monitor_id: int, us
     }
 
 
+def _find_cached_video(cached_videos: list[dict], raw_url: str) -> dict | None:
+    resolved_url = _resolve_monitor_video_url(raw_url, cached_videos)
+    match_keys = _build_monitor_video_match_keys([resolved_url])
+    for video in cached_videos:
+        video_url = str(video.get("url", "")).strip()
+        if video_url in match_keys or get_video_source_identity(video_url) in match_keys:
+            return video
+    return None
+
+
+def _monitor_video_seed_metadata(target: MonitorTarget, video: dict) -> dict:
+    return {
+        "original_url": video.get("url"),
+        "normalized_url": video.get("url"),
+        "platform": target.platform,
+        "author": target.name,
+        "title": video.get("title"),
+        "published": video.get("published"),
+        "thumbnail": video.get("thumbnail"),
+        "duration_seconds": video.get("duration_seconds"),
+        "view_count": video.get("view_count"),
+        "like_count": video.get("like_count"),
+        "favorite_count": video.get("favorite_count"),
+        "source_kind": video.get("source_kind") or "url",
+        "monitor_id": target.id,
+    }
+
+
 async def dispatch_monitor_analysis(
     db: AsyncSession,
     monitor_id: int,
     req: DispatchAnalysisRequest,
     user_id: int,
 ) -> dict:
-    from app.services.manual_video_inbox_service import enqueue_monitor_videos_to_inbox
+    if len(req.urls) > 10:
+        raise HTTPException(status_code=400, detail="一次最多处理 10 个视频，请减少选择后重试。")
 
     target = await get_monitor_or_404(db, monitor_id, user_id, for_update=True)
-    result = await enqueue_monitor_videos_to_inbox(db, target, req.urls, user_id)
+    cached_videos = list(target.cached_videos or [])
+    analyzed_video_meta = await _build_analyzed_video_meta(db, user_id)
+    active_jobs = dict(target.active_jobs or {})
+    dispatched = []
+    skipped = []
+    videos_to_dispatch: list[tuple[dict, str]] = []
+
+    await get_configured_video_extractor_or_raise(db, user_id)
+
+    for raw_url in req.urls:
+        video = _find_cached_video(cached_videos, raw_url)
+        if not video:
+            skipped.append({"url": raw_url, "reason": "未找到可生成卡片的视频。"})
+            continue
+
+        video_url = str(video.get("url", "")).strip()
+        existing = _lookup_analyzed_video_meta(analyzed_video_meta, video_url)
+        if existing and existing.get("card_id") is not None and not req.force:
+            video["already_analyzed"] = True
+            video["analyzed_card_id"] = int(existing["card_id"])
+            video["last_analyzed_at"] = existing.get("last_analyzed_at")
+            dispatched.append({"url": video_url, "card_id": int(existing["card_id"]), "already_exists": True})
+            continue
+
+        if active_jobs.get(video_url):
+            dispatched.append({"url": video_url, "job_id": active_jobs[video_url], "status": "queued"})
+            continue
+
+        videos_to_dispatch.append((video, video_url))
+
+    await ensure_resource_quota(db, user_id, VIDEO_CARDS, increment=len(videos_to_dispatch))
+    await consume_daily_quota(db, user_id, DAILY_VIDEO_ANALYSES, amount=len(videos_to_dispatch))
+
+    for video, video_url in videos_to_dispatch:
+        job_id = await dispatch_video_metadata_analysis_job(
+            video_url,
+            user_id,
+            seed_metadata=_monitor_video_seed_metadata(target, video),
+            source_kind=str(video.get("source_kind") or "url"),
+        )
+        active_jobs[video_url] = job_id
+        dispatched.append({"url": video_url, "job_id": job_id, "status": "queued"})
+
+    target.cached_videos = cached_videos
+    target.active_jobs = active_jobs
+    flag_modified(target, "cached_videos")
+    flag_modified(target, "active_jobs")
     await db.commit()
-    return result
+    return {"ok": True, "dispatched": dispatched, "skipped": skipped}
 
 
 async def delete_monitor_cached_videos(
@@ -559,12 +669,13 @@ async def get_monitor_job_status_payload(db: AsyncSession, monitor_id: int, user
             cached = target.cached_videos
             modified = False
             for video in cached:
-                if (
-                    video["url"] in completed_urls
-                    and statuses[video["url"]] == "completed"
-                    and not video.get("already_analyzed")
-                ):
+                if video["url"] in completed_urls and statuses[video["url"]] == "completed":
+                    card_meta = _lookup_analyzed_video_meta(analyzed_video_meta, video["url"])
                     video["already_analyzed"] = True
+                    if card_meta and card_meta.get("card_id") is not None:
+                        video["analyzed_card_id"] = int(card_meta["card_id"])
+                    if card_meta and card_meta.get("last_analyzed_at") is not None:
+                        video["last_analyzed_at"] = card_meta["last_analyzed_at"]
                     modified = True
             if modified:
                 target.cached_videos = list(cached)

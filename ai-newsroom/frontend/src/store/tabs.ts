@@ -36,6 +36,10 @@ interface TabsState {
 
   inboxVideoSourceId: string | null;
   setInboxVideoSourceId: (id: string | null) => void;
+
+  /** Incremented when Discover deletes cards so Inbox video tab knows to re-fetch. */
+  inboxVideoDirtyKey: number;
+  bumpInboxVideoDirty: () => void;
 }
 
 export const useTabsStore = create<TabsState>((set) => ({
@@ -74,4 +78,7 @@ export const useTabsStore = create<TabsState>((set) => ({
 
   inboxVideoSourceId: null,
   setInboxVideoSourceId: (id) => set({ inboxVideoSourceId: id }),
+
+  inboxVideoDirtyKey: 0,
+  bumpInboxVideoDirty: () => set((s) => ({ inboxVideoDirtyKey: s.inboxVideoDirtyKey + 1 })),
 }));

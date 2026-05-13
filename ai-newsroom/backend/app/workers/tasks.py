@@ -14,6 +14,7 @@ from app.services.worker_jobs import (
     run_review_job,
     run_scrape_job,
     run_video_analysis_job,
+    run_video_metadata_analysis_job,
 )
 
 logger = logging.getLogger(__name__)
@@ -108,6 +109,35 @@ def celery_analyze_video(
             logger.error(f"[Celery] Video analysis PERMANENTLY failed for {video_url}: {e}")
             return job_failure("analyze_video", error_str[:500])
         logger.error(f"[Celery] Video analysis failed for {video_url}: {e}")
+        raise self.retry(exc=e)
+
+
+@celery_app.task(name="newsroom.analyze_video_metadata", bind=True, max_retries=1, default_retry_delay=30)
+def celery_analyze_video_metadata(
+    self,
+    video_url: str,
+    owner_user_id: int,
+    seed_metadata: dict | None = None,
+    source_kind: str = "url",
+):
+    """Metadata-only video analysis: fetch public metadata → Extractor Agent → save card."""
+    try:
+        return run_video_metadata_analysis_job(
+            video_url,
+            owner_user_id,
+            seed_metadata=seed_metadata or {},
+            source_kind=source_kind,
+        )
+    except Exception as e:
+        error_str = str(e)
+        if any(keyword in error_str for keyword in [
+            "默认提取器", "API Key", "未配置", "无法获取足够的视频元信息",
+            "LLM did not return valid JSON", "Agent requires Chinese output",
+            "B站风控", "登录态异常", "Cookie 格式无效", "xsec_token",
+        ]):
+            logger.error("[Celery] Metadata-only video analysis permanently failed for %s: %s", video_url, e)
+            return job_failure("analyze_video_metadata", error_str[:500])
+        logger.error("[Celery] Metadata-only video analysis failed for %s: %s", video_url, e)
         raise self.retry(exc=e)
 
 

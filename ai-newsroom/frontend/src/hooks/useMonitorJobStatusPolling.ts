@@ -20,6 +20,9 @@ export function useMonitorJobStatusPolling({
   const [videoStatus, setVideoStatus] = React.useState<MonitorVideoStatusMap>({});
   const shownErrorsRef = React.useRef<Set<string>>(new Set());
 
+  const onAnyCompletedRef = React.useRef(onAnyCompleted);
+  React.useEffect(() => { onAnyCompletedRef.current = onAnyCompleted; }, [onAnyCompleted]);
+
   React.useEffect(() => {
     const activeMonitors = monitors.filter(
       (monitor) => monitor.active_jobs && Object.keys(monitor.active_jobs).length > 0,
@@ -30,6 +33,7 @@ export function useMonitorJobStatusPolling({
     const poll = async () => {
       while (polling) {
         let anyCompleted = false;
+        const pendingErrors: { url: string; detail: string }[] = [];
 
         for (const monitor of activeMonitors) {
           try {
@@ -52,8 +56,7 @@ export function useMonitorJobStatusPolling({
                   mappedStatus = "error";
                   if (!shownErrorsRef.current.has(url)) {
                     shownErrorsRef.current.add(url);
-                    const errorDetail = res.errors?.[url] || "";
-                    showMonitorAnalysisErrorToast(errorDetail, t);
+                    pendingErrors.push({ url, detail: res.errors?.[url] || "" });
                   }
                 }
 
@@ -91,8 +94,7 @@ export function useMonitorJobStatusPolling({
                   mappedStatus = "error";
                   if (!shownErrorsRef.current.has(url)) {
                     shownErrorsRef.current.add(url);
-                    const errorDetail = res.errors?.[url] || "";
-                    showMonitorAnalysisErrorToast(errorDetail, t);
+                    pendingErrors.push({ url, detail: res.errors?.[url] || "" });
                   }
                 }
 
@@ -109,8 +111,12 @@ export function useMonitorJobStatusPolling({
           }
         }
 
+        for (const err of pendingErrors) {
+          showMonitorAnalysisErrorToast(err.detail, t);
+        }
+
         if (anyCompleted) {
-          await onAnyCompleted?.();
+          await onAnyCompletedRef.current?.();
         }
 
         await new Promise((resolve) => setTimeout(resolve, 3000));
@@ -121,7 +127,7 @@ export function useMonitorJobStatusPolling({
     return () => {
       polling = false;
     };
-  }, [manualJobUrls, monitors, onAnyCompleted, t]);
+  }, [manualJobUrls, monitors, t]);
 
   const markSubmitting = React.useCallback((urls: string[]) => {
     urls.forEach((url) => {

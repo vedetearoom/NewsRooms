@@ -15,7 +15,7 @@ from app.schemas import (
     ManualVideoInboxItemOut,
 )
 from app.services.credential_service import get_decrypted_monitor_cookie
-from app.services.job_dispatcher import dispatch_video_analysis_job
+from app.services.job_dispatcher import dispatch_video_metadata_analysis_job
 from app.services.job_manager import job_manager
 from app.services.quota_service import (
     DAILY_VIDEO_ANALYSES,
@@ -24,6 +24,7 @@ from app.services.quota_service import (
     consume_daily_quota,
     ensure_resource_quota,
 )
+from app.services.video.metadata_analyzer import get_configured_video_extractor_or_raise
 from app.services.upload_service import s3_client, settings
 from app.services.video.downloader import detect_platform, fetch_video_metadata
 from app.services.video.local_video import store_uploaded_manual_video
@@ -383,28 +384,132 @@ async def get_manual_video_inbox_item_or_404(db: AsyncSession, item_id: int, use
     return item
 
 
-async def analyze_manual_video_inbox_item(db: AsyncSession, item_id: int, user_id: int) -> dict:
+def _manual_item_seed_metadata(item: ManualVideoInboxItem) -> dict:
+    return {
+        "original_url": item.original_url,
+        "normalized_url": item.normalized_url,
+        "platform": item.platform,
+        "author": item.author,
+        "title": item.title,
+        "published": item.published,
+        "thumbnail": item.thumbnail,
+        "duration_seconds": item.duration_seconds,
+        "view_count": item.view_count,
+        "like_count": item.like_count,
+        "favorite_count": item.favorite_count,
+        "source_kind": item.source_kind or "url",
+        "manual_video_inbox_item_id": item.id,
+    }
+
+
+async def analyze_manual_video_inbox_item(db: AsyncSession, item_id: int, user_id: int, *, force: bool = False) -> dict:
     item = await get_manual_video_inbox_item_or_404(db, item_id, user_id)
     card_index = await _build_video_card_index(db, user_id)
-    if item.normalized_url not in card_index:
-        await ensure_resource_quota(db, user_id, VIDEO_CARDS)
+    existing = card_index.get(item.normalized_url)
+    if existing and existing.get("card_id") is not None and not force:
+        item.status = "done"
+        item.linked_card_id = int(existing["card_id"])
+        item.last_analyzed_at = existing.get("last_analyzed_at")
+        item.active_job_id = None
+        item.error_message = None
+        await db.flush()
+        return {"ok": True, "card_id": item.linked_card_id, "url": item.normalized_url, "already_exists": True}
+
+    if item.active_job_id:
+        job_status = await job_manager.get_status(item.active_job_id)
+        if job_status and job_status.get("status") in {"pending", "running"}:
+            return {"ok": True, "job_id": item.active_job_id, "url": item.normalized_url, "status": job_status["status"]}
+
+    await get_configured_video_extractor_or_raise(db, user_id)
+    await ensure_resource_quota(db, user_id, VIDEO_CARDS)
     await consume_daily_quota(db, user_id, DAILY_VIDEO_ANALYSES)
 
-    job_id = await dispatch_video_analysis_job(
+    job_id = await dispatch_video_metadata_analysis_job(
         item.normalized_url,
         user_id,
-        preferred_thumbnail=item.thumbnail,
+        seed_metadata=_manual_item_seed_metadata(item),
         source_kind=item.source_kind or "url",
-        storage_key=item.storage_key,
-        original_filename=item.original_filename,
-        mime_type=item.mime_type,
     )
     item.active_job_id = job_id
-    item.status = "submitting"
+    item.status = "queued"
     item.error_message = None
     await db.flush()
 
-    return {"ok": True, "job_id": job_id, "url": item.normalized_url}
+    return {"ok": True, "job_id": job_id, "url": item.normalized_url, "status": "queued"}
+
+
+async def analyze_manual_video_inbox_items(db: AsyncSession, item_ids: list[int], user_id: int) -> dict:
+    selected_ids = [int(item_id) for item_id in dict.fromkeys(item_ids) if item_id]
+    if not selected_ids:
+        raise HTTPException(status_code=400, detail="请选择要处理的视频。")
+    if len(selected_ids) > 10:
+        raise HTTPException(status_code=400, detail="一次最多处理 10 个视频，请减少选择后重试。")
+
+    await get_configured_video_extractor_or_raise(db, user_id)
+
+    result = await db.execute(
+        select(ManualVideoInboxItem).where(
+            ManualVideoInboxItem.owner_user_id == user_id,
+            ManualVideoInboxItem.id.in_(selected_ids),
+        )
+    )
+    items_by_id = {item.id: item for item in result.scalars().all()}
+    card_index = await _build_video_card_index(db, user_id)
+    dispatch_candidates: list[ManualVideoInboxItem] = []
+    dispatched: list[dict] = []
+    skipped: list[dict] = []
+
+    for item_id in selected_ids:
+        item = items_by_id.get(item_id)
+        if item is None:
+            skipped.append({"item_id": item_id, "reason": "未找到待处理视频。"})
+            continue
+
+        existing = card_index.get(item.normalized_url)
+        if existing and existing.get("card_id") is not None:
+            item.status = "done"
+            item.linked_card_id = int(existing["card_id"])
+            item.last_analyzed_at = existing.get("last_analyzed_at")
+            item.active_job_id = None
+            item.error_message = None
+            dispatched.append({
+                "item_id": item.id,
+                "url": item.normalized_url,
+                "card_id": item.linked_card_id,
+                "already_exists": True,
+            })
+            continue
+
+        if item.active_job_id:
+            job_status = await job_manager.get_status(item.active_job_id)
+            if job_status and job_status.get("status") in {"pending", "running"}:
+                dispatched.append({
+                    "item_id": item.id,
+                    "url": item.normalized_url,
+                    "job_id": item.active_job_id,
+                    "status": job_status["status"],
+                })
+                continue
+
+        dispatch_candidates.append(item)
+
+    await ensure_resource_quota(db, user_id, VIDEO_CARDS, increment=len(dispatch_candidates))
+    await consume_daily_quota(db, user_id, DAILY_VIDEO_ANALYSES, amount=len(dispatch_candidates))
+
+    for item in dispatch_candidates:
+        job_id = await dispatch_video_metadata_analysis_job(
+            item.normalized_url,
+            user_id,
+            seed_metadata=_manual_item_seed_metadata(item),
+            source_kind=item.source_kind or "url",
+        )
+        item.active_job_id = job_id
+        item.status = "queued"
+        item.error_message = None
+        dispatched.append({"item_id": item.id, "url": item.normalized_url, "job_id": job_id, "status": "queued"})
+
+    await db.flush()
+    return {"ok": True, "dispatched": dispatched, "skipped": skipped}
 
 
 async def delete_manual_video_inbox_items(
@@ -476,9 +581,14 @@ async def get_manual_video_job_status_payload(db: AsyncSession, user_id: int) ->
         statuses[item.normalized_url] = job_status["status"]
 
         if job_status["status"] == "completed":
+            card_meta = card_index.get(item.normalized_url)
             item.active_job_id = None
             item.status = "done"
             item.error_message = None
+            if card_meta and card_meta.get("card_id") is not None:
+                item.linked_card_id = int(card_meta["card_id"])
+            if card_meta and card_meta.get("last_analyzed_at") is not None:
+                item.last_analyzed_at = card_meta["last_analyzed_at"]
         elif job_status["status"] == "failed":
             item.active_job_id = None
             item.status = "error"

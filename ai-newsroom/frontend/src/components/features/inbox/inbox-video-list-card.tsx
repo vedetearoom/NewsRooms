@@ -8,7 +8,8 @@ export interface InboxVideoListCardProps {
   isAnalyzed: boolean;
   vStatus?: 'queued' | 'submitting' | 'done' | 'error';
   onToggle: () => void;
-  onReanalyze: () => void;
+  onAnalyze?: () => void;
+  onReanalyze?: () => void;
 }
 
 export function InboxVideoListCard({
@@ -17,6 +18,7 @@ export function InboxVideoListCard({
   isAnalyzed,
   vStatus,
   onToggle,
+  onAnalyze,
   onReanalyze,
 }: InboxVideoListCardProps) {
   const { t, language } = useTranslation();
@@ -29,7 +31,6 @@ export function InboxVideoListCard({
       isAnalyzed={isAnalyzed}
       status={vStatus}
       deconstructLabel={t("monitors.deconstruct")}
-      tooLongLabel={t("monitors.tooLong")}
       submittingLabel={t("monitors.submitting")}
       queuedLabel={t("monitors.queued")}
       submitFailedLabel={t("monitors.submitFailed")}
@@ -39,6 +40,7 @@ export function InboxVideoListCard({
       lastAnalyzedAtLabel={t("monitors.lastAnalyzedAt")}
       reanalyzeHintLabel={t("monitors.reanalyzeHint")}
       onClick={onToggle}
+      onAnalyze={onAnalyze}
       onReanalyze={onReanalyze}
     />
   );

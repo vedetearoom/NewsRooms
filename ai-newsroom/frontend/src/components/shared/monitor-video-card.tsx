@@ -2,8 +2,6 @@ import type { DiscoveredVideo } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Bookmark, Check, Eye, Inbox, Loader2, Pin, Play, RotateCw, ThumbsUp, Upload } from "lucide-react";
 
-export const MAX_MONITOR_VIDEO_DURATION_SECONDS = 35 * 60;
-
 export function formatMonitorVideoDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
@@ -33,7 +31,6 @@ interface MonitorVideoCardProps {
   status?: "queued" | "submitting" | "done" | "error";
   variant?: "default" | "compact";
   deconstructLabel: string;
-  tooLongLabel: string;
   submittingLabel: string;
   queuedLabel: string;
   submitFailedLabel: string;
@@ -43,6 +40,7 @@ interface MonitorVideoCardProps {
   lastAnalyzedAtLabel?: string;
   reanalyzeHintLabel?: string;
   onClick?: () => void;
+  onAnalyze?: () => void;
   onReanalyze?: () => void;
   className?: string;
   contentClassName?: string;
@@ -71,7 +69,6 @@ export function MonitorVideoCard({
   status,
   variant = "default",
   deconstructLabel,
-  tooLongLabel,
   submittingLabel,
   queuedLabel,
   submitFailedLabel,
@@ -81,15 +78,15 @@ export function MonitorVideoCard({
   lastAnalyzedAtLabel,
   reanalyzeHintLabel,
   onClick,
+  onAnalyze,
   onReanalyze,
   className,
   contentClassName,
 }: MonitorVideoCardProps) {
-  const isTooLong = (video.duration_seconds ?? 0) > MAX_MONITOR_VIDEO_DURATION_SECONDS;
   const locale = language === "zh" ? "zh-CN" : "en-US";
   const isCompact = variant === "compact";
   const isXiaohongshu = video.url.includes("xiaohongshu.com") || video.url.includes("xhslink");
-  const canReanalyze = isAnalyzed && !status && !isTooLong && !!onReanalyze;
+  const canReanalyze = isAnalyzed && !status && !!onReanalyze;
   const stickyLabel = language === "zh" ? "置顶" : "Pinned";
   const noteTypeLabel = video.note_type === "video" ? (language === "zh" ? "视频" : "Video") : null;
   const sourceKindLabel = video.source_kind === "file" ? (language === "zh" ? "本地视频" : "Local video") : null;
@@ -99,18 +96,16 @@ export function MonitorVideoCard({
 
   return (
     <div
-      onClick={() => !isAnalyzed && !status && !isTooLong && onClick?.()}
+      onClick={() => (!isAnalyzed && !status || status === "error") && onClick?.()}
       className={cn(
         isCompact
           ? "relative rounded-lg overflow-hidden cursor-pointer group/card transition-all"
           : "relative flex flex-col overflow-hidden rounded-[22px] bg-white/96 shadow-[0_10px_24px_rgba(15,23,42,0.06),0_2px_4px_rgba(15,23,42,0.04)] cursor-pointer group/card transition-all dark:bg-[#18181b]",
         isCompact
           ? (
-              isTooLong && !isAnalyzed && !status
-                ? "opacity-50 cursor-not-allowed ring-1 ring-zinc-200/40 dark:ring-white/[0.04]"
-                : (isAnalyzed || status === "done")
-                  ? "cursor-default ring-1 ring-zinc-200/60 dark:ring-white/[0.06]"
-                  : status === "submitting"
+              (isAnalyzed || status === "done")
+                ? "cursor-default ring-1 ring-zinc-200/60 dark:ring-white/[0.06]"
+                : status === "submitting"
                     ? "ring-2 ring-zinc-900/50 dark:ring-white/50"
                     : status === "error"
                       ? "ring-2 ring-red-500/80"
@@ -121,11 +116,9 @@ export function MonitorVideoCard({
                           : "ring-1 ring-zinc-200/60 dark:ring-white/[0.06] hover:ring-zinc-400/30"
             )
           : (
-              isTooLong && !isAnalyzed && !status
-                ? "cursor-not-allowed opacity-50"
-                : (isAnalyzed || status === "done")
-                  ? `${onReanalyze ? "cursor-pointer" : "cursor-default"} hover:-translate-y-0.5`
-                  : status === "submitting"
+              (isAnalyzed || status === "done")
+                ? `${onReanalyze ? "cursor-pointer" : "cursor-default"} hover:-translate-y-0.5`
+                : status === "submitting"
                     ? "ring-2 ring-zinc-900/50 dark:ring-white/50"
                     : status === "error"
                       ? "ring-2 ring-red-500/80"
@@ -163,27 +156,25 @@ export function MonitorVideoCard({
           <span
             className={cn(
               "absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium tabular-nums shadow-sm",
-              isTooLong ? "bg-red-600/90 text-white" : "bg-black/70 text-white/90",
+              "bg-black/70 text-white/90",
             )}
           >
             {formatMonitorVideoDuration(video.duration_seconds)}
           </span>
         )}
 
-        {!isTooLong && !isAnalyzed && !status && (
+        {!isAnalyzed && !status && (
           <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] opacity-0 group-hover/card:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-            <button className="flex items-center gap-2 px-4 py-1.5 bg-white text-zinc-900 rounded-full text-[13px] font-medium tracking-wide shadow-xl transform translate-y-2 group-hover/card:translate-y-0 transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95">
+            <button
+              onClick={(event) => {
+                event.stopPropagation();
+                onAnalyze?.();
+              }}
+              className="flex items-center gap-2 px-4 py-1.5 bg-white text-zinc-900 rounded-full text-[13px] font-medium tracking-wide shadow-xl transform translate-y-2 group-hover/card:translate-y-0 transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95"
+            >
               <Inbox className="w-3.5 h-3.5 text-zinc-400" />
               {deconstructLabel}
             </button>
-          </div>
-        )}
-
-        {isTooLong && !isAnalyzed && !status && (
-          <div className="absolute inset-0 bg-black/30 flex items-center justify-center backdrop-blur-[0.5px]">
-            <span className="px-2 py-1 rounded-md bg-black/60 text-[10px] font-medium text-white/80 border border-white/10 shadow-sm">
-              {tooLongLabel}
-            </span>
           </div>
         )}
 
@@ -214,7 +205,7 @@ export function MonitorVideoCard({
           </div>
         )}
 
-        {(isAnalyzed || status === "done") && (
+        {(isAnalyzed || status === "done") && (!status || status === "done") && (
           <div className="absolute inset-0 bg-black/34 transition-colors duration-200 group-hover/card:bg-black/46 flex items-center justify-center backdrop-blur-[1px]">
             <div className="flex flex-col items-center gap-2.5 px-4 text-center">
               <span className="px-3 py-1.5 rounded-full bg-black/60 shadow-xl backdrop-blur-sm text-xs font-medium text-white shadow-black/20 border border-white/10 tracking-wide flex items-center gap-1 transition-all duration-200 group-hover/card:-translate-y-1 group-hover/card:opacity-0">
@@ -256,8 +247,13 @@ export function MonitorVideoCard({
         )}
 
         {(status === "submitting" || status === "queued") && isAnalyzed && (
-          <div className="absolute top-2 left-2 rounded-full border border-white/10 bg-black/50 px-2.5 py-1 text-[10px] font-medium text-white/86 backdrop-blur-sm shadow-lg">
-            {status === "submitting" ? (reanalyzingLabel || submittingLabel) : queuedLabel}
+          <div className="absolute inset-0 bg-black/42 flex items-center justify-center backdrop-blur-[1px]">
+            <div className="flex flex-col items-center gap-1.5 rounded-2xl border border-white/10 bg-black/50 px-4 py-3 text-white/90 shadow-lg">
+              {status === "submitting" && <Loader2 className="h-5 w-5 animate-spin" />}
+              <span className="text-[11px] font-medium">
+                {status === "submitting" ? (reanalyzingLabel || submittingLabel) : queuedLabel}
+              </span>
+            </div>
           </div>
         )}
       </div>

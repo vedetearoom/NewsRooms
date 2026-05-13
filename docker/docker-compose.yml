@@ -1,6 +1,6 @@
 services:
   metalm-base-redis:
-    image: dswr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/redis:6.2.20-alpine-linuxarm64
+    image: redis:6.2.20
     # image: registry.xuelangyun.com/shuzhi-amd64/metalm/redis:6.2.20
     container_name: metalm-base-redis
     restart: always

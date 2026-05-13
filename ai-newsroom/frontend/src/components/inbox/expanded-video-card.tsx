@@ -62,6 +62,7 @@ export function ExpandedVideoCard({ card, originRect, onClose, onSelect, isSelec
   const transcript = (meta.transcript as Array<{ time: string; text: string }>) || [];
   const hookAnalysis = (meta.hook_analysis as HookAnalysis) || {} as HookAnalysis;
   const templateSkeleton = (meta.template_skeleton as string) || "";
+  const isMetadataOnly = meta.metadata_only === true || meta.analysis_mode === "metadata_only";
 
   // Modal positioning
   const modalW = Math.min(680, windowSize.w - 48);
@@ -103,6 +104,11 @@ export function ExpandedVideoCard({ card, originRect, onClose, onSelect, isSelec
             <div className="flex items-center gap-2.5">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-[13px] font-semibold tracking-tight text-foreground">视频解构报告</span>
+              {isMetadataOnly && (
+                <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-500 dark:bg-white/10 dark:text-zinc-300">
+                  元信息分析
+                </span>
+              )}
               {duration > 0 && (
                 <span className="text-[12px] text-zinc-500 dark:text-zinc-400 font-mono tabular-nums ml-1">
                   {formatDuration(duration)}
@@ -156,6 +162,11 @@ export function ExpandedVideoCard({ card, originRect, onClose, onSelect, isSelec
             </div>
 
             <div className="space-y-8">
+              {isMetadataOnly && (
+                <div className="rounded-xl border border-amber-200/60 bg-amber-50/60 p-4 text-[13px] leading-relaxed text-amber-800 dark:border-amber-400/15 dark:bg-amber-500/10 dark:text-amber-100/80">
+                  未下载视频，未生成音频或逐字稿；以下内容基于标题、简介和公开互动数据生成。
+                </div>
+              )}
 
               {/* Summary */}
               <div>

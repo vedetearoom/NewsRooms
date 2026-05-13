@@ -89,6 +89,7 @@ class MonitorCheckStatusOut(BaseModel):
 
 class DispatchAnalysisRequest(BaseModel):
     urls: list[str]
+    force: bool = False
 
 
 class MonitorCachedVideoDeleteRequest(BaseModel):
@@ -96,7 +97,8 @@ class MonitorCachedVideoDeleteRequest(BaseModel):
 
 
 class VideoAnalyzeRequest(BaseModel):
-    url: str
+    url: Optional[str] = None
+    force: bool = False
 
 
 class ManualVideoImportRequest(BaseModel):
@@ -104,6 +106,10 @@ class ManualVideoImportRequest(BaseModel):
 
 
 class ManualVideoInboxDeleteRequest(BaseModel):
+    item_ids: list[int]
+
+
+class ManualVideoAnalyzeBatchRequest(BaseModel):
     item_ids: list[int]
 
 

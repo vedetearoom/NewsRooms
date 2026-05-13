@@ -25,6 +25,7 @@ from app.schema_defs.content import CardOut, SourceCreate, SourceOut
 from app.schema_defs.monitors import (
     DispatchAnalysisRequest,
     DiscoveredVideo,
+    ManualVideoAnalyzeBatchRequest,
     ManualVideoInboxDeleteRequest,
     ManualVideoImportRequest,
     ManualVideoInboxItemOut,
@@ -83,6 +84,7 @@ __all__ = [
     "DraftUpdate",
     "AuthResponse",
     "LoginRequest",
+    "ManualVideoAnalyzeBatchRequest",
     "ManualVideoInboxDeleteRequest",
     "ManualVideoImportRequest",
     "ManualVideoInboxItemOut",

@@ -775,10 +775,10 @@ export const api = {
     fetchAPI<MonitorCheckQueuedResponse>(`/api/monitors/${id}/check`, { method: "POST" }),
   getMonitorCheckStatus: (id: number) =>
     fetchAPI<MonitorCheckStatus>(`/api/monitors/${id}/check-status`),
-  dispatchAnalysis: (id: number, urls: string[]) =>
-    fetchAPI<{ ok: boolean; dispatched: { url: string; job_id: string }[]; skipped?: { url: string; reason: string }[] }>(`/api/monitors/${id}/dispatch`, {
+  dispatchAnalysis: (id: number, urls: string[], force = false) =>
+    fetchAPI<{ ok: boolean; dispatched: { url: string; job_id?: string; card_id?: number; status?: string; already_exists?: boolean }[]; skipped?: { url: string; reason: string }[] }>(`/api/monitors/${id}/dispatch`, {
       method: "POST",
-      body: JSON.stringify({ urls }),
+      body: JSON.stringify({ urls, force }),
     }),
   deleteMonitorCachedVideos: (id: number, urls: string[]) =>
     fetchAPI<{ ok: boolean; removed: number }>(`/api/monitors/${id}/delete-videos`, {
@@ -810,9 +810,15 @@ export const api = {
     }
     return res.json();
   },
-  analyzeManualVideoInboxItem: (itemId: number) =>
-    fetchAPI<{ ok: boolean; job_id: string; url: string }>(`/api/monitors/manual-videos/${itemId}/analyze`, {
+  analyzeManualVideoInboxItem: (itemId: number, force = false) =>
+    fetchAPI<{ ok: boolean; card_id?: number; job_id?: string; url: string; status?: string; already_exists?: boolean }>(`/api/monitors/manual-videos/${itemId}/analyze`, {
       method: "POST",
+      body: JSON.stringify({ force }),
+    }),
+  analyzeManualVideoInboxItems: (itemIds: number[]) =>
+    fetchAPI<{ ok: boolean; dispatched: { item_id: number; url: string; job_id?: string; card_id?: number; status?: string; already_exists?: boolean }[]; skipped?: { item_id?: number; url?: string; reason: string }[] }>("/api/monitors/manual-videos/analyze-batch", {
+      method: "POST",
+      body: JSON.stringify({ item_ids: itemIds }),
     }),
   deleteManualVideoInboxItems: (itemIds: number[]) =>
     fetchAPI<{ ok: boolean; removed: number }>("/api/monitors/manual-videos/delete", {

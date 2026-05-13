@@ -198,7 +198,6 @@ export function MonitorList({
                           status={vStatus}
                           variant="compact"
                           deconstructLabel={t("monitors.deconstruct")}
-                          tooLongLabel={t("monitors.tooLong")}
                           submittingLabel={t("monitors.submitting")}
                           queuedLabel={t("monitors.queued")}
                           submitFailedLabel={t("monitors.submitFailed")}

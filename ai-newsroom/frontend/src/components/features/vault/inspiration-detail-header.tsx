@@ -119,7 +119,7 @@ export function InspirationDetailHeader({
           </div>
         </div>
 
-        {!isText && (
+        {!isText && viewingInspiration.audio_url && (
           <div className="flex items-center py-2.5">
             <div className="w-32 shrink-0 text-[13px] text-zinc-500 font-medium">
               {t("vault.inspirationAudio")}

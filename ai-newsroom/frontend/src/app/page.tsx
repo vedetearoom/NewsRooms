@@ -95,6 +95,7 @@ function DiscoverContent() {
     await Promise.all(Array.from(selectedCardIds).map((id) => api.deleteCard(id)));
     clearSelection();
     fetchCards();
+    useTabsStore.getState().bumpInboxVideoDirty();
     setIsDeleting(false);
   };
 

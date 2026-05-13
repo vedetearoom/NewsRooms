@@ -279,6 +279,38 @@ def run_process_selected_job(article_ids: list[int], owner_user_id: int):
     return result
 
 
+async def _analyze_video_metadata_async(
+    video_url: str,
+    owner_user_id: int,
+    seed_metadata: dict | None = None,
+    source_kind: str = "url",
+):
+    from app.services.video.metadata_analyzer import analyze_video_metadata
+
+    async with async_session() as db:
+        card = await analyze_video_metadata(
+            db,
+            owner_user_id=owner_user_id,
+            video_url=video_url,
+            seed_metadata=seed_metadata or {},
+            source_kind=source_kind,
+        )
+        await db.commit()
+        return {"card_id": card.id, "title": card.title, "video_url": video_url}
+
+
+def run_video_metadata_analysis_job(
+    video_url: str,
+    owner_user_id: int,
+    seed_metadata: dict | None = None,
+    source_kind: str = "url",
+):
+    logger.info("[Celery] Starting metadata-only video analysis: %s", video_url)
+    result = run_async(_analyze_video_metadata_async(video_url, owner_user_id, seed_metadata, source_kind))
+    logger.info("[Celery] Metadata-only video analysis completed: %s", result)
+    return job_success("analyze_video_metadata", **result)
+
+
 async def _analyze_video_async(
     video_url: str,
     owner_user_id: int,

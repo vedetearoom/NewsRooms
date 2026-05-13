@@ -38,6 +38,7 @@ function InspirationsContent() {
     hook_analysis?: HookAnalysisData;
     original_key_points?: string[];
     original_summary?: string;
+    transcript?: Array<{ time: string; text: string }>;
   };
 
   const [inspirations, setInspirations] = React.useState<InspirationAsset[]>([]);
@@ -69,7 +70,10 @@ function InspirationsContent() {
 
   const extraData = (viewingInspiration?.extra_data || {}) as InspirationExtraData;
   const isText = viewingInspiration?.platform === 'article' || extraData.media_type === 'text';
-  const effectiveTab = isText ? (['summary', 'fulltext'].includes(detailTab) ? detailTab : 'summary') : detailTab;
+  const hasTranscript = !isText && Array.isArray(extraData.transcript) && extraData.transcript.length > 0;
+  const effectiveTab = isText
+    ? (['summary', 'fulltext'].includes(detailTab) ? detailTab : 'summary')
+    : (detailTab === 'transcript' && !hasTranscript ? 'structure' : detailTab);
 
   // Audio Player State
   const audioRef = React.useRef<HTMLAudioElement>(null);
@@ -222,6 +226,7 @@ function InspirationsContent() {
 
               <InspirationDetailTabs
                 isText={isText}
+                hasTranscript={hasTranscript}
                 effectiveTab={effectiveTab}
                 onSelectTab={setDetailTab}
               />

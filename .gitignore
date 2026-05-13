@@ -3,6 +3,9 @@ docker/volumes/
 docker/ai-newsroom/config/backend.env
 docker/rsshub.env
 
+# Claude Code local state
+.claude/
+
 # Python
 __pycache__/
 *.pyc

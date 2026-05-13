@@ -16,8 +16,11 @@ import { PageEmptyState, PageStateBoundary } from "@/components/shared/page-stat
 import { showMonitorSkippedToast } from "@/lib/async-feedback";
 import { InboxVideoListCard } from "./inbox-video-list-card";
 import { InboxVideoImportBar, type InboxVideoImportMode } from "./inbox-video-import-bar";
+import { useMonitorJobStatusPolling } from "@/hooks/useMonitorJobStatusPolling";
 import { useUrlTab } from "@/hooks/useUrlTab";
 import { useTabsStore } from "@/store/tabs";
+
+const MAX_VIDEO_ANALYSIS_BATCH = 10;
 
 type VideoInboxEntry = {
   video: DiscoveredVideo;
@@ -102,37 +105,43 @@ export function InboxVideoTab({
   const { selectedByGroup: selectedVideos, toggle: toggleVideo, clear: clearSelectedVideos, totalSelected } = useGroupedSelectableSet<string, string>();
   const [analyzing, setAnalyzing] = React.useState<Record<string, boolean>>({});
   const [deleting, setDeleting] = React.useState(false);
-  const [videoStatus, setVideoStatus] = React.useState<Record<string, "queued" | "submitting" | "done" | "error">>({});
-
-  const markSubmitting = React.useCallback((urls: string[]) => {
-    setVideoStatus((prev) => {
-      const next = { ...prev };
-      urls.forEach((url) => {
-        next[url] = "submitting";
-      });
-      return next;
-    });
-  }, []);
+  const manualJobUrls = React.useMemo(
+    () => manualItems.filter((item) => item.active_job_id).map((item) => item.normalized_url),
+    [manualItems],
+  );
+  const {
+    videoStatus,
+    setVideoStatus,
+    markSubmitting,
+    markError,
+  } = useMonitorJobStatusPolling({
+    monitors,
+    manualJobUrls,
+    t,
+    onAnyCompleted: async () => {
+      await fetchMonitors();
+    },
+  });
 
   const markQueued = React.useCallback((urls: string[]) => {
     setVideoStatus((prev) => {
       const next = { ...prev };
       urls.forEach((url) => {
-        if (next[url] !== "error") next[url] = "queued";
+        next[url] = "queued";
       });
       return next;
     });
-  }, []);
+  }, [setVideoStatus]);
 
-  const markError = React.useCallback((urls: string[]) => {
+  const markProcessed = React.useCallback((urls: string[]) => {
     setVideoStatus((prev) => {
       const next = { ...prev };
       urls.forEach((url) => {
-        if (url) next[url] = "error";
+        if (next[url] !== "error") next[url] = "done";
       });
       return next;
     });
-  }, []);
+  }, [setVideoStatus]);
 
   const fetchMonitors = React.useCallback(async () => {
     try {
@@ -152,13 +161,38 @@ export function InboxVideoTab({
         });
         return next;
       });
+      setVideoStatus((prev) => {
+        const next = { ...prev };
+        let changed = false;
+        for (const monitor of monitorData) {
+          for (const video of monitor.cached_videos || []) {
+            if (!video.already_analyzed && next[video.url] === "done") {
+              delete next[video.url];
+              changed = true;
+            }
+          }
+        }
+        for (const item of manualData) {
+          if (!item.already_analyzed && next[item.normalized_url] === "done") {
+            delete next[item.normalized_url];
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
     } catch { /* ignore */ }
     finally { setLoading(false); }
-  }, []);
+  }, [setVideoStatus]);
 
   React.useEffect(() => {
     fetchMonitors();
   }, [fetchMonitors]);
+
+  // Re-fetch when Discover page deletes cards (bumps dirty key)
+  const inboxVideoDirtyKey = useTabsStore(s => s.inboxVideoDirtyKey);
+  React.useEffect(() => {
+    if (inboxVideoDirtyKey > 0) fetchMonitors();
+  }, [inboxVideoDirtyKey, fetchMonitors]);
 
   React.useEffect(() => {
     if (onCountChange) {
@@ -283,6 +317,10 @@ export function InboxVideoTab({
     }
     
     if (Object.keys(monitorSelections).length === 0 && manualSelections.length === 0) return;
+    if (totalSelected > MAX_VIDEO_ANALYSIS_BATCH) {
+      toast.error(t("monitors.videoAnalysisBatchLimitTitle"), t("monitors.videoAnalysisBatchLimitDesc"));
+      return;
+    }
 
     for (const [mIdStr, urls] of Object.entries(monitorSelections)) {
       const monitorId = Number(mIdStr);
@@ -298,45 +336,94 @@ export function InboxVideoTab({
             if (s.url) markError([s.url]);
           }
         }
-        markQueued(urls);
+        const dispatchedUrls = res.dispatched?.map((item) => item.url).filter(Boolean) ?? [];
+        const existingUrls = res.dispatched?.filter((item) => item.already_exists || item.card_id).map((item) => item.url).filter(Boolean) ?? [];
+        if (dispatchedUrls.length) markQueued(dispatchedUrls);
+        if (existingUrls.length) markProcessed(existingUrls);
+        await fetchMonitors();
       } catch (e) {
-        console.error("Dispatch failed", e);
         markError(urls);
+        const message = e instanceof Error ? e.message : t("monitors.videoAnalysisFailedDesc");
+        toast.error(t("monitors.videoAnalysisFailedTitle"), message);
       } finally {
         setAnalyzing(prev => ({ ...prev, [groupId]: false }));
       }
     }
 
     if (manualSelections.length > 0) {
-      markQueued(manualSelections);
+      setAnalyzing(prev => ({ ...prev, manual: true }));
+      markSubmitting(manualSelections);
+      try {
+        const itemIds = manualSelections
+          .map((url) => manualItemByUrl.get(url)?.id)
+          .filter((id): id is number => typeof id === "number");
+        const res = await api.analyzeManualVideoInboxItems(itemIds);
+        if (res.skipped?.length) {
+          for (const skipped of res.skipped) {
+            showMonitorSkippedToast(skipped.reason, t);
+            if (skipped.url) markError([skipped.url]);
+          }
+        }
+        const dispatchedUrls = res.dispatched?.map((item) => item.url).filter(Boolean) ?? [];
+        const existingUrls = res.dispatched?.filter((item) => item.already_exists || item.card_id).map((item) => item.url).filter(Boolean) ?? [];
+        if (dispatchedUrls.length) markQueued(dispatchedUrls);
+        if (existingUrls.length) markProcessed(existingUrls);
+      } catch (error) {
+        markError(manualSelections);
+        const message = error instanceof Error ? error.message : t("monitors.videoAnalysisFailedDesc");
+        toast.error(t("monitors.videoAnalysisFailedTitle"), message);
+      } finally {
+        setAnalyzing(prev => ({ ...prev, manual: false }));
+      }
     }
 
     clearSelectedVideos();
     await fetchMonitors();
   };
 
-  const handleReanalyzeMonitor = async (monitorId: number, url: string) => {
+  const handleAnalyzeMonitorVideo = async (monitorId: number, url: string, force = false) => {
     const groupId = `monitor:${monitorId}`;
     setAnalyzing(prev => ({ ...prev, [groupId]: true }));
     const [resolvedUrl] = reconcileSelectedUrls([url], videos[monitorId] || []);
     markSubmitting([resolvedUrl]);
 
     try {
-      const res = await api.dispatchAnalysis(monitorId, [resolvedUrl]);
+      const res = await api.dispatchAnalysis(monitorId, [resolvedUrl], force);
       if (res.skipped?.length) {
         for (const s of res.skipped) {
           showMonitorSkippedToast(s.reason, t);
-          markError([s.url]);
+          if (s.url) markError([s.url]);
         }
       }
+      const dispatchedUrls = res.dispatched?.map((item) => item.url).filter(Boolean) ?? [];
+      const existingUrls = res.dispatched?.filter((item) => item.already_exists || item.card_id).map((item) => item.url).filter(Boolean) ?? [];
+      if (dispatchedUrls.length) markQueued(dispatchedUrls);
+      if (existingUrls.length) markProcessed(existingUrls);
+      await fetchMonitors();
     } catch (error) {
-      console.error("Re-dispatch failed", error);
+      console.error("Video analysis dispatch failed", error);
       markError([resolvedUrl]);
+      const message = error instanceof Error ? error.message : t("monitors.videoAnalysisFailedDesc");
+      toast.error(t("monitors.videoAnalysisFailedTitle"), message);
     } finally {
       setAnalyzing(prev => ({ ...prev, [groupId]: false }));
     }
 
     fetchMonitors();
+  };
+
+  const handleAnalyzeManualVideo = async (item: ManualVideoInboxItem, force = false) => {
+    markSubmitting([item.normalized_url]);
+    try {
+      const res = await api.analyzeManualVideoInboxItem(item.id, force);
+      if (res.already_exists || res.card_id) markProcessed([item.normalized_url]);
+      else markQueued([item.normalized_url]);
+      await fetchMonitors();
+    } catch (error) {
+      markError([item.normalized_url]);
+      const message = error instanceof Error ? error.message : t("monitors.videoAnalysisFailedDesc");
+      toast.error(t("monitors.videoAnalysisFailedTitle"), message);
+    }
   };
 
   const handleDeleteSelected = async () => {
@@ -564,12 +651,13 @@ export function InboxVideoTab({
                           const video = entry.video;
                           const isSelected = selected.has(video.url);
                           const isAnalyzed = entry.manualItem ? entry.manualItem.already_analyzed : video.already_analyzed;
+                          const monitorHasActiveJob = section.kind === "monitor" && !!section.monitor.active_jobs?.[video.url];
                           const vStatus = videoStatus[video.url]
                             ?? (entry.manualItem?.status === "error"
                               ? "error"
                               : entry.manualItem?.status === "submitting"
                                 ? "submitting"
-                                : entry.manualItem?.status === "queued"
+                                : entry.manualItem?.status === "queued" || monitorHasActiveJob
                                   ? "queued"
                                   : undefined);
 
@@ -581,8 +669,15 @@ export function InboxVideoTab({
                               isAnalyzed={isAnalyzed}
                               vStatus={vStatus}
                               onToggle={() => toggleVideo(section.id, video.url)}
-                              onReanalyze={section.kind === "monitor" ? () => {
-                                void handleReanalyzeMonitor(section.monitor.id, video.url);
+                              onAnalyze={entry.manualItem ? () => {
+                                void handleAnalyzeManualVideo(entry.manualItem!);
+                              } : section.kind === "monitor" ? () => {
+                                void handleAnalyzeMonitorVideo(section.monitor.id, video.url);
+                              } : undefined}
+                              onReanalyze={entry.manualItem ? () => {
+                                void handleAnalyzeManualVideo(entry.manualItem!, true);
+                              } : section.kind === "monitor" ? () => {
+                                void handleAnalyzeMonitorVideo(section.monitor.id, video.url, true);
                               } : undefined}
                             />
                           );

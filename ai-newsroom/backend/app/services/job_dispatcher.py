@@ -33,6 +33,27 @@ async def dispatch_process_selected_job(article_ids: list[int], owner_user_id: i
     )
 
 
+async def dispatch_video_metadata_analysis_job(
+    video_url: str,
+    owner_user_id: int,
+    seed_metadata: dict | None = None,
+    source_kind: str = "url",
+) -> str:
+    from app.workers.tasks import celery_analyze_video_metadata
+
+    result = celery_analyze_video_metadata.delay(video_url, owner_user_id, seed_metadata or {}, source_kind)
+    return await _track_celery_job(
+        "analyze_video_metadata",
+        result.id,
+        meta={
+            "video_url": video_url,
+            "owner_user_id": owner_user_id,
+            "seed_metadata": seed_metadata or {},
+            "source_kind": source_kind,
+        },
+    )
+
+
 async def dispatch_video_analysis_job(
     video_url: str,
     owner_user_id: int,

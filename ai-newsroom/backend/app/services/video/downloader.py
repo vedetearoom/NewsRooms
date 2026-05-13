@@ -13,6 +13,7 @@ from app.services.video.url_utils import canonicalize_video_source_url
 logger = logging.getLogger(__name__)
 
 BILIBILI_412_ERROR = "B站风控或登录态异常，下载音频失败。请重新保存 B站 Cookie，或稍后重试。"
+BILIBILI_NO_FORMATS_ERROR = "B站视频需要登录态才能获取，请先配置 B站 Cookie 后重试。"
 
 IGNORED_COOKIE_ATTRIBUTES = {
     "path",
@@ -39,6 +40,8 @@ def _rewrite_platform_download_error(source_url: str, exc: Exception) -> Excepti
         "HTTP Error 412" in message or "Precondition Failed" in message
     ):
         return ValueError(BILIBILI_412_ERROR)
+    if platform == "bilibili" and "No video formats found" in message:
+        return ValueError(BILIBILI_NO_FORMATS_ERROR)
     if (
         platform == "xiaohongshu"
         and "No video formats found" in message
@@ -335,5 +338,11 @@ async def fetch_video_metadata(video_url: str, cookie_header: str | None = None)
         "view_count": info.get("view_count"),
         "like_count": info.get("like_count"),
         "favorite_count": info.get("favorite_count"),
+        "comment_count": info.get("comment_count"),
+        "description": info.get("description") or info.get("fulltitle") or "",
+        "tags": info.get("tags") or [],
+        "channel": info.get("channel") or "",
+        "uploader_id": info.get("uploader_id") or info.get("channel_id") or "",
+        "webpage_url": info.get("webpage_url") or normalized_url,
         "platform": platform,
     }

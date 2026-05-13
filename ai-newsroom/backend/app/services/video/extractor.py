@@ -4,6 +4,8 @@ import json
 import logging
 import re
 from datetime import date, datetime, timezone
+from typing import Any
+
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from google import genai
@@ -47,6 +49,16 @@ VIDEO_ANALYZE_PROMPT = """你是一位短视频爆款内容解构专家。分析
 - 输出语言与逐字稿语言一致（中文逐字稿就输出中文分析）
 - 仅输出有效 JSON，不要包裹代码块
 """
+
+def _normalize_importance_score(value: Any, fallback: float = 0.5) -> float:
+    try:
+        score = float(value)
+    except (TypeError, ValueError):
+        score = fallback
+    if score > 1:
+        score = score / 100
+    return max(0.0, min(score, 1.0))
+
 
 def _parse_json_object(text: str) -> dict | None:
     """Robustly parse a JSON object from LLM output."""
@@ -207,6 +219,8 @@ async def analyze_video_transcript(
             existing_card = candidate
             break
 
+    importance_score = _normalize_importance_score(analysis_data.get("importance_score"))
+
     if existing_card is None:
         await ensure_resource_quota(db, owner_user_id, VIDEO_CARDS)
         card = IntelligenceCard(
@@ -217,7 +231,7 @@ async def analyze_video_transcript(
             source_urls=[video_url],
             tags=analysis_data.get("tags", []),
             category=analysis_data.get("category", "Other"),
-            importance_score=analysis_data.get("importance_score", 0.5),
+            importance_score=importance_score,
             cover_image=video_info.get("thumbnail", ""),
             content_type="video",
             extra_data=extra_data,
