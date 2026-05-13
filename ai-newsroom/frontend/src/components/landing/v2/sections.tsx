@@ -717,7 +717,9 @@ export function AgentStudioSection({ accent = "#22d3ee" }: AccentProps) {
             borderRadius: 16,
             padding: 22,
             position: "relative",
-            minHeight: 460,
+            minHeight: 400,
+            display: "flex",
+            flexDirection: "column",
           }}
         >
           <div
@@ -757,7 +759,7 @@ export function AgentStudioSection({ accent = "#22d3ee" }: AccentProps) {
             <ChipBadge color="#34d399">ACTIVE</ChipBadge>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", minHeight: 0 }}>
             <div
               style={{
                 alignSelf: "flex-end",
@@ -837,10 +839,8 @@ export function AgentStudioSection({ accent = "#22d3ee" }: AccentProps) {
 
           <div
             style={{
-              position: "absolute",
-              bottom: 22,
-              left: 22,
-              right: 22,
+              flexShrink: 0,
+              marginTop: 10,
               background: "rgba(0,0,0,0.4)",
               border: "1px solid rgba(255,255,255,0.06)",
               borderRadius: 10,
