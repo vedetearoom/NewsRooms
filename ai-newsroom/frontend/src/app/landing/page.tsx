@@ -60,13 +60,51 @@ export default function LandingPage() {
       <ClosingCTA accent={accent} onRegister={openRegister} />
       <LandingFooter accent={accent} />
 
-      {authOpen && <AuthModal mode={authMode} onModeChange={setAuthMode} onClose={() => setAuthOpen(false)} />}
+      {authOpen && (
+        <AuthModal
+          mode={authMode}
+          onModeChange={setAuthMode}
+          onClose={() => setAuthOpen(false)}
+        />
+      )}
 
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif&display=swap');
+        @import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif&display=swap");
         @keyframes modalIn {
-          from { opacity: 0; transform: scale(0.95) translateY(10px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
+          from {
+            opacity: 0;
+            transform: scale(0.95) translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+        @keyframes authBackdropIn {
+          from {
+            opacity: 0;
+            backdrop-filter: blur(0px);
+          }
+          to {
+            opacity: 1;
+            backdrop-filter: blur(24px);
+          }
+        }
+        @keyframes authCardIn {
+          from {
+            opacity: 0;
+            transform: translateY(14px) scale(0.96) rotateX(5deg);
+            filter: blur(3px);
+          }
+          62% {
+            opacity: 1;
+            filter: blur(0);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1) rotateX(0deg);
+            filter: blur(0);
+          }
         }
       `}</style>
     </div>

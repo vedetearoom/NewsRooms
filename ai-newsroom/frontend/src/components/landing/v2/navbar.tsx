@@ -28,7 +28,7 @@ export function V2Navbar({ accent = "#ffffff", isAuthenticated, onLogin, onRegis
   const switchTitle = language === "en" ? t("landing.nav.switchToChinese") : t("landing.nav.switchToEnglish");
 
   return (
-    <nav className="relative z-10 flex items-center justify-between gap-5 border-b border-white/[0.04] px-5 py-5 lg:px-10">
+    <nav className="relative z-10 flex items-center justify-between gap-5 border-b border-white/[0.04] px-5 py-4 lg:px-10">
       <Link href="/landing" className="flex items-center gap-2.5 no-underline">
         <div
           style={{
@@ -54,31 +54,32 @@ export function V2Navbar({ accent = "#ffffff", isAuthenticated, onLogin, onRegis
         ))}
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3.5">
         <button
           type="button"
           onClick={toggleLanguage}
           title={switchTitle}
           aria-label={switchTitle}
-          className="rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-1.5 font-mono text-[11px] text-white/55 transition-colors hover:border-white/[0.18] hover:text-white/80"
+          className="font-mono text-[11px] tracking-[-0.01em] text-white/38 transition-colors hover:text-white/70"
         >
-          <span className={language === "en" ? "text-white" : "text-white/35"}>EN</span>
-          <span className="px-1.5 text-white/20">/</span>
-          <span className={language === "zh" ? "text-white" : "text-white/35"}>中文</span>
+          <span className={language === "zh" ? "text-white/75" : "text-white/32"}>中文</span>
+          <span className="px-1.5 text-white/18">·</span>
+          <span className={language === "en" ? "text-white/75" : "text-white/32"}>EN</span>
         </button>
         <button
           type="button"
           onClick={secondaryAction}
-          className="hidden border-0 bg-transparent text-[13px] tracking-[-0.005em] text-white/55 transition-colors hover:text-white/80 sm:inline-flex"
+          className="hidden border-0 bg-transparent text-[13px] tracking-[-0.005em] text-white/50 transition-colors hover:text-white/80 sm:inline-flex"
         >
           {isAuthenticated ? t("landing.nav.dashboard") : t("landing.nav.login")}
         </button>
         <button
           type="button"
           onClick={primaryAction}
-          className="rounded-[7px] border-0 bg-white px-3.5 py-2 text-[13px] font-semibold tracking-[-0.005em] text-[#08090b] transition-colors hover:bg-white/90"
+          className="group inline-flex items-center gap-1.5 rounded-[11px] border border-white/80 bg-white px-3.5 py-1.5 text-[13px] font-semibold tracking-[-0.01em] text-[#08090b] shadow-[0_10px_28px_-18px_rgba(255,255,255,0.75)] transition-all duration-200 hover:bg-white/92 hover:shadow-[0_14px_34px_-20px_rgba(255,255,255,0.85)]"
         >
-          {isAuthenticated ? t("landing.nav.goToApp") : t("landing.nav.getAccess")} &rarr;
+          <span>{isAuthenticated ? t("landing.nav.goToApp") : t("landing.nav.getAccess")}</span>
+          <span className="translate-y-[-0.5px] transition-transform duration-200 group-hover:translate-x-0.5">→</span>
         </button>
       </div>
     </nav>
