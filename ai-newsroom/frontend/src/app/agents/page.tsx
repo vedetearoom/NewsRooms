@@ -93,9 +93,7 @@ function AgentStudioContent() {
     apiKey,
     setApiKey,
     audioModelType,
-    setAudioModelType,
     audioApiKey,
-    setAudioApiKey,
     systemPrompt,
     setSystemPrompt,
     contextText,
@@ -396,8 +394,6 @@ function AgentStudioContent() {
             role={role}
             modelType={modelType}
             apiKey={apiKey}
-            audioModelType={audioModelType}
-            audioApiKey={audioApiKey}
             isSystem={isSystem}
             activeAgentCreatedAt={activeAgent?.created_at}
             isProfileDirty={isProfileDirty}
@@ -408,8 +404,6 @@ function AgentStudioContent() {
             onRoleChange={setRole}
             onModelTypeChange={setModelType}
             onApiKeyChange={setApiKey}
-            onAudioModelTypeChange={setAudioModelType}
-            onAudioApiKeyChange={setAudioApiKey}
             onSave={() => handleSave("profile")}
           />
 

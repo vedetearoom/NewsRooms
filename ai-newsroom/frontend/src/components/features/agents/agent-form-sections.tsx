@@ -26,8 +26,6 @@ interface AgentProfileSectionProps {
   role: string;
   modelType: string;
   apiKey: string;
-  audioModelType: string;
-  audioApiKey: string;
   isSystem: boolean;
   activeAgentCreatedAt?: string;
   isProfileDirty: boolean;
@@ -38,8 +36,6 @@ interface AgentProfileSectionProps {
   onRoleChange: (value: string) => void;
   onModelTypeChange: (value: string) => void;
   onApiKeyChange: (value: string) => void;
-  onAudioModelTypeChange: (value: string) => void;
-  onAudioApiKeyChange: (value: string) => void;
   onSave: () => void;
 }
 
@@ -48,8 +44,6 @@ export function AgentProfileSection({
   role,
   modelType,
   apiKey,
-  audioModelType,
-  audioApiKey,
   isSystem,
   activeAgentCreatedAt,
   isProfileDirty,
@@ -60,8 +54,6 @@ export function AgentProfileSection({
   onRoleChange,
   onModelTypeChange,
   onApiKeyChange,
-  onAudioModelTypeChange,
-  onAudioApiKeyChange,
   onSave,
 }: AgentProfileSectionProps) {
   const roleOptions: AgentSelectOption[] = [
@@ -69,14 +61,6 @@ export function AgentProfileSection({
     { value: "writer", label: t("agents.writersGroup"), icon: <Pen className="w-3.5 h-3.5 text-muted-foreground" /> },
     { value: "reviewer", label: t("agents.reviewers"), icon: <Search className="w-3.5 h-3.5 text-muted-foreground" /> },
     { value: "illustrator", label: t("agents.illustrators"), icon: <ImageIcon className="w-3.5 h-3.5 text-muted-foreground" /> },
-  ];
-
-  const audioModelOptions: AgentSelectOption[] = [
-    { value: "gemini-2.5-flash", label: `gemini-2.5-flash (${t("agents.recommended")})` },
-    { value: "gemini-2.5-pro", label: "gemini-2.5-pro" },
-    { value: "qwen-omni-turbo-latest", label: "qwen-omni-turbo-latest (千问最新生产可用)" },
-    { value: "qwen-omni-turbo", label: "qwen-omni-turbo" },
-    { value: "qwen-audio-turbo-latest", label: "qwen-audio-turbo-latest (限免)" },
   ];
 
   return (
@@ -149,37 +133,6 @@ export function AgentProfileSection({
             />
           </div>
         </div>
-
-        {role === "extractor" && (
-          <div className="grid grid-cols-2 gap-5 pt-2 border-t border-dashed border-zinc-200 dark:border-white/10 mt-5">
-            <div className="space-y-4">
-              <label className="block text-[11px] font-semibold text-foreground mb-1.5 ml-0.5 flex justify-between items-center">
-                <span>{t("agents.transcriptionModel")}</span>
-                <span className="text-[9px] text-muted-foreground/60 font-medium tracking-wide uppercase px-1.5 py-0.5 bg-zinc-100 dark:bg-white/[0.04] rounded-md">
-                  {t("agents.optional")}
-                </span>
-              </label>
-              <AgentCustomSelect
-                value={audioModelType}
-                onChange={onAudioModelTypeChange}
-                className={cn(inputClass, "font-mono text-[12px]")}
-                options={audioModelOptions}
-              />
-            </div>
-            <div className="space-y-4 relative">
-              <label className="block text-[11px] font-semibold text-foreground mb-1.5 ml-0.5">
-                {t("agents.transcriptionKey")}
-              </label>
-              <input
-                type="password"
-                value={audioApiKey}
-                onChange={(event) => onAudioApiKeyChange(event.target.value)}
-                className={cn(inputClass, "font-mono text-[12px]")}
-                placeholder={t("agents.transcriptionKeyPlaceholder")}
-              />
-            </div>
-          </div>
-        )}
       </div>
     </AgentSettingsCard>
   );
