@@ -23,5 +23,6 @@ greenlet
 celery[redis]
 yt-dlp
 cryptography
+pyjwt
 playwright
 hermes-agent @ git+https://github.com/NousResearch/hermes-agent.git@v2026.4.16

@@ -14,12 +14,12 @@ from app.services.auth_service import (
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
-@router.post("/register", response_model=AuthResponse)
+@router.post("/register", response_model=AuthResponse, deprecated=True)
 async def register(register_in: RegisterRequest, db: AsyncSession = Depends(get_db)):
     return await register_user(register_in, db)
 
 
-@router.post("/login", response_model=AuthResponse)
+@router.post("/login", response_model=AuthResponse, deprecated=True)
 async def login(login_in: LoginRequest, db: AsyncSession = Depends(get_db)):
     return await authenticate_user(login_in, db)
 
@@ -29,7 +29,7 @@ async def me(current_user: CurrentUserOut = Depends(get_current_user_out)):
     return current_user
 
 
-@router.post("/change-password", response_model=CurrentUserOut)
+@router.post("/change-password", response_model=CurrentUserOut, deprecated=True)
 async def change_password(
     password_in: ChangePasswordRequest,
     current_user=Depends(resolve_current_user),

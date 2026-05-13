@@ -2,8 +2,6 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/lib/api";
-import { login } from "@/lib/auth";
 import { useTranslation } from "@/hooks/useTranslation";
 
 export type AuthMode = "login" | "register";
@@ -70,25 +68,11 @@ export function AuthModal({ mode, onClose, onModeChange }: AuthModalProps) {
 
   const handleSubmit = async (event: React.FormEvent, submitMode: AuthMode) => {
     event.preventDefault();
-    setError("");
-    setLoading(true);
-
-    try {
-      const session =
-        submitMode === "login"
-          ? await api.auth.login({ username, password })
-          : await api.auth.register({
-              username,
-              email,
-              display_name: username,
-              password,
-            });
-
-      login(session);
-      router.push("/");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t("landing.auth.failed"));
-      setLoading(false);
+    // Redirect to Clerk's hosted sign-in/sign-up pages
+    if (submitMode === "login") {
+      router.push("/sign-in");
+    } else {
+      router.push("/sign-up");
     }
   };
 

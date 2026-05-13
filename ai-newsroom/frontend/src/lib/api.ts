@@ -1,5 +1,5 @@
 import type { AuthSession, AuthUser, AuthRole, AuthPermission } from "@/lib/auth";
-import { getAuthToken } from "@/lib/auth";
+import { getAuthToken, getAuthHeader } from "@/lib/auth";
 
 const API_BASE =
   typeof window === "undefined"
@@ -53,7 +53,12 @@ async function parseAPIErrorResponse(res: Response): Promise<{ message: string; 
 }
 
 async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
-  const token = getAuthToken();
+  let token = getAuthToken();
+  // If no cached token, try fetching from Clerk
+  if (!token) {
+    const { fetchClerkToken } = await import("@/lib/auth");
+    token = await fetchClerkToken();
+  }
   let res: Response;
   try {
     res = await fetch(`${API_BASE}${path}`, {
@@ -655,13 +660,13 @@ export const api = {
     fetchAPI<AgentActionProposal>(`/api/agents/${agentId}/threads/${threadId}/actions/${actionId}/reject`, {
       method: "POST",
     }),
-  streamAgentThreadChat: (agentId: number, threadId: number, prompt: string, signal?: AbortSignal) =>
+  streamAgentThreadChat: async (agentId: number, threadId: number, prompt: string, signal?: AbortSignal) =>
     fetch(`${API_BASE}/api/agents/${agentId}/threads/${threadId}/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "text/event-stream",
-        ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {}),
+        ...(await getAuthHeader()),
       },
       body: JSON.stringify({ prompt }),
       signal,
@@ -690,13 +695,13 @@ export const api = {
     fetchAPI<Agent>(`/api/agents/${agentId}/plugins/${pluginId}`, { method: "DELETE" }),
 
   // Context Lab Stream
-  streamLabChat: (inspirationIds: number[], prompt: string, agentType: string, signal?: AbortSignal) =>
+  streamLabChat: async (inspirationIds: number[], prompt: string, agentType: string, signal?: AbortSignal) =>
     fetch(`${API_BASE}/api/agents/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Accept": "text/event-stream",
-        ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {}),
+        ...(await getAuthHeader()),
       },
       body: JSON.stringify({ inspiration_ids: inspirationIds, prompt, agent_type: agentType }),
       signal
@@ -714,7 +719,7 @@ export const api = {
       method: "POST",
       body: formData,
       headers: {
-        ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {}),
+        ...(await getAuthHeader()),
       },
       // Note: Do NOT set Content-Type header — browser auto-sets multipart boundary
     });
@@ -747,7 +752,7 @@ export const api = {
     const res = await fetch(`${API_BASE}/api/upload/${filename}`, {
       method: "DELETE",
       headers: {
-        ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {}),
+        ...(await getAuthHeader()),
       },
     });
     if (!res.ok) {
@@ -801,7 +806,7 @@ export const api = {
       method: "POST",
       body: formData,
       headers: {
-        ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {}),
+        ...(await getAuthHeader()),
       },
     });
     if (!res.ok) {

@@ -168,7 +168,7 @@ export function Sidebar() {
     });
   }, [NAV_ITEMS]);
 
-  if (pathname.startsWith("/editor") || pathname.startsWith("/landing")) return null;
+  if (pathname.startsWith("/editor") || pathname.startsWith("/landing") || pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) return null;
 
   return (
     <aside className="w-[220px] min-w-[220px] h-screen sticky top-0 flex flex-col bg-[var(--sidebar-bg)] border-r border-[var(--sidebar-border)] dark:border-white/[0.04]">

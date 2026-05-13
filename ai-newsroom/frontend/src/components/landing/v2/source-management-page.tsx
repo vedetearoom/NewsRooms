@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Check, Database, FileText, Globe2, LockKeyhole, Radio, Rss, ShieldCheck, Sparkles, Video } from "lucide-react";
 import { AuthModal, type AuthMode } from "./auth-modal";
 import { V2Navbar } from "./navbar";
-import { isAuthenticated } from "@/lib/auth";
+import { useAuth } from "@clerk/nextjs";
 import { useTranslation } from "@/hooks/useTranslation";
 
 const isCJK = (s: string) => /[\u4e00-\u9fff]/.test(s);
@@ -41,19 +41,18 @@ export function SourceManagementPage() {
   const [authOpen, setAuthOpen] = React.useState(false);
   const [authMode, setAuthMode] = React.useState<AuthMode>("login");
   const [authed, setAuthed] = React.useState(false);
+  const { isSignedIn } = useAuth();
 
   React.useEffect(() => {
-    setAuthed(isAuthenticated());
-  }, []);
+    setAuthed(!!isSignedIn);
+  }, [isSignedIn]);
 
   const openLogin = () => {
-    setAuthMode("login");
-    setAuthOpen(true);
+    router.push("/sign-in");
   };
 
   const openRegister = () => {
-    setAuthMode("register");
-    setAuthOpen(true);
+    router.push("/sign-up");
   };
 
   const goToApp = () => router.push("/");

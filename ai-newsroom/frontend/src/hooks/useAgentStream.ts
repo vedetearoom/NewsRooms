@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { api, CritiqueItem, type AgentRunEvent } from "@/lib/api";
-import { getAuthToken } from "@/lib/auth";
+import { getAuthHeader } from "@/lib/auth";
 import type { EditorPhase } from "@/lib/editor-phase";
 import {
   showEditorReviewConnectionToast,
@@ -125,12 +125,12 @@ function openAuthenticatedEventStream(
 
   void (async () => {
     try {
-      const token = getAuthToken();
+      const authHeader = await getAuthHeader();
       const response = await fetch(url, {
         method: "GET",
         headers: {
           Accept: "text/event-stream",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...authHeader,
         },
         cache: "no-store",
         signal: controller.signal,

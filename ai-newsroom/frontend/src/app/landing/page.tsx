@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import { HeroV2 } from "@/components/landing/v2/hero-v2";
 import { ScaledHero } from "@/components/landing/v2/scaled-hero";
 import {
@@ -17,28 +18,26 @@ import {
 } from "@/components/landing/v2/sections";
 import { FeatureGateway } from "@/components/landing/feature-gateway";
 import { AuthModal, type AuthMode } from "@/components/landing/v2/auth-modal";
-import { isAuthenticated } from "@/lib/auth";
 
 export default function LandingPage() {
   const router = useRouter();
+  const { isSignedIn } = useAuth();
   const [authOpen, setAuthOpen] = React.useState(false);
   const [authMode, setAuthMode] = React.useState<AuthMode>("login");
   const accent = "#c0c0dd";
 
   React.useEffect(() => {
-    if (isAuthenticated()) {
+    if (isSignedIn) {
       router.replace("/");
     }
-  }, [router]);
+  }, [isSignedIn, router]);
 
   const openLogin = () => {
-    setAuthMode("login");
-    setAuthOpen(true);
+    router.push("/sign-in");
   };
 
   const openRegister = () => {
-    setAuthMode("register");
-    setAuthOpen(true);
+    router.push("/sign-up");
   };
 
   return (

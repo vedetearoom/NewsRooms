@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Check, type LucideIcon } from "lucide-react";
 import { AuthModal, type AuthMode } from "./auth-modal";
 import { V2Navbar } from "./navbar";
-import { isAuthenticated } from "@/lib/auth";
+import { useAuth } from "@clerk/nextjs";
 import { useTranslation } from "@/hooks/useTranslation";
 
 type ModuleVariant = "panorama" | "workspace" | "network" | "studio";
@@ -56,20 +56,19 @@ export function ModulePage({
   const [authOpen, setAuthOpen] = React.useState(false);
   const [authMode, setAuthMode] = React.useState<AuthMode>("login");
   const [authed, setAuthed] = React.useState(false);
+  const { isSignedIn } = useAuth();
   const zh = language === "zh";
 
   React.useEffect(() => {
-    setAuthed(isAuthenticated());
-  }, []);
+    setAuthed(!!isSignedIn);
+  }, [isSignedIn]);
 
   const openLogin = () => {
-    setAuthMode("login");
-    setAuthOpen(true);
+    router.push("/sign-in");
   };
 
   const openRegister = () => {
-    setAuthMode("register");
-    setAuthOpen(true);
+    router.push("/sign-up");
   };
 
   const goToApp = () => router.push("/");

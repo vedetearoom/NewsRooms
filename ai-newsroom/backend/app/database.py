@@ -61,6 +61,7 @@ async def init_db():
         await conn.run_sync(_ensure_agent_plugin_columns)
         await conn.run_sync(_ensure_plugin_runtime_profiles)
         await conn.run_sync(_ensure_role_quota_columns)
+        await conn.run_sync(_ensure_clerk_user_id_column)
 
     from app.models import User
     from app.services.agent_service import ensure_default_agents_for_user
@@ -197,3 +198,17 @@ def _ensure_role_quota_columns(sync_conn) -> None:
     columns = {column["name"] for column in inspector.get_columns("roles")}
     if "quota_limits" not in columns:
         sync_conn.execute(text("ALTER TABLE roles ADD COLUMN quota_limits JSON"))
+
+
+def _ensure_clerk_user_id_column(sync_conn) -> None:
+    inspector = inspect(sync_conn)
+    if "users" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("users")}
+    if "clerk_user_id" not in columns:
+        sync_conn.execute(text("ALTER TABLE users ADD COLUMN clerk_user_id VARCHAR(255)"))
+    sync_conn.execute(
+        text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_clerk_user_id ON users (clerk_user_id)")
+    )
+    sync_conn.execute(text("ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL"))

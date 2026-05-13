@@ -65,6 +65,9 @@ class Settings(BaseSettings):
     hermes_sandbox_light_image: str = "ai-newsroom-hermes-sandbox-light:local"
     hermes_sandbox_network: str = "newsroom-sandbox"
     hermes_sandbox_timeout_seconds: int = 600
+    clerk_jwks_url: str = ""
+    clerk_issuer: str = ""
+    clerk_secret_key: str = ""
 
     model_config = SettingsConfigDict(extra="ignore")
 

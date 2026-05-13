@@ -24,6 +24,16 @@ from app.schema_defs.auth import (
 )
 from app.services.quota_service import default_quota_limits, normalize_quota_limits, unlimited_quota_limits
 
+
+_clerk_configured: bool | None = None
+
+
+def _is_clerk_configured() -> bool:
+    global _clerk_configured
+    if _clerk_configured is None:
+        _clerk_configured = bool(settings.clerk_jwks_url or settings.clerk_issuer)
+    return _clerk_configured
+
 settings = get_settings()
 
 
@@ -299,6 +309,7 @@ async def serialize_user(db: AsyncSession, user: User) -> UserOut:
         username=user.username,
         email=user.email,
         display_name=user.display_name,
+        clerk_user_id=user.clerk_user_id,
         is_active=user.is_active,
         is_super_admin=user.is_super_admin,
         roles=serialized_roles,
@@ -377,6 +388,48 @@ async def register_user(register_in: RegisterRequest, db: AsyncSession) -> AuthR
     return AuthResponse(access_token=create_access_token(user.id), user=await serialize_user(db, user))
 
 
+async def get_or_create_user_from_clerk(
+    db: AsyncSession,
+    clerk_user_id: str,
+    email: str | None = None,
+    display_name: str | None = None,
+) -> User:
+    from app.services.agent_service import ensure_default_agents_for_user
+
+    result = await db.execute(select(User).where(User.clerk_user_id == clerk_user_id))
+    user = result.scalars().first()
+    if user:
+        return user
+
+    base_username = email.split("@")[0] if email else f"clerk_{clerk_user_id[:8]}"
+    username = base_username
+
+    existing = await db.execute(select(User).where(User.username == username))
+    if existing.scalars().first():
+        suffix = clerk_user_id[:8]
+        username = f"{base_username}_{suffix}"
+        existing2 = await db.execute(select(User).where(User.username == username))
+        if existing2.scalars().first():
+            username = f"u_{clerk_user_id[:12]}"
+
+    user = User(
+        username=username,
+        email=email or f"{clerk_user_id}@clerk.placeholder",
+        display_name=display_name or (email.split("@")[0] if email else "User"),
+        password_hash=None,
+        clerk_user_id=clerk_user_id,
+        is_active=True,  # Clerk Waitlist handles pre-registration approval
+        is_super_admin=False,
+        last_login_at=datetime.now(UTC),
+    )
+    db.add(user)
+    await db.flush()
+    await assign_roles_to_user(user.id, ["user"], db)
+    await ensure_default_agents_for_user(db, user.id)
+    await db.flush()
+    return user
+
+
 async def update_own_password(current_user: User, password_in: ChangePasswordRequest, db: AsyncSession) -> CurrentUserOut:
     if not verify_password(password_in.current_password, current_user.password_hash):
         raise HTTPException(status_code=400, detail="当前密码错误")
@@ -392,11 +445,42 @@ async def resolve_current_user(
 ) -> User:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing bearer token")
-    payload = decode_access_token(authorization.replace("Bearer ", "", 1))
-    user = await db.get(User, int(payload["sub"]))
-    if not user or not user.is_active:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid user session")
-    return user
+    token = authorization.replace("Bearer ", "", 1)
+
+    # 1) Try legacy local JWT first
+    try:
+        payload = decode_access_token(token)
+        sub = payload.get("sub")
+        if sub is not None:
+            user = await db.get(User, int(sub))
+            if user and user.is_active:
+                return user
+    except HTTPException:
+        pass  # Not a valid local token — try Clerk
+
+    # 2) If Clerk is configured, try verifying as a Clerk JWT
+    if _is_clerk_configured():
+        from app.services.clerk_auth import verify_clerk_token
+
+        try:
+            clerk_payload = await verify_clerk_token(token)
+            clerk_user_id = clerk_payload.get("sub")
+            if clerk_user_id:
+                email = clerk_payload.get("email")
+                name = clerk_payload.get("name")
+                user = await get_or_create_user_from_clerk(db, clerk_user_id, email=email, display_name=name)
+                if not user.is_active:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Account is disabled",
+                    )
+                return user
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token") from exc
+
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
 
 
 async def get_current_user_out(current_user: User = Depends(resolve_current_user), db: AsyncSession = Depends(get_db)) -> CurrentUserOut:
