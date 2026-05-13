@@ -33,11 +33,13 @@ export default function LandingPage() {
   }, [isSignedIn, router]);
 
   const openLogin = () => {
-    router.push("/sign-in");
+    setAuthMode("login");
+    setAuthOpen(true);
   };
 
   const openRegister = () => {
-    router.push("/sign-up");
+    setAuthMode("register");
+    setAuthOpen(true);
   };
 
   return (

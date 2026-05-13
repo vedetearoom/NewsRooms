@@ -48,11 +48,13 @@ export function SourceManagementPage() {
   }, [isSignedIn]);
 
   const openLogin = () => {
-    router.push("/sign-in");
+    setAuthMode("login");
+    setAuthOpen(true);
   };
 
   const openRegister = () => {
-    router.push("/sign-up");
+    setAuthMode("register");
+    setAuthOpen(true);
   };
 
   const goToApp = () => router.push("/");

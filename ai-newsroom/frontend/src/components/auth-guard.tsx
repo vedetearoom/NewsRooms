@@ -46,7 +46,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
       // Not signed in via Clerk
       if (!isSignedIn) {
-        router.replace("/sign-in");
+        router.replace("/landing");
         return;
       }
 
@@ -73,7 +73,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       } catch {
         if (!cancelled) {
           await clerk.signOut();
-          router.replace("/sign-in");
+          router.replace("/landing");
         }
       }
     };

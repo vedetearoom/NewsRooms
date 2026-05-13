@@ -10,8 +10,8 @@ export function ClerkSync() {
 
   useEffect(() => {
     if (isSignedIn && session) {
-      registerClerkTokenGetter(async () => {
-        const token = await session.getToken();
+      registerClerkTokenGetter(async (forceRefresh?: boolean) => {
+        const token = await session.getToken({ skipCache: forceRefresh });
         return token;
       });
       // Immediately populate the cache so getAuthToken() returns a value

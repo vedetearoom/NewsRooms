@@ -1,9 +1,20 @@
-import { SignUp } from "@clerk/nextjs";
+"use client";
+
+import { AuthModal, type AuthMode } from "@/components/landing/v2/auth-modal";
 
 export default function SignUpPage() {
+  const handleModeChange = (mode: AuthMode) => {
+    if (mode === "login") {
+      window.location.href = "/sign-in";
+    }
+  };
+
   return (
-    <div className="flex justify-center items-center min-h-screen bg-background">
-      <SignUp />
-    </div>
+    <AuthModal
+      mode="register"
+      onClose={() => (window.location.href = "/landing")}
+      onModeChange={handleModeChange}
+      standalone
+    />
   );
 }

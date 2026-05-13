@@ -1,14 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { Ban, Check, KeyRound, PencilLine, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Ban, Check, PencilLine, RotateCcw } from "lucide-react";
 import { api, type CurrentUser, type Role } from "@/lib/api";
 import { useAuthState } from "@/lib/auth";
 import { useTranslation } from "@/hooks/useTranslation";
 import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 
-type UserFormErrors = Partial<Record<"username" | "display_name" | "email" | "password" | "role_codes" | "resetPassword", string>>;
+type UserFormErrors = Partial<Record<"username" | "display_name" | "email" | "role_codes", string>>;
 
 function roleLabel(role: Role, t: (key: string) => string) {
   if (role.code === "super_admin") return t("system.superAdmin");
@@ -62,21 +62,15 @@ export default function SystemUsersPage() {
   const [loading, setLoading] = React.useState(true);
   const [modalOpen, setModalOpen] = React.useState(false);
   const [editingUser, setEditingUser] = React.useState<CurrentUser | null>(null);
-  const [resetTarget, setResetTarget] = React.useState<CurrentUser | null>(null);
-  const [deleteTarget, setDeleteTarget] = React.useState<CurrentUser | null>(null);
   const [saving, setSaving] = React.useState(false);
-  const [deleting, setDeleting] = React.useState(false);
   const [formErrors, setFormErrors] = React.useState<UserFormErrors>({});
   const [form, setForm] = React.useState({
     username: "",
     email: "",
     display_name: "",
-    password: "",
     role_codes: ["user"] as string[],
     is_active: true,
   });
-  const [resetPassword, setResetPassword] = React.useState("");
-
   const canManage = hasPermission("system.manage");
 
   const loadData = React.useCallback(async () => {
@@ -101,20 +95,6 @@ export default function SystemUsersPage() {
     }
   }, [canManage, loadData, ready]);
 
-  const openCreate = () => {
-    setEditingUser(null);
-    setFormErrors({});
-    setForm({
-      username: "",
-      email: "",
-      display_name: "",
-      password: "",
-      role_codes: ["user"],
-      is_active: true,
-    });
-    setModalOpen(true);
-  };
-
   const openEdit = (target: CurrentUser) => {
     setEditingUser(target);
     setFormErrors({});
@@ -122,7 +102,6 @@ export default function SystemUsersPage() {
       username: target.username,
       email: target.email,
       display_name: target.display_name,
-      password: "",
       role_codes: [target.roles[0]?.code || "user"],
       is_active: target.is_active,
     });
@@ -136,7 +115,6 @@ export default function SystemUsersPage() {
     if (form.username.trim().length < 3) nextErrors.username = t("system.validationUsername");
     if (form.display_name.trim().length < 2) nextErrors.display_name = t("system.validationDisplayName");
     if (email.length < 5 || !/^\S+@\S+\.\S+$/.test(email)) nextErrors.email = t("system.validationEmail");
-    if (!editingUser && form.password.trim().length < 6) nextErrors.password = t("system.validationPassword");
     if (form.role_codes.length === 0) nextErrors.role_codes = t("system.validationRole");
 
     setFormErrors(nextErrors);
@@ -151,24 +129,13 @@ export default function SystemUsersPage() {
     }
     setSaving(true);
     try {
-      if (editingUser) {
-        await api.admin.updateUser(editingUser.id, {
-          email: form.email.trim(),
-          display_name: form.display_name.trim(),
-          role_codes: form.role_codes,
-          is_active: form.is_active,
-        });
-        toast.success(t("system.userUpdated"));
-      } else {
-        await api.admin.createUser({
-          ...form,
-          username: form.username.trim(),
-          email: form.email.trim(),
-          display_name: form.display_name.trim(),
-          password: form.password.trim(),
-        });
-        toast.success(t("system.userCreated"));
-      }
+      if (!editingUser) return;
+      await api.admin.updateUser(editingUser.id, {
+        display_name: form.display_name.trim(),
+        role_codes: form.role_codes,
+        is_active: form.is_active,
+      });
+      toast.success(t("system.userUpdated"));
       setModalOpen(false);
       setFormErrors({});
       await loadData();
@@ -188,46 +155,6 @@ export default function SystemUsersPage() {
     } catch (error) {
       console.error(error);
       toast.error(t("system.updateStatusFailed"), t("system.tryLater"));
-    }
-  };
-
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!resetTarget) return;
-    if (resetPassword.trim().length < 6) {
-      setFormErrors((prev) => ({ ...prev, resetPassword: t("system.validationPassword") }));
-      toast.error(t("system.formInvalidTitle"), t("system.formInvalidDesc"));
-      return;
-    }
-    setSaving(true);
-    try {
-      await api.admin.resetUserPassword(resetTarget.id, resetPassword);
-      toast.success(t("system.passwordResetSuccess"));
-      setResetTarget(null);
-      setResetPassword("");
-      setFormErrors((prev) => ({ ...prev, resetPassword: undefined }));
-    } catch (error) {
-      console.error(error);
-      toast.error(t("system.passwordResetFailed"), t("system.passwordResetFailedDesc"));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteUser = async () => {
-    if (!deleteTarget) return;
-    setDeleting(true);
-    try {
-      await api.admin.deleteUser(deleteTarget.id);
-      toast.success(t("system.userDeleted"));
-      setDeleteTarget(null);
-      await loadData();
-    } catch (error) {
-      console.error(error);
-      const message = error instanceof Error ? error.message : t("system.tryLater");
-      toast.error(t("system.deleteUserFailed"), message);
-    } finally {
-      setDeleting(false);
     }
   };
 
@@ -269,10 +196,6 @@ export default function SystemUsersPage() {
             </h1>
             <p className="mt-1 max-w-2xl text-[13px] text-zinc-500 dark:text-zinc-400">{t("system.userManagementDesc")}</p>
           </div>
-          <button onClick={openCreate} className={topActionButtonClass}>
-            <Plus className="h-[14px] w-[14px] shrink-0" />
-            {t("system.createUser")}
-          </button>
         </div>
       </div>
 
@@ -354,24 +277,6 @@ export default function SystemUsersPage() {
                           >
                             {item.is_active ? <Ban className="h-4 w-4" /> : <RotateCcw className="h-4 w-4" />}
                           </button>
-                          <button
-                            onClick={() => setResetTarget(item)}
-                            aria-label={t("system.resetPassword")}
-                            title={t("system.resetPassword")}
-                            className={actionButtonClass}
-                          >
-                            <KeyRound className="h-4 w-4" />
-                          </button>
-                          {!item.is_super_admin && currentUser?.id !== item.id ? (
-                            <button
-                              onClick={() => setDeleteTarget(item)}
-                              aria-label={t("system.delete")}
-                              title={t("system.delete")}
-                              className={cn(actionButtonClass, "hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-300")}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          ) : null}
                         </div>
                       </td>
                     </tr>
@@ -386,7 +291,7 @@ export default function SystemUsersPage() {
         <div className="fixed inset-0 z-[140] flex items-center justify-center px-4">
           <button className="absolute inset-0 bg-black/55 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
           <div className="relative z-10 w-full max-w-[560px] rounded-[32px] border border-zinc-200/80 bg-white p-7 text-zinc-950 shadow-[0_30px_90px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-[#121418] dark:text-white dark:shadow-2xl dark:shadow-black/60">
-            <h2 className="text-xl font-semibold tracking-tight">{editingUser ? t("system.editUser") : t("system.createUser")}</h2>
+            <h2 className="text-xl font-semibold tracking-tight">{t("system.editUser")}</h2>
             <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">{t("system.userFormDesc")}</p>
             <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -423,39 +328,15 @@ export default function SystemUsersPage() {
                 </div>
               </div>
               <div>
-                <FieldLabel label={t("system.email")} required />
+                <FieldLabel label={t("system.email")} />
                 <input
                   type="email"
                   value={form.email}
-                  autoComplete="email"
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setForm((prev) => ({ ...prev, email: value }));
-                    setFormErrors((prev) => ({ ...prev, email: undefined }));
-                  }}
+                  readOnly
                   placeholder={t("system.email")}
-                  className={cn(modalInputClass, "font-mono text-[13px]")}
+                  className={cn(modalInputClass, "font-mono text-[13px] cursor-not-allowed opacity-60")}
                 />
-                {formErrors.email ? <p className="mt-2 text-xs text-red-500">{formErrors.email}</p> : null}
               </div>
-              {!editingUser && (
-                <div>
-                  <FieldLabel label={t("system.initialPassword")} required />
-                  <input
-                    type="password"
-                    value={form.password}
-                    autoComplete="new-password"
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setForm((prev) => ({ ...prev, password: value }));
-                      setFormErrors((prev) => ({ ...prev, password: undefined }));
-                    }}
-                    placeholder={t("system.initialPassword")}
-                    className={modalInputClass}
-                  />
-                  {formErrors.password ? <p className="mt-2 text-xs text-red-500">{formErrors.password}</p> : null}
-                </div>
-              )}
               <div>
                 <FieldLabel label={t("system.role")} required />
                 <div className="rounded-[28px] bg-zinc-50/80 p-2.5 dark:bg-white/[0.03]">
@@ -523,73 +404,6 @@ export default function SystemUsersPage() {
         </div>
       )}
 
-      {resetTarget && (
-        <div className="fixed inset-0 z-[141] flex items-center justify-center px-4">
-          <button className="absolute inset-0 bg-black/55 backdrop-blur-sm" onClick={() => setResetTarget(null)} />
-          <div className="relative z-10 w-full max-w-[420px] rounded-[32px] border border-zinc-200/80 bg-white p-7 text-zinc-950 shadow-[0_30px_90px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-[#121418] dark:text-white dark:shadow-2xl dark:shadow-black/60">
-            <h2 className="text-xl font-semibold tracking-tight">{t("system.resetPassword")}</h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">{t("system.resetPasswordDesc").replace("{name}", resetTarget.display_name)}</p>
-            <form className="mt-6 space-y-4" onSubmit={handleResetPassword}>
-              <div>
-                <FieldLabel label={t("system.newPassword")} required />
-                <input
-                  type="password"
-                  value={resetPassword}
-                  autoComplete="new-password"
-                  onChange={(e) => {
-                    setResetPassword(e.target.value);
-                    setFormErrors((prev) => ({ ...prev, resetPassword: undefined }));
-                  }}
-                  placeholder={t("system.newPassword")}
-                  className={modalInputClass}
-                />
-                {formErrors.resetPassword ? <p className="mt-2 text-xs text-red-500">{formErrors.resetPassword}</p> : null}
-              </div>
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setResetTarget(null)}
-                  className="rounded-xl px-4 py-2.5 text-sm text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-900 dark:text-white/45 dark:hover:bg-white/[0.05] dark:hover:text-white/75 dark:focus-visible:ring-white"
-                >
-                  {t("system.cancel")}
-                </button>
-                <button disabled={saving || !resetPassword} type="submit" className={primaryButtonClass}>
-                  {saving ? t("system.saving") : t("system.confirmReset")}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {deleteTarget && (
-        <div className="fixed inset-0 z-[142] flex items-center justify-center px-4">
-          <button className="absolute inset-0 bg-black/55 backdrop-blur-sm" onClick={() => !deleting && setDeleteTarget(null)} />
-          <div className="relative z-10 w-full max-w-[420px] rounded-[32px] border border-zinc-200/80 bg-white p-7 text-zinc-950 shadow-[0_30px_90px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-[#121418] dark:text-white dark:shadow-2xl dark:shadow-black/60">
-            <h2 className="text-xl font-semibold tracking-tight">{t("system.delete")}</h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
-              {t("system.deleteUserConfirm").replace("{name}", deleteTarget.display_name)}
-            </p>
-            <div className="mt-6 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setDeleteTarget(null)}
-                className="rounded-xl px-4 py-2.5 text-sm text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-900 dark:text-white/45 dark:hover:bg-white/[0.05] dark:hover:text-white/75 dark:focus-visible:ring-white"
-              >
-                {t("system.cancel")}
-              </button>
-              <button
-                type="button"
-                disabled={deleting}
-                onClick={() => void handleDeleteUser()}
-                className="inline-flex items-center rounded-full bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-900 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-              >
-                {deleting ? t("system.saving") : t("system.delete")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

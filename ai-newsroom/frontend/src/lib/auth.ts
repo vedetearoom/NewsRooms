@@ -55,16 +55,17 @@ export interface AuthSession {
 // from 6+ places. This module-level cache bridges the gap.
 
 let _cachedToken: string | null = null;
-let _tokenGetter: (() => Promise<string | null>) | null = null;
+let _tokenGetter: ((forceRefresh?: boolean) => Promise<string | null>) | null = null;
 
-export function registerClerkTokenGetter(getter: () => Promise<string | null>) {
+export function registerClerkTokenGetter(getter: (forceRefresh?: boolean) => Promise<string | null>) {
   _tokenGetter = getter;
 }
 
-export async function fetchClerkToken(): Promise<string | null> {
+export async function fetchClerkToken(forceRefresh = false): Promise<string | null> {
+  if (forceRefresh) _cachedToken = null;
   if (_tokenGetter) {
     try {
-      _cachedToken = await _tokenGetter();
+      _cachedToken = await _tokenGetter(forceRefresh);
     } catch {
       _cachedToken = null;
     }

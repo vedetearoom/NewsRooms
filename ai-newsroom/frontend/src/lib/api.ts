@@ -59,16 +59,28 @@ async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
     const { fetchClerkToken } = await import("@/lib/auth");
     token = await fetchClerkToken();
   }
+  const buildHeaders = (nextToken: string | null) => ({
+    "Content-Type": "application/json",
+    ...(nextToken ? { Authorization: `Bearer ${nextToken}` } : {}),
+    ...options?.headers,
+  });
+
   let res: Response;
   try {
     res = await fetch(`${API_BASE}${path}`, {
       ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...options?.headers,
-      },
+      headers: buildHeaders(token),
     });
+    if (res.status === 401) {
+      const { fetchClerkToken } = await import("@/lib/auth");
+      token = await fetchClerkToken(true);
+      if (token) {
+        res = await fetch(`${API_BASE}${path}`, {
+          ...options,
+          headers: buildHeaders(token),
+        });
+      }
+    }
   } catch (error) {
     const target = `${API_BASE}${path}` || path;
     const message =
