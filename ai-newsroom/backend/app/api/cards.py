@@ -11,9 +11,11 @@ from app.services.card_service import (
     get_card_or_404,
     list_card_categories,
     list_cards as list_cards_service,
+    list_pinned_cards as list_pinned_cards_service,
     mark_card_read,
     today_cards as today_cards_service,
     toggle_card_archive,
+    toggle_pin_card as toggle_pin_card_service,
 )
 
 router = APIRouter(prefix="/api/cards", tags=["cards"])
@@ -43,6 +45,25 @@ async def list_categories(
     current_user=Depends(require_permission("discover.view")),
 ):
     return await list_card_categories(db, current_user.id)
+
+@router.get("/pinned", response_model=list[CardOut])
+async def list_pinned(
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    category: Optional[str] = None,
+    tag: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("discover.view")),
+):
+    return await list_pinned_cards_service(db, current_user.id, date_from, date_to, category, tag)
+
+@router.patch("/{card_id}/pin")
+async def toggle_pin(
+    card_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("system.manage")),
+):
+    return await toggle_pin_card_service(db, current_user.id, card_id)
 
 @router.get("/{card_id}", response_model=CardOut)
 async def get_card(

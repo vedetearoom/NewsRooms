@@ -14,6 +14,7 @@ import { useAgentThreadMessages, useAgentThreads } from "@/hooks/useApi";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useTranslation } from "@/hooks/useTranslation";
 import { cn } from "@/lib/utils";
+import { sanitizeErrorForUser } from "@/lib/async-feedback";
 
 type StreamToolCall = {
   name: string;
@@ -402,7 +403,7 @@ function ActionProposalCard({
                 <AlertTriangle className="h-3.5 w-3.5" />
                 {t("agents.workbench.actions.failed")}
               </p>
-              <p>{error || JSON.stringify(proposal.result_json)}</p>
+              <p>{sanitizeErrorForUser(error || "") || JSON.stringify(proposal.result_json)}</p>
               <div className="flex items-center gap-2 pt-1">
                 <Button
                   size="sm"
@@ -481,7 +482,7 @@ function ActionResultCompact({
               {jobId ? <JobStatusInline jobId={jobId} /> : null}
             </div>
           )}
-          {isFailed ? <p className="mt-1 line-clamp-2 text-[11px]">{error || JSON.stringify(result)}</p> : null}
+          {isFailed ? <p className="mt-1 line-clamp-2 text-[11px]">{sanitizeErrorForUser(error || "") || JSON.stringify(result)}</p> : null}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           {redirectPath ? (
@@ -678,7 +679,7 @@ export function AgentWorkbench({ activeAgent }: AgentWorkbenchProps) {
       setSelectedThreadId(thread.id);
       return thread;
     } catch (error) {
-      toast.error(t("agents.workbench.toast.createThreadFailed"), error instanceof Error ? error.message : t("agents.workbench.toast.tryLater"));
+      toast.error(t("agents.workbench.toast.createThreadFailed"), error instanceof Error ? sanitizeErrorForUser(error.message) : t("agents.workbench.toast.tryLater"));
       return null;
     } finally {
       setIsCreatingThread(false);
@@ -739,7 +740,7 @@ export function AgentWorkbench({ activeAgent }: AgentWorkbenchProps) {
       }, t("agents.workbench.toast.streamRequestFailed"));
       await refreshCurrentThread();
     } catch (error) {
-      toast.error(t("agents.workbench.toast.sendFailed"), error instanceof Error ? error.message : t("agents.workbench.toast.tryLater"));
+      toast.error(t("agents.workbench.toast.sendFailed"), error instanceof Error ? sanitizeErrorForUser(error.message) : t("agents.workbench.toast.tryLater"));
     } finally {
       setIsSending(false);
       setLiveUserPrompt(null);
@@ -759,7 +760,7 @@ export function AgentWorkbench({ activeAgent }: AgentWorkbenchProps) {
       await refreshCurrentThread();
       toast.success(t("agents.workbench.toast.actionExecuted"));
     } catch (error) {
-      toast.error(t("agents.workbench.toast.approveFailed"), error instanceof Error ? error.message : t("agents.workbench.toast.tryLater"));
+      toast.error(t("agents.workbench.toast.approveFailed"), error instanceof Error ? sanitizeErrorForUser(error.message) : t("agents.workbench.toast.tryLater"));
     } finally {
       setBusyActionId(null);
     }

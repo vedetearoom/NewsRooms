@@ -69,6 +69,7 @@ async def init_db():
         await conn.run_sync(_ensure_plugin_runtime_profiles)
         await conn.run_sync(_ensure_role_quota_columns)
         await conn.run_sync(_ensure_clerk_user_id_column)
+        await conn.run_sync(_ensure_pinned_columns)
 
     from app.models import User
     from app.services.agent_service import ensure_default_agents_for_user
@@ -221,3 +222,20 @@ def _ensure_clerk_user_id_column(sync_conn) -> None:
         text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_clerk_user_id ON users (clerk_user_id)")
     )
     sync_conn.execute(text("ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL"))
+
+
+def _ensure_pinned_columns(sync_conn) -> None:
+    inspector = inspect(sync_conn)
+    if "intelligence_cards" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("intelligence_cards")}
+    if "is_pinned" not in columns:
+        sync_conn.execute(text("ALTER TABLE intelligence_cards ADD COLUMN is_pinned BOOLEAN DEFAULT FALSE"))
+    if "pinned_by" not in columns:
+        sync_conn.execute(text("ALTER TABLE intelligence_cards ADD COLUMN pinned_by INTEGER"))
+    if "pinned_at" not in columns:
+        sync_conn.execute(text("ALTER TABLE intelligence_cards ADD COLUMN pinned_at TIMESTAMP WITH TIME ZONE"))
+    sync_conn.execute(
+        text("CREATE INDEX IF NOT EXISTS ix_intelligence_cards_is_pinned ON intelligence_cards (is_pinned)")
+    )

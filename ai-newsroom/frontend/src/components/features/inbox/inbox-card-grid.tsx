@@ -25,6 +25,8 @@ interface InboxCardGridProps {
   onCardClick: (card: IntelligenceCard, rect: DOMRect) => void;
   onToggleCard: (id: number) => void;
   onClearArchiveFilter: () => void;
+  canPin?: boolean;
+  onTogglePin?: (cardId: number) => void;
 }
 
 export function InboxCardGrid({
@@ -38,7 +40,10 @@ export function InboxCardGrid({
   onCardClick,
   onToggleCard,
   onClearArchiveFilter,
+  canPin,
+  onTogglePin,
 }: InboxCardGridProps) {
+  const isPinnedView = contentTab === "pinned";
   const viewKey = `${contentTab}:${activeTab}:${archiveDateFilter ?? "all"}:${activeTag}`;
   const hasData = displayCards.length > 0;
   const [previousView, setPreviousView] = React.useState<{ key: string; hasData: boolean } | null>(null);
@@ -68,8 +73,20 @@ export function InboxCardGrid({
         animate={shouldAnimateTransition ? "visible" : "static"}
       >
         {displayCards.length === 0 ? (
-          <div className="text-center py-20 text-muted-foreground text-sm">
-            {activeTag !== "all" && activeTab === "older" && archiveDateFilter ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            {contentTab === "pinned" ? (
+              <div className="flex flex-col items-center gap-4 max-w-sm">
+                <div className="w-14 h-14 rounded-2xl bg-zinc-100 dark:bg-white/5 border border-zinc-200/60 dark:border-white/10 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-zinc-400 dark:text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-1">{t("inbox.pinnedEmptyTitle")}</h3>
+                  <p className="text-[13px] text-zinc-500 dark:text-zinc-400 leading-relaxed">{t("inbox.pinnedEmpty")}</p>
+                </div>
+              </div>
+            ) : activeTag !== "all" && activeTab === "older" && archiveDateFilter ? (
               <>
                 <div className="mb-4">
                   {t("inbox.emptyArchiveFilter")
@@ -97,19 +114,25 @@ export function InboxCardGrid({
                 <VideoCard
                   key={card.id}
                   card={card}
-                  isSelected={selectedCardIds.has(card.id)}
-                  onToggle={onToggleCard}
+                  isSelected={isPinnedView ? false : selectedCardIds.has(card.id)}
+                  onToggle={isPinnedView ? () => {} : onToggleCard}
                   onClick={onCardClick}
                   isFeatured={index === 0 && activeTag === "all"}
+                  canPin={isPinnedView ? false : canPin}
+                  onTogglePin={isPinnedView ? undefined : onTogglePin}
+                  selectable={!isPinnedView}
                 />
               ) : (
                 <NewsCard
                   key={card.id}
                   card={card}
-                  isSelected={selectedCardIds.has(card.id)}
-                  onToggle={onToggleCard}
+                  isSelected={isPinnedView ? false : selectedCardIds.has(card.id)}
+                  onToggle={isPinnedView ? () => {} : onToggleCard}
                   onClick={onCardClick}
                   isFeatured={index === 0 && activeTag === "all"}
+                  canPin={isPinnedView ? false : canPin}
+                  onTogglePin={isPinnedView ? undefined : onTogglePin}
+                  selectable={!isPinnedView}
                 />
               )
             ))}

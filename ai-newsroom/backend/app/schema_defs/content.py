@@ -38,6 +38,9 @@ class CardOut(BaseModel):
     cover_image: Optional[str] = None
     is_read: bool = False
     is_archived: bool = False
+    is_pinned: bool = False
+    pinned_by: Optional[int] = None
+    pinned_at: Optional[datetime] = None
     content_type: str = "article"
     extra_data: dict = {}
     audio_url: Optional[str] = None

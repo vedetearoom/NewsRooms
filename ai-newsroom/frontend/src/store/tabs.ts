@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 
 interface TabsState {
-  discoverContentTab: "article" | "video";
-  setDiscoverContentTab: (tab: "article" | "video") => void;
+  discoverContentTab: "pinned" | "article" | "video";
+  setDiscoverContentTab: (tab: "pinned" | "article" | "video") => void;
 
   discoverTimeTab: "today" | "thisWeek" | "older";
   setDiscoverTimeTab: (tab: "today" | "thisWeek" | "older") => void;

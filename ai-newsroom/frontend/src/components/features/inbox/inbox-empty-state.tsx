@@ -1,7 +1,7 @@
 "use client";
 
 interface InboxEmptyStateProps {
-  contentTab: "article" | "video";
+  contentTab: "pinned" | "article" | "video";
   t: (key: string, fallback?: string) => string;
 }
 

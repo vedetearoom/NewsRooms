@@ -306,6 +306,7 @@ export function ExpandedVideoCard({ card, originRect, onClose, onSelect, isSelec
           </div>
 
           {/* Action Footer */}
+          {!card.is_pinned && (
           <div className="shrink-0 p-5 px-6 border-t border-gray-100 dark:border-white/5 bg-white dark:bg-[#111214]">
             {isSelected ? (
               <div className="flex flex-col items-center">
@@ -326,6 +327,7 @@ export function ExpandedVideoCard({ card, originRect, onClose, onSelect, isSelec
               </Button>
             )}
           </div>
+          )}
         </motion.div>
       </div>
     </>

@@ -121,6 +121,9 @@ export interface IntelligenceCard {
   cover_image: string | null;
   is_read: boolean;
   is_archived: boolean;
+  is_pinned: boolean;
+  pinned_by: number | null;
+  pinned_at: string | null;
   content_type: string;  // "article" | "video"
   extra_data: Record<string, unknown>;
   audio_url?: string;
@@ -570,6 +573,15 @@ export const api = {
     )).then(cards => cards.filter((c): c is IntelligenceCard => c !== null)),
   deleteCard: (id: number) =>
     fetchAPI(`/api/cards/${id}`, { method: "DELETE" }),
+  getPinnedCards: (params?: Record<string, string>) => {
+    const qs = params ? "?" + new URLSearchParams(params).toString() : "";
+    return fetchAPI<IntelligenceCard[]>(`/api/cards/pinned${qs}`);
+  },
+  togglePin: (id: number) =>
+    fetchAPI<{ ok: boolean; is_pinned: boolean; pinned_by: number | null; pinned_at: string | null }>(
+      `/api/cards/${id}/pin`,
+      { method: "PATCH" }
+    ),
 
   // Tasks
   getTasks: () => fetchAPI<Task[]>("/api/tasks"),

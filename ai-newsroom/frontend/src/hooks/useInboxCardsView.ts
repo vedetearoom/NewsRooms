@@ -3,7 +3,7 @@ import type { IntelligenceCard } from "@/lib/api";
 
 const TOP_TAG_COUNT = 5;
 
-export type InboxContentTab = "article" | "video";
+export type InboxContentTab = "pinned" | "article" | "video";
 export type InboxTimeTab = "today" | "thisWeek" | "older";
 
 type TimeGroupedCards = Record<InboxTimeTab, IntelligenceCard[]>;
@@ -11,6 +11,7 @@ type TimeGroupedCards = Record<InboxTimeTab, IntelligenceCard[]>;
 interface UseInboxCardsViewParams {
   cards: IntelligenceCard[];
   archivedCards: IntelligenceCard[];
+  pinnedCards: IntelligenceCard[];
   contentTab: InboxContentTab;
   activeTab: InboxTimeTab;
   activeTag: string;
@@ -45,6 +46,12 @@ function getVideoFallbackTag(card: IntelligenceCard): string {
 }
 
 function getCardTag(card: IntelligenceCard, contentTab: InboxContentTab) {
+  if (contentTab === "pinned") {
+    if (card.content_type === "video") {
+      return normalizeLabel(card.extra_data?.author) || getVideoFallbackTag(card);
+    }
+    return card.category || "Other";
+  }
   if (contentTab === "video") {
     return normalizeLabel(card.extra_data?.author) || getVideoFallbackTag(card);
   }
@@ -94,20 +101,21 @@ export function formatArchiveDate(dateStr: string) {
 export function useInboxCardsView({
   cards,
   archivedCards,
+  pinnedCards,
   contentTab,
   activeTab,
   activeTag,
   archiveDateFilter,
 }: UseInboxCardsViewParams) {
-  const contentFilteredCards = React.useMemo(
-    () => cards.filter((card) => (card.content_type || "article") === contentTab),
-    [cards, contentTab],
-  );
+  const contentFilteredCards = React.useMemo(() => {
+    if (contentTab === "pinned") return pinnedCards;
+    return cards.filter((card) => (card.content_type || "article") === contentTab);
+  }, [cards, pinnedCards, contentTab]);
 
-  const contentFilteredArchived = React.useMemo(
-    () => archivedCards.filter((card) => (card.content_type || "article") === contentTab),
-    [archivedCards, contentTab],
-  );
+  const contentFilteredArchived = React.useMemo(() => {
+    if (contentTab === "pinned") return [];
+    return archivedCards.filter((card) => (card.content_type || "article") === contentTab);
+  }, [archivedCards, contentTab]);
 
   const timeGroupedCards = React.useMemo(
     () => buildTimeGroups(contentFilteredCards, contentFilteredArchived, archiveDateFilter),

@@ -202,7 +202,7 @@ export function ExpandedFlipCard({ card, originRect, onClose, onSelect, isSelect
                 </div>
               )}
 
-              {card.raw_article_ids && card.raw_article_ids.length > 0 && (
+              {!card.is_pinned && card.raw_article_ids && card.raw_article_ids.length > 0 && (
                 <div>
                   <h4 className="text-[12px] font-bold uppercase tracking-wider text-muted-foreground mb-3">{t('cardDetails.dataLineage')}</h4>
                   <div className="flex items-center gap-3">
@@ -220,15 +220,17 @@ export function ExpandedFlipCard({ card, originRect, onClose, onSelect, isSelect
           </div>
 
           {/* Action Footer */}
-          <div className="shrink-0 p-5 px-6 border-t border-zinc-100 dark:border-white/5 bg-white dark:bg-[#111214]">
-            <Button
-              className="w-full font-medium h-11"
-              variant={isSelected ? "outline" : "default"}
-              onClick={() => onSelect(card.id)}
-            >
-              {isSelected ? t('cardDetails.removeFromQueue') : t('cardDetails.addToQueue')}
-            </Button>
-          </div>
+          {!card.is_pinned && (
+            <div className="shrink-0 p-5 px-6 border-t border-zinc-100 dark:border-white/5 bg-white dark:bg-[#111214]">
+              <Button
+                className="w-full font-medium h-11"
+                variant={isSelected ? "outline" : "default"}
+                onClick={() => onSelect(card.id)}
+              >
+                {isSelected ? t('cardDetails.removeFromQueue') : t('cardDetails.addToQueue')}
+              </Button>
+            </div>
+          )}
         </motion.div>
       </div>
     </>

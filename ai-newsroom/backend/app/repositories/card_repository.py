@@ -2,7 +2,7 @@ from typing import Optional, List, Sequence, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update, delete, String
 from sqlalchemy.orm.attributes import flag_modified
-from datetime import date
+from datetime import date, datetime, timezone
 from app.models import IntelligenceCard, Task
 
 class CardRepository:
@@ -81,6 +81,47 @@ class CardRepository:
         await self.db.commit()
         return True
 
+    async def list_pinned_cards(
+        self,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
+        category: Optional[str] = None,
+        tag: Optional[str] = None,
+    ) -> Sequence[IntelligenceCard]:
+        q = select(IntelligenceCard).where(
+            IntelligenceCard.is_pinned == True,
+            IntelligenceCard.is_archived == False,
+        )
+        if date_from:
+            q = q.where(IntelligenceCard.published_date >= date_from)
+        if date_to:
+            q = q.where(IntelligenceCard.published_date <= date_to)
+        if category:
+            q = q.where(IntelligenceCard.category == category)
+        if tag:
+            q = q.where(IntelligenceCard.tags.cast(String).contains(tag))
+        q = q.order_by(IntelligenceCard.pinned_at.desc(), IntelligenceCard.created_at.desc())
+        result = await self.db.execute(q)
+        return result.scalars().all()
+
+    async def toggle_pin(self, card_id: int, admin_user_id: int) -> Optional[IntelligenceCard]:
+        result = await self.db.execute(
+            select(IntelligenceCard).where(IntelligenceCard.id == card_id)
+        )
+        card = result.scalar_one_or_none()
+        if not card:
+            return None
+        if card.is_pinned:
+            card.is_pinned = False
+            card.pinned_by = None
+            card.pinned_at = None
+        else:
+            card.is_pinned = True
+            card.pinned_by = admin_user_id
+            card.pinned_at = datetime.now(timezone.utc)
+        await self.db.flush()
+        return card
+
     async def delete(self, card_id: int) -> bool:
         """
         Cascade cleanup: before deleting a card, remove its reference from any Task
@@ -95,7 +136,7 @@ class CardRepository:
                 new_ids = [cid for cid in task.card_ids if cid != card_id]
                 task.card_ids = new_ids
                 flag_modified(task, "card_ids")
-        
+
         # 2. Delete the card
         card = await self.get_by_id(card_id)
         if not card:

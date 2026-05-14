@@ -147,6 +147,36 @@ async def _clear_video_card_references(db: AsyncSession, user_id: int, card: Int
             item.status = "pending"
 
 
+async def list_pinned_cards(
+    db: AsyncSession,
+    user_id: int,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    category: Optional[str] = None,
+    tag: Optional[str] = None,
+) -> list[CardOut]:
+    cards = await CardRepository(db, user_id).list_pinned_cards(date_from, date_to, category, tag)
+    owners_seen: set[int] = set()
+    for card in cards:
+        if card.content_type == "video" and card.owner_user_id and card.owner_user_id not in owners_seen:
+            await _hydrate_video_card_thumbnails(db, card.owner_user_id, [card])
+            owners_seen.add(card.owner_user_id)
+    return cards
+
+
+async def toggle_pin_card(db: AsyncSession, user_id: int, card_id: int) -> dict:
+    repo = CardRepository(db, user_id)
+    card = await repo.toggle_pin(card_id, user_id)
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+    return {
+        "ok": True,
+        "is_pinned": card.is_pinned,
+        "pinned_by": card.pinned_by,
+        "pinned_at": str(card.pinned_at) if card.pinned_at else None,
+    }
+
+
 async def delete_card(db: AsyncSession, user_id: int, card_id: int) -> dict:
     repo = CardRepository(db, user_id)
     card = await repo.get_by_id(card_id)

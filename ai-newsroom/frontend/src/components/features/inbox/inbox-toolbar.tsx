@@ -5,13 +5,14 @@ import { ChevronDown } from "lucide-react";
 import { useClickOutside } from "@/hooks/useClickOutside";
 
 interface InboxToolbarProps {
-  contentTab: "article" | "video";
-  setContentTab: (tab: "article" | "video") => void;
+  contentTab: "pinned" | "article" | "video";
+  setContentTab: (tab: "pinned" | "article" | "video") => void;
   activeTag: string;
   setActiveTag: (tag: string) => void;
   topTags: [string, number][];
   overflowTags: [string, number][];
   totalCount: number;
+  pinnedCount: number;
 }
 
 export function InboxToolbar({
@@ -22,10 +23,10 @@ export function InboxToolbar({
   topTags,
   overflowTags,
   totalCount,
+  pinnedCount,
 }: InboxToolbarProps) {
   const { t } = useTranslation();
-  
-  // Local state for the overflow tags dropdown
+
   const [moreOpen, setMoreOpen] = React.useState(false);
   const moreRef = React.useRef<HTMLDivElement>(null);
   useClickOutside({
@@ -42,7 +43,7 @@ export function InboxToolbar({
         <div className="flex items-center gap-5">
           <h1 className="text-[14px] font-semibold tracking-[-0.02em]">{t('inbox.title')}</h1>
           {/* Content Type Tabs */}
-          <div className="flex items-center gap-1 ml-4 border-r border-zinc-200 dark:border-white/10 pr-4 mr-1">
+          <div className="flex items-center gap-1">
             <button
               onClick={() => { setContentTab("article"); setActiveTag("all"); }}
               className={cn(
@@ -64,6 +65,17 @@ export function InboxToolbar({
               )}
             >
               {t('inbox.videoIntel')}
+            </button>
+            <button
+              onClick={() => { setContentTab("pinned"); setActiveTag("all"); }}
+              className={cn(
+                "px-3 py-1 rounded-md text-[13px] transition-colors cursor-pointer",
+                contentTab === "pinned"
+                  ? "text-foreground font-semibold bg-[var(--pill-bg)]"
+                  : "text-muted-foreground hover:text-foreground hover:bg-[var(--pill-hover-bg)]"
+              )}
+            >
+              {t('inbox.pinnedTab')}
             </button>
           </div>
           {/* Dynamic Trending Tags */}
@@ -87,7 +99,6 @@ export function InboxToolbar({
               </span>
             </button>
 
-            {/* Top N trending tags */}
             {topTags.map(([tag, count]) => (
               <button
                 key={tag}
@@ -99,7 +110,7 @@ export function InboxToolbar({
                     : "text-muted-foreground hover:text-foreground hover:bg-[var(--pill-hover-bg)]"
                 )}
               >
-                {contentTab === "video" ? tag : (t(`categories.${tag}`) === `categories.${tag}` ? tag : t(`categories.${tag}`))}
+                {t(`categories.${tag}`) === `categories.${tag}` ? tag : t(`categories.${tag}`)}
                 <span className={cn(
                   "ml-1 text-[10px] tabular-nums",
                   activeTag === tag ? "opacity-50" : "opacity-30"
@@ -109,7 +120,6 @@ export function InboxToolbar({
               </button>
             ))}
 
-            {/* More ▼ dropdown for overflow tags */}
             {overflowTags.length > 0 && (
               <div className="relative z-[130]" ref={moreRef}>
                 <button
@@ -129,7 +139,6 @@ export function InboxToolbar({
                   )} />
                 </button>
 
-                {/* Dropdown */}
                 {moreOpen && (
                   <div className="absolute top-full left-0 z-[140] mt-1.5 min-w-[160px] rounded-lg border border-zinc-200/60 bg-white py-1.5 shadow-lg shadow-black/10 animate-fade-in dark:border-white/[0.08] dark:bg-[#111214] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] dark:backdrop-blur-xl">
                     {overflowTags.map(([tag, count]) => (
@@ -143,7 +152,7 @@ export function InboxToolbar({
                             : "text-muted-foreground hover:text-foreground hover:bg-zinc-50 dark:hover:bg-white/5"
                         )}
                       >
-                        <span>{contentTab === "video" ? tag : (t(`categories.${tag}`) === `categories.${tag}` ? tag : t(`categories.${tag}`))}</span>
+                        <span>{t(`categories.${tag}`) === `categories.${tag}` ? tag : t(`categories.${tag}`)}</span>
                         <span className="text-[10px] tabular-nums opacity-40">{count}</span>
                       </button>
                     ))}

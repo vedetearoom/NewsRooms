@@ -8,6 +8,7 @@ import { FloatingActionBar } from "@/components/shared/floating-action-bar";
 import { CommandPalette } from "@/components/shared/command-palette";
 import { AnimatePresence } from "framer-motion";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { toast } from "@/components/ui/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTabsStore } from "@/store/tabs";
 import { useUrlTab } from "@/hooks/useUrlTab";
@@ -20,6 +21,7 @@ import { InboxEmptyState } from "@/components/features/inbox/inbox-empty-state";
 import { InboxTimeTabs } from "@/components/features/inbox/inbox-time-tabs";
 import { InboxCardGrid } from "@/components/features/inbox/inbox-card-grid";
 import { PageShellFallback } from "@/components/shared/page-shell-fallback";
+import { useAuthState } from "@/lib/auth";
 
 export default function InboxPage() {
   return (
@@ -40,11 +42,12 @@ function DiscoverContent() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
   const [isArchiving, setIsArchiving] = React.useState(false);
   const [archivedCards, setArchivedCards] = React.useState<IntelligenceCard[]>([]);
+  const [pinnedCards, setPinnedCards] = React.useState<IntelligenceCard[]>([]);
   const { t } = useTranslation();
 
   // Content type tab — article vs video
   const setContentTabAction = useTabsStore(s => s.setDiscoverContentTab);
-  const [contentTab, setContentTab] = useUrlTab<"article" | "video">("type", "article", setContentTabAction);
+  const [contentTab, setContentTab] = useUrlTab<"pinned" | "article" | "video">("type", "article", setContentTabAction);
 
   // Tag filter — resets when time tab changes
   const [activeTag, setActiveTag] = React.useState<string>("all");
@@ -57,12 +60,14 @@ function DiscoverContent() {
 
   const fetchCards = React.useCallback(async () => {
     try {
-      const [data, archived] = await Promise.all([
+      const [data, archived, pinned] = await Promise.all([
         api.getCards(),
         api.getCards({ archived: "true" }),
+        api.getPinnedCards(),
       ]);
       setCards(data);
       setArchivedCards(archived);
+      setPinnedCards(pinned);
     } catch { console.warn("Failed to fetch cards"); }
     finally { setLoading(false); }
   }, []);
@@ -112,6 +117,28 @@ function DiscoverContent() {
     }
   };
 
+  const { hasPermission: checkPermission } = useAuthState();
+  const canPin = checkPermission("system.manage");
+
+  const handleTogglePin = async (cardId: number) => {
+    try {
+      const result = await api.togglePin(cardId);
+      setCards(prev => prev.map(c => c.id === cardId ? { ...c, is_pinned: result.is_pinned, pinned_by: result.pinned_by, pinned_at: result.pinned_at } : c));
+      if (result.is_pinned) {
+        const card = cards.find(c => c.id === cardId) || pinnedCards.find(c => c.id === cardId);
+        if (card) {
+          setPinnedCards(prev => [{ ...card, is_pinned: true, pinned_by: result.pinned_by, pinned_at: result.pinned_at }, ...prev]);
+        }
+        toast.success(t("inbox.pinSuccess"));
+      } else {
+        setPinnedCards(prev => prev.filter(c => c.id !== cardId));
+        toast.success(t("inbox.unpinSuccess"));
+      }
+    } catch (e) {
+      console.error("Failed to toggle pin:", e);
+    }
+  };
+
   const selectAllVisible = () => {
     const allSelected = displayCards.length > 0 && displayCards.every(c => selectedCardIds.has(c.id));
     if (allSelected && displayCards.length > 0) {
@@ -140,6 +167,7 @@ function DiscoverContent() {
   const { timeGroupedCards, displayCards, topTags, overflowTags, totalCount } = useInboxCardsView({
     cards,
     archivedCards,
+    pinnedCards,
     contentTab,
     activeTab,
     activeTag,
@@ -156,6 +184,7 @@ function DiscoverContent() {
         topTags={topTags}
         overflowTags={overflowTags}
         totalCount={totalCount}
+        pinnedCount={pinnedCards.length}
       />
 
       {/* Main Layout Area */}
@@ -165,6 +194,34 @@ function DiscoverContent() {
         <div className="flex-1 flex flex-col overflow-y-scroll px-8 py-6 pt-8">
         {loading ? (
           <InboxLoadingGrid />
+        ) : contentTab === "pinned" ? (
+          <div className="space-y-8">
+            <InboxTimeTabs
+              activeTab={activeTab}
+              archiveDateFilter={archiveDateFilter}
+              archiveDropdownOpen={archiveDropdownOpen}
+              archivedCards={[]}
+              timeGroupedCards={timeGroupedCards}
+              t={t}
+              onTabSwitch={handleTabSwitch}
+              onCloseArchiveDropdown={() => setArchiveDropdownOpen(false)}
+              onSelectArchiveDate={setArchiveDateFilter}
+            />
+            <InboxCardGrid
+              contentTab={contentTab}
+              activeTab={activeTab}
+              activeTag={activeTag}
+              archiveDateFilter={archiveDateFilter}
+              displayCards={displayCards}
+              selectedCardIds={selectedCardIds}
+              t={t}
+              onCardClick={handleCardClick}
+              onToggleCard={toggleCard}
+              onClearArchiveFilter={() => setArchiveDateFilter(null)}
+              canPin={canPin}
+              onTogglePin={handleTogglePin}
+            />
+          </div>
         ) : cards.length === 0 ? (
           <InboxEmptyState contentTab={contentTab} t={t} />
         ) : (
@@ -192,6 +249,8 @@ function DiscoverContent() {
               onCardClick={handleCardClick}
               onToggleCard={toggleCard}
               onClearArchiveFilter={() => setArchiveDateFilter(null)}
+              canPin={canPin}
+              onTogglePin={handleTogglePin}
             />
           </div>
         )}
@@ -207,18 +266,20 @@ function DiscoverContent() {
         
       </div>
 
-      <FloatingActionBar
-        selectedCount={selectedCardIds.size}
-        onDispatch={() => setCommandOpen(true)}
-        onArchive={handleArchiveSelected}
-        onDelete={handleDeleteSelected}
-        onSelectAll={selectAllVisible}
-        isAllSelected={displayCards.length > 0 && displayCards.every(c => selectedCardIds.has(c.id))}
-        onClearSelection={() => clearSelection()}
-        isArchiving={isArchiving}
-        isRestore={activeTab === "older"}
-        isDeleting={isDeleting}
-      />
+      {contentTab !== "pinned" && (
+        <FloatingActionBar
+          selectedCount={selectedCardIds.size}
+          onDispatch={() => setCommandOpen(true)}
+          onArchive={handleArchiveSelected}
+          onDelete={handleDeleteSelected}
+          onSelectAll={selectAllVisible}
+          isAllSelected={displayCards.length > 0 && displayCards.every(c => selectedCardIds.has(c.id))}
+          onClearSelection={() => clearSelection()}
+          isArchiving={isArchiving}
+          isRestore={activeTab === "older"}
+          isDeleting={isDeleting}
+        />
+      )}
       <CommandPalette
         open={commandOpen}
         onClose={() => setCommandOpen(false)}

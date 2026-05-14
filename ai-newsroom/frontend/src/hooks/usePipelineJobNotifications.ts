@@ -2,6 +2,7 @@ import * as React from "react";
 
 import { toast } from "@/components/ui/use-toast";
 import type { ActiveJob } from "@/lib/job-store";
+import { sanitizeErrorForUser } from "@/lib/async-feedback";
 
 interface UsePipelineJobNotificationsOptions {
   jobs: unknown;
@@ -78,7 +79,7 @@ export function usePipelineJobNotifications({
                 );
           toast.success(t("pipeline.processingCompleteTitle"), detail);
         } else {
-          toast.error(t("pipeline.processingFailedTitle"), job.error || t("pipeline.processingFailedDesc"));
+          toast.error(t("pipeline.processingFailedTitle"), sanitizeErrorForUser(job.error || "") || t("pipeline.processingFailedDesc"));
         }
         void onProcessHandled?.();
       }

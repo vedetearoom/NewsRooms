@@ -4,7 +4,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { api, type IntelligenceCard } from "@/lib/api";
-import { Bookmark, Loader2 } from "lucide-react";
+import { Bookmark, Loader2, Star } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { toast } from "@/components/ui/use-toast";
 
@@ -14,6 +14,9 @@ interface VideoCardProps {
   onToggle: (id: number) => void;
   onClick: (card: IntelligenceCard, rect: DOMRect) => void;
   isFeatured?: boolean;
+  canPin?: boolean;
+  onTogglePin?: (cardId: number) => void;
+  selectable?: boolean;
 }
 
 /* Score color */
@@ -44,7 +47,7 @@ function formatDuration(seconds: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-export function VideoCard({ card, isSelected, onToggle, onClick, isFeatured = false }: VideoCardProps) {
+export function VideoCard({ card, isSelected, onToggle, onClick, isFeatured = false, canPin, onTogglePin, selectable = true }: VideoCardProps) {
   const { language } = useTranslation();
   const meta = (card.extra_data || {}) as Record<string, unknown>;
   const platform = (meta.platform as string) || "";
@@ -198,10 +201,10 @@ export function VideoCard({ card, isSelected, onToggle, onClick, isFeatured = fa
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {/* Score & Checkbox Toggle */}
+        <div className="flex items-center gap-1">
+          {selectable ? (
           <div
-            className="flex items-center gap-2 p-3 -mt-3 -mr-3 cursor-pointer group/toggle"
+            className="relative p-3 -mt-3 -mr-3 cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
               onToggle(card.id);
@@ -209,14 +212,14 @@ export function VideoCard({ card, isSelected, onToggle, onClick, isFeatured = fa
           >
             <span className={cn(
               "text-[12px] font-bold tabular-nums drop-shadow-md transition-opacity duration-150",
-              isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-hover/toggle:opacity-100",
+              isSelected ? "opacity-0" : "group-hover:opacity-0",
               scoreColor(card.importance_score)
             )}>
               {Math.round(card.importance_score * 100)}
             </span>
             <div className={cn(
-              "transition-opacity duration-150",
-              isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-hover/toggle:opacity-100"
+              "absolute inset-0 flex items-center justify-end p-3 transition-opacity duration-150",
+              isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
             )}>
               <Checkbox
                 checked={isSelected}
@@ -224,6 +227,14 @@ export function VideoCard({ card, isSelected, onToggle, onClick, isFeatured = fa
               />
             </div>
           </div>
+          ) : (
+            <span className={cn(
+              "text-[12px] font-bold tabular-nums drop-shadow-md p-3 -mt-3 -mr-3 opacity-100",
+              scoreColor(card.importance_score)
+            )}>
+              {Math.round(card.importance_score * 100)}
+            </span>
+          )}
         </div>
       </div>
 
@@ -266,33 +277,53 @@ export function VideoCard({ card, isSelected, onToggle, onClick, isFeatured = fa
           ) : <div className="flex-1" />}
 
           <div className="flex items-center gap-2">
+            {canPin && onTogglePin && (
+              <>
+                <div
+                  className={cn(
+                    "p-1 rounded-full cursor-pointer transition-all duration-200 pointer-events-auto shrink-0",
+                    card.is_pinned
+                      ? "text-amber-400 hover:text-amber-300 opacity-100"
+                      : "text-white/40 hover:text-white/80 opacity-0 group-hover:opacity-100"
+                  )}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onTogglePin(card.id);
+                  }}
+                  title={card.is_pinned ? "取消精选" : "设为精选"}
+                >
+                  <Star className={cn("w-3.5 h-3.5", card.is_pinned ? "fill-amber-400" : "fill-none")} />
+                </div>
+                <div
+                  className={cn(
+                    "overflow-hidden transition-all duration-200 pointer-events-auto shrink-0",
+                    isSavedInspiration
+                      ? "w-6 p-1 opacity-100"
+                      : "w-0 p-0 opacity-0 group-hover:w-6 group-hover:p-1 group-hover:opacity-100",
+                    "text-white/40 hover:text-white/80 rounded-full cursor-pointer"
+                  )}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSaveInspiration();
+                  }}
+                  title={isSavedInspiration ? "已收藏至灵感武器库" : "收藏结构至灵感武器库"}
+                >
+                  {isSavingInspiration ? (
+                    <Loader2 className="w-3.5 h-3.5 text-white/70 animate-spin drop-shadow-md" />
+                  ) : (
+                    <Bookmark
+                      className={cn(
+                        "w-3.5 h-3.5 drop-shadow-md transition-colors",
+                        isSavedInspiration ? "text-white/90 fill-white/90" : "text-white/40 hover:text-white/90"
+                      )}
+                    />
+                  )}
+                </div>
+              </>
+            )}
             <span className="text-[10.5px] font-medium text-white/40 tracking-wide mt-0.5 shrink-0 tabular-nums">
               {new Date(card.created_at).toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US', { month: "short", day: "numeric" })}
             </span>
-            {templateSkeleton && (
-              <div
-                className={cn(
-                  "p-1 rounded-full cursor-pointer transition-all duration-300 pointer-events-auto hover:bg-white/10",
-                  isSavedInspiration ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                )}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSaveInspiration();
-                }}
-                title={isSavedInspiration ? "已收藏至灵感武器库" : "收藏结构至灵感武器库"}
-              >
-                {isSavingInspiration ? (
-                  <Loader2 className="w-3.5 h-3.5 text-white/70 animate-spin drop-shadow-md" />
-                ) : (
-                  <Bookmark
-                    className={cn(
-                      "w-3.5 h-3.5 drop-shadow-md transition-colors",
-                      isSavedInspiration ? "text-white/90 fill-white/90" : "text-white/40 hover:text-white/90"
-                    )}
-                  />
-                )}
-              </div>
-            )}
           </div>
         </div>
       </div>
