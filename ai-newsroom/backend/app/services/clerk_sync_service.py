@@ -13,6 +13,22 @@ logger = logging.getLogger(__name__)
 ClerkUserData = dict[str, Any]
 
 
+def _clerk_admin_emails() -> set[str]:
+    from app.config import get_settings
+
+    return {
+        email.strip().lower()
+        for email in get_settings().clerk_admin_emails.split(",")
+        if email.strip()
+    }
+
+
+def role_codes_for_clerk_email(email: str | None) -> list[str]:
+    if email and email.lower() in _clerk_admin_emails():
+        return ["super_admin"]
+    return ["user"]
+
+
 def extract_primary_email(data: ClerkUserData) -> str | None:
     primary_email_id = data.get("primary_email_address_id")
     email_addresses = data.get("email_addresses") or []
@@ -110,6 +126,8 @@ async def sync_clerk_user_created_or_updated(db: AsyncSession, data: ClerkUserDa
                 )
                 return email_user
 
+    role_codes = role_codes_for_clerk_email(email)
+
     if user:
         user.clerk_user_id = clerk_user_id
         if email:
@@ -119,6 +137,7 @@ async def sync_clerk_user_created_or_updated(db: AsyncSession, data: ClerkUserDa
         user.password_hash = None
         user.is_active = True
         user.clerk_deleted_at = None
+        await assign_roles_to_user(user.id, role_codes, db)
         await ensure_default_agents_for_user(db, user.id)
         await db.flush()
         return user
@@ -137,7 +156,7 @@ async def sync_clerk_user_created_or_updated(db: AsyncSession, data: ClerkUserDa
     )
     db.add(user)
     await db.flush()
-    await assign_roles_to_user(user.id, ["user"], db)
+    await assign_roles_to_user(user.id, role_codes, db)
     await ensure_default_agents_for_user(db, user.id)
     await db.flush()
     return user
