@@ -220,7 +220,8 @@ cd ../ai-newsroom
 # 3. 准备应用配置
 cp ../docker/ai-newsroom/.env.example ../docker/ai-newsroom/.env
 cp ../docker/ai-newsroom/config/backend.env.example ../docker/ai-newsroom/config/backend.env
-# 按需编辑 backend.env，填入真实 API Key、数据库密码、认证密钥和 Clerk 配置
+# 编辑 .env，填入前端公开配置，例如 AI_NEWSROOM_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+# 编辑 backend.env，填入真实 API Key、数据库密码、认证密钥和 Clerk 后端配置
 
 # 4. 启动应用服务
 docker compose --env-file ../docker/ai-newsroom/.env \
@@ -250,12 +251,14 @@ docker compose --env-file ../docker/ai-newsroom/.env \
 
 | 文件 | 用途 |
 |---|---|
-| `docker/ai-newsroom/.env` | Compose 层配置：端口、镜像名、构建镜像源、NPM / pip / apt 源 |
-| `docker/ai-newsroom/config/backend.env` | 运行时配置：数据库、Redis、MinIO、模型密钥、认证密钥、Clerk 配置 |
+| `docker/ai-newsroom/.env` | Compose 层配置：端口、镜像名、构建镜像源、NPM / pip / apt 源、前端公开 Clerk 配置 |
+| `docker/ai-newsroom/config/backend.env` | 后端运行时配置：数据库、Redis、MinIO、模型密钥、认证密钥、Clerk secret / webhook 配置 |
 | `docker/rsshub.env` | RSSHub Cookie 等本地运行时配置，不应提交 |
 | `docker/rsshub.env.example` | 可提交的 RSSHub 配置模板 |
 
 生产环境必须更换所有默认密钥和默认密码，尤其是 `AUTH_SECRET_KEY`、`DEFAULT_ADMIN_PASSWORD`、数据库、Redis、MinIO、Clerk 和模型 API Key。
+
+再次执行 `docker compose up -d` 不会清空已有数据库。后端启动时会创建缺失的表，并对已知的缺失字段做轻量补齐；已有数据会保留。只有在本地开发需要彻底重置数据、或 schema 已损坏无法启动时，才考虑删除数据库 volume。
 
 ## RSSHub Cookie 安全说明
 

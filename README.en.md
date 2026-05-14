@@ -220,7 +220,8 @@ cd ../ai-newsroom
 # 3. Prepare application config
 cp ../docker/ai-newsroom/.env.example ../docker/ai-newsroom/.env
 cp ../docker/ai-newsroom/config/backend.env.example ../docker/ai-newsroom/config/backend.env
-# Edit backend.env with real API keys, database passwords, auth secrets, and Clerk config.
+# Edit .env with public frontend config, such as AI_NEWSROOM_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.
+# Edit backend.env with real API keys, database passwords, auth secrets, and Clerk backend config.
 
 # 4. Start application services
 docker compose --env-file ../docker/ai-newsroom/.env \
@@ -250,12 +251,14 @@ Configuration files:
 
 | File | Purpose |
 |---|---|
-| `docker/ai-newsroom/.env` | Compose-layer config: ports, image names, build mirrors, npm / pip / apt mirrors |
-| `docker/ai-newsroom/config/backend.env` | Runtime config: database, Redis, MinIO, model keys, auth secrets, Clerk config |
+| `docker/ai-newsroom/.env` | Compose-layer config: ports, image names, build mirrors, npm / pip / apt mirrors, public frontend Clerk config |
+| `docker/ai-newsroom/config/backend.env` | Backend runtime config: database, Redis, MinIO, model keys, auth secrets, Clerk secret / webhook config |
 | `docker/rsshub.env` | RSSHub cookies and local runtime config; must not be committed |
 | `docker/rsshub.env.example` | Commit-safe RSSHub config template |
 
 Production deployments must replace all default secrets and passwords, especially `AUTH_SECRET_KEY`, `DEFAULT_ADMIN_PASSWORD`, database, Redis, MinIO, Clerk, and model API keys.
+
+Running `docker compose up -d` again does not clear the existing database. On startup, the backend creates missing tables and applies lightweight checks for known missing columns; existing data is preserved. Only delete database volumes when you intentionally want a local reset or the schema is damaged and cannot start.
 
 ## RSSHub cookie safety
 
