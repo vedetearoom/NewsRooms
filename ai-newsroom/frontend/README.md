@@ -46,20 +46,26 @@ bash ../start-frontend.sh
 
 ## 环境变量
 
-当前前端主要依赖：
+本地开发可以在 `frontend/` 下创建 `.env.local`，模板见 `.env.local.example`：
 
 ```bash
-NEXT_PUBLIC_API_URL=http://localhost:8000
-INTERNAL_API_URL=http://localhost:8000
+cp .env.local.example .env.local
 ```
 
-说明：
+| 变量 | 默认值 | 说明 |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | 浏览器端 API 地址，本地开发使用 |
+| `INTERNAL_API_URL` | `http://localhost:8000` | 服务端 / SSR / 容器内反向代理使用的后端地址 |
+| `INTERNAL_ASSET_URL` | 同 `INTERNAL_API_URL` | 可选，覆盖资产代理地址（MinIO 图片） |
+| `NEXT_PUBLIC_MINIO_BUCKET` | `newsroom-images` | MinIO Bucket 名，用于图片重写规则 |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | 空 | Clerk Publishable Key，不配置则跳过 Clerk 认证 |
+| `CLERK_SECRET_KEY` | 空 | Clerk Secret Key，SSR / 服务端验证用 |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_URL` | `/sign-in` | Clerk 登录页路由 |
+| `NEXT_PUBLIC_CLERK_SIGN_UP_URL` | `/sign-up` | Clerk 注册页路由 |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL` | `/` | 登录后跳转地址 |
+| `NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL` | `/` | 注册后跳转地址 |
 
-- `NEXT_PUBLIC_API_URL` 主要给本地开发或直接访问前端容器时使用
-- `INTERNAL_API_URL` 主要给 Next.js 服务端渲染和容器内反向代理使用
-- 浏览器端默认继续走同源 `/api/*`，这样在 Nginx 反代场景下不需要把前端代码改成写死某个后端域名
-
-如果都不配置，前端会默认回落到本地 `8000` 端口后端。定义位置见 [src/lib/api.ts](/Users/jay/Desktop/claude/ai-newsroom/frontend/src/lib/api.ts:1) 和 [next.config.ts](/Users/jay/Desktop/claude/ai-newsroom/frontend/next.config.ts:1)。
+浏览器端默认走同源 `/api/*`，Nginx 反代场景下不需要硬编码后端域名。如果所有 API URL 都不配置，前端会回落到 `localhost:8000`。
 
 ## Docker / Nginx
 

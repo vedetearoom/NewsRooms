@@ -190,12 +190,28 @@ https://<your-domain>/api/webhooks/clerk
 
 ## 前端环境变量
 
+在 `ai-newsroom/frontend/` 下创建 `.env.local`，可从模板开始：
+
 ```bash
-NEXT_PUBLIC_API_URL=http://localhost:8000
-INTERNAL_API_URL=http://localhost:8000
+cp ai-newsroom/frontend/.env.local.example ai-newsroom/frontend/.env.local
 ```
 
-如果不配置，前端会默认请求 `localhost:8000`。在 Nginx 部署中，浏览器请求会走同源 `/api/*` 路径，不需要硬编码后端域名。
+常用配置：
+
+| 变量 | 默认值 | 说明 |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | 浏览器端 API 地址 |
+| `INTERNAL_API_URL` | `http://localhost:8000` | 服务端 / SSR 使用的后端地址 |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | 空 | Clerk Publishable Key，不配置则跳过 Clerk 认证 |
+| `CLERK_SECRET_KEY` | 空 | Clerk Secret Key，服务端验证用 |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_URL` | `/sign-in` | Clerk 登录页路由 |
+| `NEXT_PUBLIC_CLERK_SIGN_UP_URL` | `/sign-up` | Clerk 注册页路由 |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL` | `/` | 登录后跳转地址 |
+| `NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL` | `/` | 注册后跳转地址 |
+
+如果不配置 API URL，前端会默认请求 `localhost:8000`。在 Nginx 部署中，浏览器请求会走同源 `/api/*` 路径，不需要硬编码后端域名。
+
+如果 `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` 为空，前端会跳过 Clerk 认证流程（适用于不需要认证的本地开发或 Docker 构建场景）。Docker 构建时需通过 `docker/ai-newsroom/.env` 中的 `AI_NEWSROOM_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` 注入。
 
 ## Docker 部署
 
