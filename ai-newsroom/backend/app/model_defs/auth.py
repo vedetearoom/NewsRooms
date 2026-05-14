@@ -29,6 +29,7 @@ class User(Base):
     display_name = Column(String(255), nullable=False)
     password_hash = Column(String(512), nullable=True)
     clerk_user_id = Column(String(255), nullable=True, unique=True, index=True)
+    clerk_deleted_at = Column(DateTime(timezone=True), nullable=True)
     is_active = Column(Boolean, default=True)
     is_super_admin = Column(Boolean, default=False)
     last_login_at = Column(DateTime(timezone=True), nullable=True)

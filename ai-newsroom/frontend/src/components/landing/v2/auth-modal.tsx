@@ -37,6 +37,11 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
   const [error, setError] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [oauthLoading, setOauthLoading] = React.useState<AuthMode | null>(null);
+  const [showForgotPassword, setShowForgotPassword] = React.useState(false);
+  const [resetStep, setResetStep] = React.useState<"email" | "verify" | "success">("email");
+  const [resetEmail, setResetEmail] = React.useState("");
+  const [resetCode, setResetCode] = React.useState("");
+  const [newPassword, setNewPassword] = React.useState("");
   const [cardHeight, setCardHeight] = React.useState<number | null>(null);
   const [isFlipping, setIsFlipping] = React.useState(false);
   const loginFaceRef = React.useRef<HTMLDivElement>(null);
@@ -53,7 +58,7 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
 
   React.useLayoutEffect(() => {
     updateCardHeight();
-  }, [mode, error, loading, oauthLoading, updateCardHeight]);
+  }, [mode, error, loading, oauthLoading, resetStep, updateCardHeight]);
 
   React.useEffect(() => {
     if (standalone) return;
@@ -180,6 +185,70 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!signInLoaded || !signIn) return;
+    setError("");
+    setLoading(true);
+    try {
+      const result = await signIn.create({ identifier: resetEmail });
+      const resetFactor = result.supportedFirstFactors?.find(
+        (factor) => factor.strategy === "reset_password_email_code",
+      );
+
+      if (!resetFactor || !("emailAddressId" in resetFactor)) {
+        setError(t("landing.auth.resetEmailFailed"));
+        setLoading(false);
+        return;
+      }
+
+      await result.prepareFirstFactor({
+        strategy: "reset_password_email_code",
+        emailAddressId: resetFactor.emailAddressId,
+      });
+      setResetStep("verify");
+    } catch (err) {
+      setError(getClerkErrorMessage(err, t("landing.auth.resetEmailFailed")));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyAndReset = async () => {
+    if (!signInLoaded || !signIn) return;
+    setError("");
+    setLoading(true);
+    try {
+      const result = await signIn.attemptFirstFactor({
+        strategy: "reset_password_email_code",
+        code: resetCode,
+        password: newPassword,
+      });
+      if (result.status === "complete") {
+        await finishSignIn(result.createdSessionId, setSignInActive);
+        return;
+      }
+      setError(t("landing.auth.resetPasswordFailed"));
+      setLoading(false);
+    } catch (err) {
+      const msg = getClerkErrorMessage(err, t("landing.auth.resetPasswordFailed"));
+      if (msg.toLowerCase().includes("password") && !msg.toLowerCase().includes("reset password")) {
+        setError(t("landing.auth.passwordTooWeak"));
+      } else {
+        setError(msg);
+      }
+      setLoading(false);
+    }
+  };
+
+  const handleBackToLogin = () => {
+    setShowForgotPassword(false);
+    setResetStep("email");
+    setResetEmail("");
+    setResetCode("");
+    setNewPassword("");
+    setError("");
+  };
+
   const renderHeader = (faceMode: AuthMode) => (
     <>
       <div className="mb-8 flex items-center gap-2.5">
@@ -241,7 +310,111 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
     </button>
   );
 
-  const renderForm = (faceMode: AuthMode) => (
+  const renderForm = (faceMode: AuthMode) => {
+    if (faceMode === "login" && showForgotPassword) {
+      const inputClass = "w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3.5 py-3 text-[13px] text-white outline-none transition-all placeholder:text-white/20 focus:border-white/20 focus:bg-white/[0.06] focus:shadow-[0_0_0_1px_rgba(255,255,255,0.1)]";
+      const labelClass = "mb-1.5 block text-[11px] font-semibold uppercase tracking-widest text-white/35";
+
+      return (
+        <div className="space-y-4">
+          {resetStep === "email" && (
+            <>
+              <p className="text-[13px] text-white/40">
+                {t("landing.auth.resetPasswordDescription")}
+              </p>
+              <div>
+                <label className={labelClass}>{t("landing.auth.email")}</label>
+                <input
+                  type="email"
+                  value={resetEmail}
+                  onChange={(event) => setResetEmail(event.target.value)}
+                  placeholder={t("landing.auth.emailPlaceholder")}
+                  autoComplete="email"
+                  className={inputClass}
+                />
+              </div>
+              {error ? (
+                <p className="rounded-xl bg-red-500/10 px-3 py-2.5 text-[12px] leading-relaxed text-red-400">{error}</p>
+              ) : null}
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={loading || !resetEmail}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-[13px] font-semibold tracking-tight text-black transition-all hover:-translate-y-px hover:bg-white/90 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {loading ? (
+                  <><svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>{t("landing.auth.connecting")}</>
+                ) : t("landing.auth.sendCode")}
+              </button>
+              <button type="button" onClick={handleBackToLogin} className="w-full text-center text-[13px] text-white/40 transition-colors hover:text-white/75">
+                {t("landing.auth.backToLogin")}
+              </button>
+            </>
+          )}
+
+          {resetStep === "verify" && (
+            <>
+              <p className="text-[13px] text-white/40">
+                {t("landing.auth.verifyCodeDescription")}
+              </p>
+              <div>
+                <label className={labelClass}>{t("landing.auth.verificationCode")}</label>
+                <input
+                  type="text"
+                  value={resetCode}
+                  onChange={(event) => setResetCode(event.target.value)}
+                  placeholder="000000"
+                  autoComplete="one-time-code"
+                  inputMode="numeric"
+                  maxLength={6}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>{t("landing.auth.newPassword")}</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                  placeholder={t("landing.auth.passwordPlaceholder")}
+                  autoComplete="new-password"
+                  className={inputClass}
+                />
+              </div>
+              {error ? (
+                <p className="rounded-xl bg-red-500/10 px-3 py-2.5 text-[12px] leading-relaxed text-red-400">{error}</p>
+              ) : null}
+              <button
+                type="button"
+                onClick={handleVerifyAndReset}
+                disabled={loading || !resetCode || !newPassword}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-[13px] font-semibold tracking-tight text-black transition-all hover:-translate-y-px hover:bg-white/90 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {loading ? (
+                  <><svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>{t("landing.auth.connecting")}</>
+                ) : t("landing.auth.resetPassword")}
+              </button>
+              <button type="button" onClick={handleBackToLogin} className="w-full text-center text-[13px] text-white/40 transition-colors hover:text-white/75">
+                {t("landing.auth.backToLogin")}
+              </button>
+            </>
+          )}
+
+          {resetStep === "success" && (
+            <>
+              <p className="rounded-xl bg-emerald-500/10 px-3 py-2.5 text-[12px] leading-relaxed text-emerald-400">
+                {t("landing.auth.resetSuccess")}
+              </p>
+              <button type="button" onClick={handleBackToLogin} className="w-full text-center text-[13px] text-white/40 transition-colors hover:text-white/75">
+                {t("landing.auth.backToLogin")}
+              </button>
+            </>
+          )}
+        </div>
+      );
+    }
+
+    return (
     <form onSubmit={(event) => handleSubmit(event, faceMode)} className="space-y-4">
       {faceMode === "login" ? renderGoogleButton(faceMode) : null}
 
@@ -303,6 +476,14 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
             tabIndex={mode === faceMode ? 0 : -1}
             className="w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3.5 py-3 text-[13px] text-white outline-none transition-all placeholder:text-white/20 focus:border-white/20 focus:bg-white/[0.06] focus:shadow-[0_0_0_1px_rgba(255,255,255,0.1)]"
           />
+          <button
+            type="button"
+            onClick={() => setShowForgotPassword(true)}
+            tabIndex={mode === faceMode ? 0 : -1}
+            className="mt-2 text-[11px] text-white/35 transition-colors hover:text-white/65"
+          >
+            {t("landing.auth.forgotPassword")}
+          </button>
         </div>
       ) : null}
 
@@ -342,7 +523,8 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
         {faceMode === "login" ? t("landing.auth.needAccount") : t("landing.auth.haveAccount")}
       </button>
     </form>
-  );
+    );
+  };
 
   const renderFace = (faceMode: AuthMode, ref: React.RefObject<HTMLDivElement | null>) => (
     <div

@@ -68,6 +68,7 @@ class Settings(BaseSettings):
     clerk_jwks_url: str = ""
     clerk_issuer: str = ""
     clerk_secret_key: str = ""
+    clerk_webhook_secret: str = ""
 
     model_config = SettingsConfigDict(extra="ignore")
 

@@ -25,4 +25,5 @@ yt-dlp
 cryptography
 pyjwt
 playwright
+svix
 hermes-agent @ git+https://github.com/NousResearch/hermes-agent.git@v2026.4.16

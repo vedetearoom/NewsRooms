@@ -995,7 +995,20 @@
       "waitlistDescription": "留下邮箱，我们会在开放访问时通知你。",
       "waitlistSuccess": "已加入等待名单。开放访问时我们会通知你。",
       "googleContinue": "使用 Google 继续",
-      "connecting": "正在连接..."
+      "connecting": "正在连接...",
+      "forgotPassword": "忘记密码？",
+      "resetPassword": "重置密码",
+      "resetPasswordDescription": "输入与您账户关联的邮箱地址，我们将向您发送一个验证码。",
+      "resetEmailSent": "重置链接已发送！请查收您的邮箱。",
+      "resetEmailFailed": "发送验证码失败，请重试。",
+      "sendCode": "发送验证码 →",
+      "verifyCodeDescription": "请输入邮箱中收到的 6 位验证码，并设置新密码。",
+      "verificationCode": "验证码",
+      "newPassword": "新密码",
+      "resetPasswordFailed": "验证失败，请检查验证码后重试。",
+      "passwordTooWeak": "密码不符合要求，至少需要 8 个字符，并包含字母和数字的组合。",
+      "resetSuccess": "密码已重置成功，正在跳转...",
+      "backToLogin": "← 返回登录"
     },
     "hero": {
       "badge": "3 个智能体协同工作",

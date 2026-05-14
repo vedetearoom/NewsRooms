@@ -301,6 +301,7 @@ async def serialize_role(db: AsyncSession, role: Role) -> RoleOut:
 
 
 async def serialize_user(db: AsyncSession, user: User) -> UserOut:
+    await db.refresh(user)
     roles = await _load_user_roles(db, user.id)
     permissions = await _load_user_permissions(db, user.id)
     serialized_roles = [await serialize_role(db, role) for role in roles]
@@ -394,38 +395,18 @@ async def get_or_create_user_from_clerk(
     email: str | None = None,
     display_name: str | None = None,
 ) -> User:
-    from app.services.agent_service import ensure_default_agents_for_user
+    from app.services.clerk_sync_service import sync_clerk_user_created_or_updated
 
-    result = await db.execute(select(User).where(User.clerk_user_id == clerk_user_id))
-    user = result.scalars().first()
-    if user:
-        return user
-
-    base_username = email.split("@")[0] if email else f"clerk_{clerk_user_id[:8]}"
-    username = base_username
-
-    existing = await db.execute(select(User).where(User.username == username))
-    if existing.scalars().first():
-        suffix = clerk_user_id[:8]
-        username = f"{base_username}_{suffix}"
-        existing2 = await db.execute(select(User).where(User.username == username))
-        if existing2.scalars().first():
-            username = f"u_{clerk_user_id[:12]}"
-
-    user = User(
-        username=username,
-        email=email or f"{clerk_user_id}@clerk.placeholder",
-        display_name=display_name or (email.split("@")[0] if email else "User"),
-        password_hash=None,
-        clerk_user_id=clerk_user_id,
-        is_active=True,  # Clerk Waitlist handles pre-registration approval
-        is_super_admin=False,
-        last_login_at=datetime.now(UTC),
-    )
-    db.add(user)
-    await db.flush()
-    await assign_roles_to_user(user.id, ["user"], db)
-    await ensure_default_agents_for_user(db, user.id)
+    data = {
+        "id": clerk_user_id,
+        "email_addresses": [{"id": "primary", "email_address": email}] if email else [],
+        "primary_email_address_id": "primary" if email else None,
+        "first_name": display_name,
+    }
+    user = await sync_clerk_user_created_or_updated(db, data)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Clerk user")
+    user.last_login_at = datetime.now(UTC)
     await db.flush()
     return user
 

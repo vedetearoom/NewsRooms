@@ -5,6 +5,13 @@ from app.config import get_settings
 
 settings = get_settings()
 
+
+def _to_sync_database_url(database_url: str) -> str:
+    if database_url.startswith("postgresql+asyncpg://"):
+        return database_url.replace("postgresql+asyncpg://", "postgresql+psycopg://", 1)
+    return database_url
+
+
 # Async engine (for FastAPI / uvicorn)
 engine = create_async_engine(settings.database_url, echo=False, pool_size=20, max_overflow=10)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -12,7 +19,7 @@ async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit
 async_session_maker = async_session
 
 # Sync engine (for Celery workers — they run outside asyncio)
-sync_engine = create_engine(settings.database_url_sync, echo=False, pool_size=5, max_overflow=5)
+sync_engine = create_engine(_to_sync_database_url(settings.database_url_sync), echo=False, pool_size=5, max_overflow=5)
 SyncSession = sessionmaker(bind=sync_engine, expire_on_commit=False)
 
 
@@ -208,6 +215,8 @@ def _ensure_clerk_user_id_column(sync_conn) -> None:
     columns = {column["name"] for column in inspector.get_columns("users")}
     if "clerk_user_id" not in columns:
         sync_conn.execute(text("ALTER TABLE users ADD COLUMN clerk_user_id VARCHAR(255)"))
+    if "clerk_deleted_at" not in columns:
+        sync_conn.execute(text("ALTER TABLE users ADD COLUMN clerk_deleted_at TIMESTAMP WITH TIME ZONE"))
     sync_conn.execute(
         text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_clerk_user_id ON users (clerk_user_id)")
     )

@@ -992,7 +992,20 @@
       "waitlistDescription": "Enter your email and we'll let you know when access is ready.",
       "waitlistSuccess": "You're on the waitlist. We'll notify you when access is ready.",
       "googleContinue": "Continue with Google",
-      "connecting": "Connecting..."
+      "connecting": "Connecting...",
+      "forgotPassword": "Forgot password?",
+      "resetPassword": "Reset password",
+      "resetPasswordDescription": "Enter the email address associated with your account and we'll send you a verification code.",
+      "resetEmailSent": "Reset link sent! Check your inbox.",
+      "resetEmailFailed": "Failed to send reset email. Please try again.",
+      "sendCode": "Send code →",
+      "verifyCodeDescription": "Enter the 6-digit code from your email and set a new password.",
+      "verificationCode": "Verification code",
+      "newPassword": "New password",
+      "resetPasswordFailed": "Verification failed. Please check the code and try again.",
+      "passwordTooWeak": "Password does not meet requirements. It must be at least 8 characters with a mix of letters and numbers.",
+      "resetSuccess": "Password has been reset successfully. Redirecting...",
+      "backToLogin": "← Back to log in"
     },
     "hero": {
       "badge": "3 agents working in lockstep",
