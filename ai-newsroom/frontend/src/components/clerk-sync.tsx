@@ -2,22 +2,26 @@
 
 import { useEffect } from "react";
 import { useAuth, useSession } from "@clerk/nextjs";
-import { registerClerkTokenGetter, fetchClerkToken } from "@/lib/auth";
+import { clearAuthTokenCache, registerClerkTokenGetter, fetchClerkToken } from "@/lib/auth";
 
 export function ClerkSync() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
   const { session } = useSession();
 
   useEffect(() => {
-    if (isSignedIn && session) {
-      registerClerkTokenGetter(async (forceRefresh?: boolean) => {
-        const token = await session.getToken({ skipCache: forceRefresh });
-        return token;
-      });
-      // Immediately populate the cache so getAuthToken() returns a value
-      fetchClerkToken();
+    if (!isLoaded) return;
+
+    if (!isSignedIn || !session) {
+      clearAuthTokenCache();
+      registerClerkTokenGetter(null);
+      return;
     }
-  }, [isSignedIn, session]);
+
+    registerClerkTokenGetter(async (forceRefresh?: boolean) => {
+      return session.getToken({ skipCache: forceRefresh });
+    });
+    fetchClerkToken();
+  }, [isLoaded, isSignedIn, session]);
 
   return null;
 }

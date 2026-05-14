@@ -57,7 +57,15 @@ export interface AuthSession {
 let _cachedToken: string | null = null;
 let _tokenGetter: ((forceRefresh?: boolean) => Promise<string | null>) | null = null;
 
-export function registerClerkTokenGetter(getter: (forceRefresh?: boolean) => Promise<string | null>) {
+export function clearAuthTokenCache() {
+  _cachedToken = null;
+}
+
+export function hasClerkTokenGetter(): boolean {
+  return Boolean(_tokenGetter);
+}
+
+export function registerClerkTokenGetter(getter: ((forceRefresh?: boolean) => Promise<string | null>) | null) {
   _tokenGetter = getter;
 }
 

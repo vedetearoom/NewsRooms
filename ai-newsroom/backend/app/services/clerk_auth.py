@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 import jwt
 from fastapi import HTTPException, status
 import httpx
@@ -5,6 +7,8 @@ import httpx
 from app.config import get_settings
 
 _clerk_api_cache: dict = {"base_url": None, "secret_key": None}
+_verified_user_cache: dict[str, tuple[float, dict]] = {}
+_VERIFIED_USER_CACHE_TTL_SECONDS = 60
 
 
 def _get_api_config() -> tuple[str, str]:
@@ -46,6 +50,12 @@ async def verify_clerk_token(token: str) -> dict:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Clerk token missing 'sub' claim",
         )
+
+    now_ts = datetime.now(UTC).timestamp()
+    cached = _verified_user_cache.get(clerk_user_id)
+    if cached and cached[0] > now_ts:
+        payload.update(cached[1])
+        return payload
 
     # Step 2: Verify user via Clerk Backend API
     base_url, secret_key = _get_api_config()
@@ -90,10 +100,30 @@ async def verify_clerk_token(token: str) -> dict:
             detail="Clerk account is banned",
         )
 
-    # Enrich payload with Clerk user data
-    payload["email"] = user_data.get("email_addresses", [{}])[0].get("email_address")
-    payload["name"] = user_data.get("first_name", "") or user_data.get("username", "")
+    email_addresses = user_data.get("email_addresses") or []
+    primary_email_id = user_data.get("primary_email_address_id")
+    primary_email = next(
+        (
+            email.get("email_address")
+            for email in email_addresses
+            if email.get("id") == primary_email_id and email.get("email_address")
+        ),
+        None,
+    )
+    email = primary_email or next(
+        (email.get("email_address") for email in email_addresses if email.get("email_address")),
+        None,
+    )
+    name = user_data.get("first_name", "") or user_data.get("username", "")
     if user_data.get("last_name"):
-        payload["name"] = f'{payload["name"]} {user_data["last_name"]}'.strip()
+        name = f'{name} {user_data["last_name"]}'.strip()
+
+    enriched = {"email": email, "name": name}
+    payload.update(enriched)
+    token_exp = payload.get("exp")
+    token_ttl = max(0, int(token_exp) - int(now_ts)) if token_exp else _VERIFIED_USER_CACHE_TTL_SECONDS
+    cache_ttl = min(_VERIFIED_USER_CACHE_TTL_SECONDS, token_ttl)
+    if cache_ttl > 0:
+        _verified_user_cache[clerk_user_id] = (now_ts + cache_ttl, enriched)
 
     return payload

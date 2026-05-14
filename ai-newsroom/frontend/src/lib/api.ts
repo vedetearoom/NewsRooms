@@ -52,12 +52,20 @@ async function parseAPIErrorResponse(res: Response): Promise<{ message: string; 
   return { message, detail };
 }
 
+function isPublicApiPath(path: string): boolean {
+  return path.startsWith("/api/auth/login") || path.startsWith("/api/auth/register") || path.startsWith("/api/health");
+}
+
 async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
   let token = getAuthToken();
-  // If no cached token, try fetching from Clerk
   if (!token) {
-    const { fetchClerkToken } = await import("@/lib/auth");
-    token = await fetchClerkToken();
+    const { fetchClerkToken, hasClerkTokenGetter } = await import("@/lib/auth");
+    if (hasClerkTokenGetter()) {
+      token = await fetchClerkToken();
+    }
+  }
+  if (!token && !isPublicApiPath(path)) {
+    throw new ApiError("Authentication token is not ready", 401, "Authentication token is not ready");
   }
   const buildHeaders = (nextToken: string | null) => ({
     "Content-Type": "application/json",

@@ -2,9 +2,9 @@
 
 import * as React from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { useAuth, useClerk } from "@clerk/nextjs";
+import { useAuth, useClerk, useSession } from "@clerk/nextjs";
 import { api } from "@/lib/api";
-import { getAuthToken, hasPermission, updateStoredUser } from "@/lib/auth";
+import { hasPermission, updateStoredUser } from "@/lib/auth";
 
 function getRouteRequirement(pathname: string | null): string | null {
   if (!pathname || pathname.startsWith("/landing")) return null;
@@ -28,6 +28,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { isSignedIn, isLoaded } = useAuth();
+  const { session } = useSession();
   const clerk = useClerk();
   const [ready, setReady] = React.useState(false);
 
@@ -50,14 +51,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Signed in via Clerk but no cached token yet (race condition on first load)
-      if (!getAuthToken()) {
-        // Poll briefly for ClerkSync to populate the token cache
-        for (let i = 0; i < 20; i++) {
-          await new Promise((r) => setTimeout(r, 50));
-          if (getAuthToken()) break;
-        }
-      }
+      if (!session) return;
+      const token = await session.getToken();
+      if (!token) return;
 
       try {
         const user = await api.auth.me();
@@ -82,7 +78,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [pathname, router, isLoaded, isSignedIn, clerk]);
+  }, [pathname, router, isLoaded, isSignedIn, session, clerk]);
 
   React.useEffect(() => {
     if (pathname?.startsWith("/landing") || pathname?.startsWith("/sign-in") || pathname?.startsWith("/sign-up")) {

@@ -1,0 +1,349 @@
+# AI Newsroom
+
+AI Newsroom is an AI-assisted content production workbench for editors and content teams. It connects source ingestion, material processing, intelligence cards, draft generation, review/rewrite workflows, video monitoring, image generation, and access control into a configurable private content pipeline.
+
+中文文档: [README.md](README.md)
+
+## Features
+
+- **Source ingestion**: Pull content from RSS / RSSHub, with scheduled and manual ingestion.
+- **Intelligence cards**: Convert raw articles into structured AI summaries for editorial triage and reuse.
+- **Writing and review workflow**: Generate drafts, run AssassinAgent reviews, compare diffs, and rewrite content.
+- **Video monitoring**: Monitor YouTube, Bilibili, and other video platforms, then route new content into analysis pipelines.
+- **Vault and inspiration library**: Store references, reusable materials, and inspiration snippets.
+- **Agent configuration**: Configure models and API keys per agent, with SSE streaming output.
+- **Image generation**: Generate cover images or illustrations for cards and tasks.
+- **Access control and system management**: Manage users, roles, permissions, quotas, and optional Clerk user sync.
+
+## Repository layout
+
+```text
+NewsRoom/
+├── ai-newsroom/                # Application source
+│   ├── backend/                # FastAPI + Celery + SQLAlchemy backend
+│   ├── frontend/               # Next.js 16 + React 19 frontend
+│   ├── start-backend.sh        # Local backend launcher
+│   ├── start-celery.sh         # Local Celery worker launcher
+│   ├── start-frontend.sh       # Local frontend launcher
+│   └── docker-local.sh         # Local image build helper
+└── docker/
+    ├── docker-compose.yml      # Infrastructure: PostgreSQL, Redis, MinIO, RSSHub
+    ├── rsshub.env.example      # RSSHub cookie configuration template
+    └── ai-newsroom/
+        ├── docker-compose.yml  # App services: backend, celery, frontend, nginx
+        ├── .env.example        # Compose / image / port configuration template
+        ├── config/             # Runtime backend.env configuration
+        └── nginx/default.conf  # Nginx reverse proxy configuration
+```
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS 4, Zustand, SWR |
+| Backend | FastAPI, SQLAlchemy async, Pydantic v2 |
+| Queue | Celery + Redis |
+| Scheduler | APScheduler, running in the API process |
+| Database | PostgreSQL 15 |
+| Object storage | MinIO, S3-compatible |
+| RSS | RSSHub |
+| AI models | Google Gemini, Qwen / DashScope, OpenAI-compatible APIs |
+| Web/video extraction | Playwright, yt-dlp, optional Jina Reader |
+| Authentication | Local accounts + optional Clerk JWT / webhook sync |
+
+## Local development
+
+### Requirements
+
+- Python 3.11+
+- Node.js 20+
+- `uv`, used by local scripts to create the backend virtualenv and install Python dependencies
+- Docker and Docker Compose, used for PostgreSQL, Redis, MinIO, and RSSHub
+
+### 1. Start infrastructure
+
+```bash
+cd docker
+cp rsshub.env.example rsshub.env
+docker network create metalm-base-net 2>/dev/null || true
+docker compose up -d
+```
+
+This starts PostgreSQL, Redis, MinIO, and RSSHub:
+
+| Service | Local port |
+|---|---|
+| PostgreSQL | `23012` |
+| Redis | `23013` |
+| MinIO | `23016` |
+| RSSHub | `23017` |
+
+> `docker/rsshub.env` is local/deployment runtime configuration and is ignored by Git. Never commit real cookies.
+
+### 2. Configure backend environment variables
+
+For local development, start from the backend template:
+
+```bash
+cp ai-newsroom/backend/.env.example ai-newsroom/backend/.env
+```
+
+Fill in Clerk, model keys, or other local settings as needed. `start-backend.sh` reads `ai-newsroom/backend/.env`.
+
+### 3. Start the backend API
+
+```bash
+cd ai-newsroom
+bash start-backend.sh
+```
+
+The script creates `.venv` and installs dependencies via `uv` when the virtualenv is missing. The backend runs on `http://localhost:8000` by default. Health check:
+
+```bash
+curl http://localhost:8000/api/health
+```
+
+### 4. Start the Celery worker
+
+```bash
+bash start-celery.sh
+```
+
+Many ingestion, processing, video analysis, and generation flows depend on Celery. If only the backend API is running, endpoints can respond but async jobs may remain queued.
+
+### 5. Start the frontend
+
+```bash
+bash start-frontend.sh
+```
+
+The script runs `npm ci` when `node_modules` is missing. The frontend runs on `http://localhost:3000` by default.
+
+## Backend environment variables
+
+The backend reads configuration files in this precedence order:
+
+1. File pointed to by `AI_NEWSROOM_SETTINGS_FILE`
+2. `/run/config/backend.env`, the Docker-mounted runtime config
+3. `ai-newsroom/.env`
+4. `ai-newsroom/backend/.env`
+
+Common variables:
+
+| Variable | Default | Description |
+|---|---|---|
+| `DATABASE_URL` | `postgresql+asyncpg://...@localhost:23012/metalm` | Async database connection |
+| `DATABASE_URL_SYNC` | `postgresql+psycopg://...@localhost:23012/metalm` | Sync database connection |
+| `REDIS_URL` | `redis://:metalm2024@localhost:23013/0` | Redis for Celery and job management |
+| `GEMINI_API_KEY` | empty | Google Gemini API key |
+| `QWEN_API_KEY` | empty | Qwen / DashScope API key |
+| `JINA_API_KEY` | empty | Optional enhanced web extraction via Jina Reader |
+| `MINIO_ENDPOINT` | `http://127.0.0.1:23016` | MinIO endpoint |
+| `MINIO_ACCESS_KEY` | `minioadmin` | MinIO access key; local default only |
+| `MINIO_SECRET_KEY` | `minioadmin` | MinIO secret key; local default only |
+| `MINIO_BUCKET` | `newsroom-images` | MinIO bucket |
+| `RSSHUB_BASE_URL` | `http://localhost:23017` | RSSHub endpoint |
+| `AUTH_SECRET_KEY` | `ai-newsroom-dev-secret` | JWT signing key; must be changed in production |
+| `CREDENTIAL_ENCRYPTION_SECRET` | empty | Encryption key for platform cookies; keep stable after deployment |
+| `CORS_ORIGINS` | `http://localhost:3000` | Allowed frontend origins |
+| `ENABLE_SCHEDULER` | `true` | Whether APScheduler runs in the API process |
+| `SCRAPE_CRON` | `0 */4 * * *` | Source ingestion cron, every 4 hours by default |
+| `CLERK_ISSUER` | empty | Optional Clerk JWT issuer |
+| `CLERK_SECRET_KEY` | empty | Optional Clerk Backend API secret key |
+| `CLERK_WEBHOOK_SECRET` | empty | Optional Clerk/Svix webhook signing secret |
+| `CLERK_ADMIN_EMAILS` | empty | Comma-separated admin email allowlist; matching users receive `super_admin` |
+
+`GEMINI_API_KEY` and `QWEN_API_KEY` are not required at startup. Prefer configuring model credentials per agent in the frontend Agent page.
+
+## Clerk webhook and admin bootstrap
+
+The backend exposes a Clerk webhook endpoint:
+
+```text
+POST /api/webhooks/clerk
+```
+
+For local testing, expose the backend with Cloudflare Tunnel, ngrok, or another HTTPS tunnel, for example:
+
+```bash
+cloudflared tunnel --url http://localhost:8000 run dev-tunnel
+```
+
+In the Clerk Dashboard, configure the endpoint as:
+
+```text
+https://<your-domain>/api/webhooks/clerk
+```
+
+Recommended events:
+
+- `user.created`
+- `user.updated`
+- `user.deleted`
+
+Sync behavior:
+
+- `user.created` / `user.updated` create or update local users.
+- `user.deleted` marks the local user inactive; it does not physically delete the row.
+- Emails listed in `CLERK_ADMIN_EMAILS` automatically receive the `super_admin` role, which enables System Management UI access.
+- Other Clerk events return success and are ignored.
+
+## Frontend environment variables
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8000
+INTERNAL_API_URL=http://localhost:8000
+```
+
+If omitted, the frontend defaults to `localhost:8000`. In Nginx deployments, browser requests use same-origin `/api/*` paths, so hard-coding the backend origin is not required.
+
+## Docker deployment
+
+Deployment has two layers:
+
+- **Infrastructure**: `docker/docker-compose.yml`, containing PostgreSQL, Redis, MinIO, and RSSHub.
+- **Application services**: `docker/ai-newsroom/docker-compose.yml`, containing backend, celery, frontend, and nginx.
+
+First-time startup example:
+
+```bash
+# 1. Start infrastructure
+cd docker
+cp rsshub.env.example rsshub.env
+docker network create metalm-base-net 2>/dev/null || true
+docker compose up -d
+
+# 2. Build application images; the script detects arm64 / amd64
+cd ../ai-newsroom
+./docker-local.sh local
+
+# 3. Prepare application config
+cp ../docker/ai-newsroom/.env.example ../docker/ai-newsroom/.env
+cp ../docker/ai-newsroom/config/backend.env.example ../docker/ai-newsroom/config/backend.env
+# Edit backend.env with real API keys, database passwords, auth secrets, and Clerk config.
+
+# 4. Start application services
+docker compose --env-file ../docker/ai-newsroom/.env \
+  -f ../docker/ai-newsroom/docker-compose.yml up -d
+```
+
+Entrypoints:
+
+| Service | URL |
+|---|---|
+| Unified Nginx entrypoint | `http://localhost:8080` |
+| Direct frontend | `http://localhost:3000` |
+| Direct backend API | `http://localhost:8000` |
+
+Build options:
+
+```bash
+# Build images for the current machine architecture
+./docker-local.sh local
+
+# Export a linux/amd64 + linux/arm64 multi-arch OCI archive without pushing
+./docker-local.sh archive
+# Output directory: ai-newsroom/dist/docker/
+```
+
+Configuration files:
+
+| File | Purpose |
+|---|---|
+| `docker/ai-newsroom/.env` | Compose-layer config: ports, image names, build mirrors, npm / pip / apt mirrors |
+| `docker/ai-newsroom/config/backend.env` | Runtime config: database, Redis, MinIO, model keys, auth secrets, Clerk config |
+| `docker/rsshub.env` | RSSHub cookies and local runtime config; must not be committed |
+| `docker/rsshub.env.example` | Commit-safe RSSHub config template |
+
+Production deployments must replace all default secrets and passwords, especially `AUTH_SECRET_KEY`, `DEFAULT_ADMIN_PASSWORD`, database, Redis, MinIO, Clerk, and model API keys.
+
+## RSSHub cookie safety
+
+`docker/rsshub.env` is loaded through Docker Compose `env_file` and may contain platform cookies for Bilibili, Xiaohongshu, and other sources. Real cookies are sensitive and must not be committed.
+
+Safe setup:
+
+```bash
+cd docker
+cp rsshub.env.example rsshub.env
+```
+
+If cookies are needed, prefer filling them from the System Management UI or the video monitor cookie configuration UI. The app writes to local `docker/rsshub.env`; restart or recreate the RSSHub container after changes.
+
+## Backend architecture
+
+```text
+app/
+├── main.py              # App initialization, middleware, router registration
+├── api/                 # HTTP routes for validation, auth, and responses
+├── services/            # Business logic and cross-domain coordination
+│   ├── worker_jobs.py   # Celery worker execution logic
+│   ├── job_dispatcher.py
+│   ├── monitor_service.py
+│   ├── card_service.py
+│   └── ...
+├── workers/tasks.py     # Celery task wrappers, retry policies, logging
+├── model_defs/          # SQLAlchemy models split by domain
+├── schema_defs/         # Pydantic schemas split by domain
+├── models.py            # Model aggregate exports
+├── schemas.py           # Schema aggregate exports
+├── repositories/        # Single-domain data access
+└── config.py            # pydantic-settings configuration
+```
+
+Key flows:
+
+- **Source ingestion**: `sources` route → `job_dispatcher` → Celery task → `worker_jobs` → `scraper` → `raw_articles`
+- **Article processing**: `raw_articles` / `jobs` routes → Celery task → `processor` → `processor_support` calls LLM → `intelligence_cards`
+- **Review and rewrite**: `stream` route → `job_dispatcher` → AssassinAgent → `drafts` / `critiques` → SSE polling
+- **Video monitoring**: `monitors` route → `monitor_service` → RSS check or cookie mode → Celery task → `VideoAnalyzer` → video intelligence card
+- **Clerk sync**: `clerk_webhooks` route → Svix signature verification → `clerk_sync_service` → local user and role sync
+
+## Tests and quality checks
+
+### Backend tests
+
+```bash
+cd ai-newsroom/backend
+
+# Run all backend tests
+./.venv/bin/python -m unittest discover -s tests -p 'test*.py'
+
+# Run a specific test module
+./.venv/bin/python -m unittest -v tests.test_external_integrations
+```
+
+Formal tests live in `ai-newsroom/backend/tests/`. The repository also contains a few manual or experimental scripts; they are not part of the official regression suite.
+
+### Frontend checks
+
+```bash
+cd ai-newsroom/frontend
+npm run lint
+npm run build
+```
+
+There is currently no dedicated frontend test runner and no standalone `typecheck` script. `npm run build` is the main frontend build and type-checking gate.
+
+### Recommended high-priority tests or fixes
+
+- **Clerk sync regression**: Test `user.created`, `user.updated`, `user.deleted`, missing/invalid Svix signatures, repeated deliveries, and `CLERK_ADMIN_EMAILS` role assignment.
+- **Auth and permissions**: Test local login, Clerk JWT login, expired tokens, inactive users, `system.manage` route protection, and System Management menu visibility.
+- **Celery dependency**: Test job submission, status display, and frontend messaging when Redis or Celery is not running.
+- **Database initialization**: Test startup with an empty database and an existing legacy schema to ensure startup schema adjustments do not block the service.
+- **Frontend API routes**: Test `/api/generate-image`, `/api/agents/chat`, and `/api/stream/...` in both local development and Docker/Nginx deployment.
+- **Image generation quota**: Decide whether provider/config failures should consume quota; the current behavior needs product confirmation.
+- **Webhook export button**: The editor still has a simulated webhook push entry. If it is not a real feature, disable it, hide it, or label it as not configured.
+- **Deployment security**: Production must not use local defaults such as `admin123`, `ai-newsroom-dev-secret`, `metalm2024`, or `minioadmin`.
+
+## Default account
+
+On first startup, the backend creates a default administrator account:
+
+| Field | Value |
+|---|---|
+| Username | `admin` |
+| Email | `admin@newsroom.local` |
+| Password | `admin123` |
+
+For production, change the default account through `DEFAULT_ADMIN_*` environment variables or through the System Management UI after login.
