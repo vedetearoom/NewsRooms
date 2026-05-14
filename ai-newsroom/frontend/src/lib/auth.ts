@@ -169,8 +169,11 @@ export async function fetchAndCacheMeUser(): Promise<AuthUser | null> {
   return _clerkUserFetchPromise;
 }
 
+const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
 export function useAuthState() {
-  const { isSignedIn, isLoaded: clerkLoaded } = useClerkAuth();
+  const clerkAuth = clerkKey ? useClerkAuth() : { isSignedIn: false, isLoaded: true };
+  const { isSignedIn, isLoaded: clerkLoaded } = clerkAuth;
   const [user, setUser] = React.useState<AuthUser | null>(null);
   const [ready, setReady] = React.useState(false);
 

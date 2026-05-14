@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
+import { useAuthSafe } from "@/lib/clerk-safe";
 import { HeroV2 } from "@/components/landing/v2/hero-v2";
 import { ScaledHero } from "@/components/landing/v2/scaled-hero";
 import {
@@ -21,7 +21,7 @@ import { AuthModal, type AuthMode } from "@/components/landing/v2/auth-modal";
 
 export default function LandingPage() {
   const router = useRouter();
-  const { isSignedIn } = useAuth();
+  const { isSignedIn } = useAuthSafe();
   const [authOpen, setAuthOpen] = React.useState(false);
   const [authMode, setAuthMode] = React.useState<AuthMode>("login");
   const accent = "#c0c0dd";

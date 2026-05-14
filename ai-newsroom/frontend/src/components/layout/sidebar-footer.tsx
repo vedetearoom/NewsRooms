@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useClerk } from "@clerk/nextjs";
+import { useClerkSafe } from "@/lib/clerk-safe";
 import { LogOut, Moon, Sun } from "lucide-react";
 import { logout, useAuthState } from "@/lib/auth";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -15,7 +15,7 @@ export function SidebarFooter() {
   const { t, language } = useTranslation();
   const { toggleLanguage } = useLanguageStore();
   const { user } = useAuthState();
-  const clerk = useClerk();
+  const clerk = useClerkSafe();
 
   const [mounted, setMounted] = React.useState(false);
   
@@ -76,7 +76,7 @@ export function SidebarFooter() {
             onClick={async (e) => {
               e.stopPropagation();
               logout();
-              await clerk.signOut();
+              if (clerk) await clerk.signOut();
               router.push("/landing");
             }}
             className="flex items-center justify-center w-6 h-6 rounded-lg hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors ml-0.5"

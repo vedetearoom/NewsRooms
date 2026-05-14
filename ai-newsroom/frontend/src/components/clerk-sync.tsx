@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { useAuth, useSession } from "@clerk/nextjs";
+import { useAuthSafe, useSessionSafe } from "@/lib/clerk-safe";
 import { clearAuthTokenCache, registerClerkTokenGetter, fetchClerkToken } from "@/lib/auth";
 
 export function ClerkSync() {
-  const { isSignedIn, isLoaded } = useAuth();
-  const { session } = useSession();
+  const { isSignedIn, isLoaded } = useAuthSafe();
+  const { session } = useSessionSafe();
 
   useEffect(() => {
     if (!isLoaded) return;

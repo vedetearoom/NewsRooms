@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Check, Database, FileText, Globe2, LockKeyhole, Radio, Rss, ShieldCheck, Sparkles, Video } from "lucide-react";
 import { AuthModal, type AuthMode } from "./auth-modal";
 import { V2Navbar } from "./navbar";
-import { useAuth } from "@clerk/nextjs";
+import { useAuthSafe } from "@/lib/clerk-safe";
 import { useTranslation } from "@/hooks/useTranslation";
 
 const isCJK = (s: string) => /[\u4e00-\u9fff]/.test(s);
@@ -41,7 +41,7 @@ export function SourceManagementPage() {
   const [authOpen, setAuthOpen] = React.useState(false);
   const [authMode, setAuthMode] = React.useState<AuthMode>("login");
   const [authed, setAuthed] = React.useState(false);
-  const { isSignedIn } = useAuth();
+  const { isSignedIn } = useAuthSafe();
 
   React.useEffect(() => {
     setAuthed(!!isSignedIn);

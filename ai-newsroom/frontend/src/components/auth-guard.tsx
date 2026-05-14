@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { useAuth, useClerk, useSession } from "@clerk/nextjs";
+import { useAuthSafe, useSessionSafe, useClerkSafe } from "@/lib/clerk-safe";
 import { api } from "@/lib/api";
 import { hasPermission, updateStoredUser } from "@/lib/auth";
 
@@ -27,9 +27,9 @@ function getFallbackPath(permissions: string[]): string {
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isSignedIn, isLoaded } = useAuth();
-  const { session } = useSession();
-  const clerk = useClerk();
+  const { isSignedIn, isLoaded } = useAuthSafe();
+  const { session } = useSessionSafe();
+  const clerk = useClerkSafe();
   const [ready, setReady] = React.useState(false);
 
   React.useEffect(() => {
@@ -68,7 +68,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         }
       } catch {
         if (!cancelled) {
-          await clerk.signOut();
+          if (clerk) await clerk.signOut();
           router.replace("/landing");
         }
       }
