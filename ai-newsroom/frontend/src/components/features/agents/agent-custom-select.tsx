@@ -17,9 +17,11 @@ interface AgentCustomSelectProps {
   options: AgentSelectOption[];
   disabled?: boolean;
   className?: string;
+  popoverClassName?: string;
+  inlinePopover?: boolean;
 }
 
-export function AgentCustomSelect({ value, onChange, options, disabled, className }: AgentCustomSelectProps) {
+export function AgentCustomSelect({ value, onChange, options, disabled, className, popoverClassName, inlinePopover }: AgentCustomSelectProps) {
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
   useClickOutside({
@@ -48,7 +50,13 @@ export function AgentCustomSelect({ value, onChange, options, disabled, classNam
       </button>
 
       {open && (
-        <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-white dark:bg-[#111214] border border-zinc-200 dark:border-white/10 rounded-lg shadow-xl z-50 py-1.5 overflow-hidden">
+        <div
+          className={cn(
+            "w-full bg-white dark:bg-[#111214] border border-zinc-200 dark:border-white/10 rounded-lg shadow-xl z-50 py-1.5 overflow-hidden",
+            inlinePopover ? "mt-1" : "absolute top-[calc(100%+4px)] left-0",
+            popoverClassName,
+          )}
+        >
           {options.map((option) => (
             <button
               key={option.value}

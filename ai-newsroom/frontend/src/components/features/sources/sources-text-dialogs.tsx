@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { AgentCustomSelect, type AgentSelectOption } from "@/components/features/agents/agent-custom-select";
 import type { Source } from "@/lib/api";
 
 interface SourcesTextDialogsProps {
@@ -47,11 +48,16 @@ export function SourcesTextDialogs({
   onCloseDeleteDialog,
   onConfirmDelete,
 }: SourcesTextDialogsProps) {
+  const sourceTypeOptions: AgentSelectOption[] = [
+    { value: "rss", label: t("sources.rssFeed") },
+    { value: "web", label: t("sources.webScrape") },
+  ];
+
   return (
     <>
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-card w-full max-w-md rounded-2xl shadow-2xl border border-border overflow-hidden animate-scale-in">
+          <div className="bg-card w-full max-w-md rounded-2xl shadow-2xl border border-border overflow-visible animate-scale-in">
             <div className="px-6 py-5 border-b border-border flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-bold text-foreground tracking-tight">{editingSourceId ? t("sources.editSource") : t("sources.addNewSource")}</h3>
@@ -96,14 +102,13 @@ export function SourcesTextDialogs({
 
               <div className="space-y-1.5">
                 <label className="text-[13px] font-semibold text-foreground">{t("sources.type")}</label>
-                <select
+                <AgentCustomSelect
                   value={sourceType}
-                  onChange={(event) => onSourceTypeChange(event.target.value)}
+                  onChange={onSourceTypeChange}
+                  options={sourceTypeOptions}
+                  popoverClassName="z-[160]"
                   className="w-full h-10 px-3 rounded-lg bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20 transition-all"
-                >
-                  <option value="rss">{t("sources.rssFeed")}</option>
-                  <option value="web">{t("sources.webScrape")}</option>
-                </select>
+                />
               </div>
 
               {sourceType === "web" && (

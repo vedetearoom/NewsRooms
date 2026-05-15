@@ -244,7 +244,7 @@ export default function SystemUsersPage() {
 
       <div className="flex-1 overflow-y-auto bg-zinc-50/50 dark:bg-white/[0.01]">
         <div className="pb-8 pt-6">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto px-8 lg:px-12">
             <table className="w-full min-w-[960px]">
                 <colgroup>
                   <col className="w-[28%]" />
@@ -256,12 +256,12 @@ export default function SystemUsersPage() {
                 </colgroup>
                 <thead>
                   <tr className="border-b border-zinc-200/60 dark:border-white/[0.06]">
-                    <th className={cn(tableHeaderClass, "pl-8 pr-5 lg:pl-12")}>{t("system.user")}</th>
+                    <th className={cn(tableHeaderClass, "pr-5")}>{t("system.user")}</th>
                     <th className={cn(tableHeaderClass, "px-5")}>{t("system.email")}</th>
                     <th className={cn(tableHeaderClass, "px-5")}>{t("system.role")}</th>
                     <th className={cn(tableHeaderClass, "px-5")}>{t("system.status")}</th>
                     <th className={cn(tableHeaderClass, "px-5")}>{t("system.lastLogin")}</th>
-                    <th className={cn(tableHeaderClass, "pl-5 pr-8 lg:pr-12")}>{t("system.actions")}</th>
+                    <th className={cn(tableHeaderClass, "pl-5")}>{t("system.actions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -270,7 +270,7 @@ export default function SystemUsersPage() {
                       key={item.id}
                       className="group border-b border-zinc-200/60 transition-colors last:border-b-0 hover:bg-zinc-100/60 dark:border-white/[0.05] dark:hover:bg-white/[0.03]"
                     >
-                      <td className="py-4 pl-8 pr-5 align-middle lg:pl-12">
+                      <td className="py-4 pr-5 align-middle">
                         <div className="min-w-0">
                           <div className="truncate text-[15px] font-medium text-zinc-900 dark:text-white flex items-center gap-2">
                             {item.display_name}
@@ -318,7 +318,7 @@ export default function SystemUsersPage() {
                       <td className="px-5 py-4 align-middle whitespace-nowrap">
                         <div className="font-mono text-[12px] tabular-nums text-zinc-500 dark:text-zinc-400">{formatLastLogin(item.last_login_at)}</div>
                       </td>
-                      <td className="py-4 pl-5 pr-8 align-middle lg:pr-12">
+                      <td className="py-4 pl-5 align-middle">
                         <div className="flex items-center justify-start gap-1">
                           <button onClick={() => openEdit(item)} aria-label={t("system.edit")} title={t("system.edit")} className={actionButtonClass}>
                             <PencilLine className="h-4 w-4" />
@@ -343,7 +343,7 @@ export default function SystemUsersPage() {
                 </tbody>
               </table>
             {sortedUsers.length > PAGE_SIZE && (
-              <div className="flex items-center justify-center border-t border-zinc-200/60 px-8 py-3.5 lg:px-12 dark:border-white/[0.06]">
+              <div className="flex items-center justify-center border-t border-zinc-200/60 py-3.5 dark:border-white/[0.06]">
                 <div className="flex items-center gap-0.5">
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}

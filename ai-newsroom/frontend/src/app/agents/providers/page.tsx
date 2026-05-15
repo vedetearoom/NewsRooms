@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, PencilLine, Trash2, Eye, EyeOff, KeyRound, Search } from "lucide-react";
+import { Plus, PencilLine, Trash2, Eye, EyeOff, KeyRound, Search, X } from "lucide-react";
 import { api, type ModelProvider } from "@/lib/api";
 import { useModelProviders } from "@/hooks/useApi";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -33,7 +33,7 @@ const MODEL_CATALOG: Record<string, Record<string, string[]>> = {
 };
 
 const inputClass =
-  "w-full rounded-2xl bg-zinc-50/85 px-4 py-3 text-sm text-zinc-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(15,23,42,0.06)] outline-none transition-all placeholder:text-zinc-400 focus:bg-white focus:ring-1 focus:ring-zinc-300 dark:bg-white/[0.06] dark:text-white dark:placeholder:text-white/20 dark:focus:bg-white/[0.08] dark:focus:ring-white/20";
+  "w-full h-10 rounded-lg bg-background border border-border px-3 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-foreground/20";
 
 const primaryBtn =
   "inline-flex items-center rounded-full bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-900 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-black dark:hover:bg-zinc-200";
@@ -276,17 +276,30 @@ export default function ModelProvidersPage() {
 
       {/* Create/Edit Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setModalOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setModalOpen(false)}>
           <div
-            className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl dark:bg-[#141517]"
+            className="bg-card w-full max-w-md rounded-2xl shadow-2xl border border-border overflow-visible"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
-              {editing ? mp("editProviderTitle") : mp("addProviderTitle")}
-            </h2>
-            <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+            <div className="px-6 py-5 border-b border-border flex items-center justify-between">
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">{mp("nameLabel")}</label>
+                <h3 className="text-lg font-bold text-foreground tracking-tight">
+                  {editing ? mp("editProviderTitle") : mp("addProviderTitle")}
+                </h3>
+                <p className="text-sm text-muted-foreground">{mp("desc")}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalOpen(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-[13px] font-semibold text-foreground">{mp("nameLabel")}</label>
                 <input
                   className={inputClass}
                   value={form.name}
@@ -294,27 +307,29 @@ export default function ModelProvidersPage() {
                   placeholder={mp("namePlaceholder")}
                 />
               </div>
-              <div>
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">{mp("providerLabel")}</label>
+              <div className="space-y-1.5">
+                <label className="text-[13px] font-semibold text-foreground">{mp("providerLabel")}</label>
                 <AgentCustomSelect
                   value={form.provider}
                   onChange={(v) => setForm({ ...form, provider: v, default_model: "" })}
                   className={inputClass}
+                  popoverClassName="z-[160]"
                   options={providerSelectOptions}
                 />
               </div>
-              <div>
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">{mp("categoryLabel")}</label>
+              <div className="space-y-1.5">
+                <label className="text-[13px] font-semibold text-foreground">{mp("categoryLabel")}</label>
                 <AgentCustomSelect
                   value={form.category}
                   onChange={(v) => setForm({ ...form, category: v, default_model: "" })}
                   className={inputClass}
+                  popoverClassName="z-[160]"
                   options={categorySelectOptions}
                 />
               </div>
-              <div>
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                  {mp("apiKeyLabel")} {editing ? <span className="text-zinc-400 normal-case">({mp("apiKeyEditHint")})</span> : <span className="text-red-500">*</span>}
+              <div className="space-y-1.5">
+                <label className="text-[13px] font-semibold text-foreground">
+                  {mp("apiKeyLabel")} {editing ? <span className="text-muted-foreground font-normal">({mp("apiKeyEditHint")})</span> : <span className="text-red-500">*</span>}
                 </label>
                 <div className="relative">
                   <input
@@ -326,24 +341,25 @@ export default function ModelProvidersPage() {
                   />
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     onClick={() => setShowKey(!showKey)}
                   >
                     {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
-              <div>
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">{mp("defaultModel")}</label>
+              <div className="space-y-1.5">
+                <label className="text-[13px] font-semibold text-foreground">{mp("defaultModel")}</label>
                 <AgentCustomSelect
                   value={form.default_model || (MODEL_CATALOG[form.provider]?.[form.category]?.[0] || "")}
                   onChange={(v) => setForm({ ...form, default_model: v })}
                   className={cn(inputClass, "font-mono text-xs")}
+                  popoverClassName="z-[160]"
                   options={(MODEL_CATALOG[form.provider]?.[form.category] || []).map((m) => ({ value: m, label: m }))}
                 />
               </div>
-              <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setModalOpen(false)} className="rounded-full px-4 py-2.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-white/[0.06]">
+              <div className="pt-4 flex items-center justify-end gap-3">
+                <button type="button" onClick={() => setModalOpen(false)} className="rounded-full px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors">
                   {mp("cancel")}
                 </button>
                 <button type="submit" disabled={saving} className={primaryBtn}>

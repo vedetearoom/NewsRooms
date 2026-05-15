@@ -306,7 +306,7 @@ export default function SystemRolesPage() {
 
       <div className="flex-1 overflow-y-auto bg-zinc-50/50 dark:bg-white/[0.01]">
         <div className="pb-8 pt-6">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto px-8 lg:px-12">
             <table className="w-full min-w-[920px]">
                 <colgroup>
                   <col className="w-[30%]" />
@@ -315,9 +315,9 @@ export default function SystemRolesPage() {
                 </colgroup>
                 <thead>
                   <tr className="border-b border-zinc-200/60 dark:border-white/[0.06]">
-                    <th className={cn(tableHeaderClass, "pl-8 pr-5 lg:pl-12")}>{t("system.role")}</th>
+                    <th className={cn(tableHeaderClass, "pr-5")}>{t("system.role")}</th>
                     <th className={cn(tableHeaderClass, "px-5")}>{t("system.permissions")}</th>
-                    <th className={cn(tableHeaderClass, "pl-5 pr-8 lg:pr-12")}>{t("system.actions")}</th>
+                    <th className={cn(tableHeaderClass, "pl-5")}>{t("system.actions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -333,7 +333,7 @@ export default function SystemRolesPage() {
                           isLocked ? "hover:bg-zinc-100/40 dark:hover:bg-white/[0.015]" : "hover:bg-zinc-100/60 dark:hover:bg-white/[0.03]",
                         )}
                       >
-                        <td className="py-4 pl-8 pr-5 align-middle lg:pl-12">
+                        <td className="py-4 pr-5 align-middle">
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
                               <span className={cn("truncate text-[15px] font-medium", isLocked ? "text-zinc-400 dark:text-zinc-500" : "text-zinc-900 dark:text-white")}>
@@ -367,7 +367,7 @@ export default function SystemRolesPage() {
                             ))}
                           </div>
                         </td>
-                        <td className="py-4 pl-5 pr-8 align-middle lg:pr-12">
+                        <td className="py-4 pl-5 align-middle">
                           <div className="flex items-center justify-start gap-1">
                             {isLocked ? (
                               <span
