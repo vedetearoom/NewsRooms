@@ -63,21 +63,18 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
   React.useEffect(() => {
     if (standalone) return;
     const scrollY = window.scrollY;
-    const html = document.documentElement;
-    const els = [html, document.body];
-    for (const el of els) {
-      el.style.overflow = "hidden";
-    }
     document.body.style.position = "fixed";
     document.body.style.top = `-${scrollY}px`;
     document.body.style.width = "100%";
+    const preventScroll = (e: Event) => e.preventDefault();
+    window.addEventListener("wheel", preventScroll, { passive: false });
+    window.addEventListener("touchmove", preventScroll, { passive: false });
     return () => {
-      for (const el of els) {
-        el.style.overflow = "";
-      }
       document.body.style.position = "";
       document.body.style.top = "";
       document.body.style.width = "";
+      window.removeEventListener("wheel", preventScroll);
+      window.removeEventListener("touchmove", preventScroll);
       window.scrollTo(0, scrollY);
     };
   }, [standalone]);
