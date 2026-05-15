@@ -17,6 +17,31 @@ from app.services.auth_service import ALLOWED_PERMISSION_CODES, assign_roles_to_
 from app.services.quota_service import default_quota_limits, normalize_quota_limits
 
 
+async def _is_last_super_admin(db: AsyncSession, user_id: int) -> bool:
+    result = await db.execute(select(Role).where(Role.code == "super_admin"))
+    role = result.scalars().first()
+    if not role:
+        return False
+    count_result = await db.execute(
+        select(func.count())
+        .select_from(user_roles)
+        .join(User, User.id == user_roles.c.user_id)
+        .where(user_roles.c.role_id == role.id, User.is_active.is_(True))
+    )
+    count = int(count_result.scalar() or 0)
+    if count > 1:
+        return False
+    if count == 1:
+        owner_result = await db.execute(
+            select(user_roles.c.user_id)
+            .join(User, User.id == user_roles.c.user_id)
+            .where(user_roles.c.role_id == role.id, User.is_active.is_(True))
+        )
+        owner_id = owner_result.scalars().first()
+        return owner_id == user_id
+    return False
+
+
 async def list_users(db: AsyncSession) -> list[UserOut]:
     result = await db.execute(select(User).order_by(User.created_at.desc(), User.id.desc()))
     return [await serialize_user(db, user) for user in result.scalars().all()]
@@ -37,7 +62,6 @@ async def create_user(user_in: UserCreate, db: AsyncSession) -> UserOut:
         display_name=user_in.display_name,
         password_hash=hash_password(user_in.password),
         is_active=user_in.is_active,
-        is_super_admin=False,
     )
     db.add(user)
     await db.flush()
@@ -56,8 +80,8 @@ async def get_user_or_404(user_id: int, db: AsyncSession) -> User:
 
 async def update_user(user_id: int, user_in: UserUpdate, db: AsyncSession) -> UserOut:
     user = await get_user_or_404(user_id, db)
-    if user.is_super_admin and user_in.is_active is False:
-        raise HTTPException(status_code=400, detail="不能禁用超级管理员")
+    if user_in.is_active is False and await _is_last_super_admin(db, user.id):
+        raise HTTPException(status_code=400, detail="不能禁用最后一个超级管理员")
 
     payload = user_in.model_dump(exclude_unset=True)
     role_codes = payload.pop("role_codes", None)
@@ -74,8 +98,8 @@ async def update_user(user_id: int, user_in: UserUpdate, db: AsyncSession) -> Us
 
 async def update_user_status(user_id: int, status_in: UserStatusUpdate, db: AsyncSession) -> UserOut:
     user = await get_user_or_404(user_id, db)
-    if user.is_super_admin and not status_in.is_active:
-        raise HTTPException(status_code=400, detail="不能禁用超级管理员")
+    if not status_in.is_active and await _is_last_super_admin(db, user.id):
+        raise HTTPException(status_code=400, detail="不能禁用最后一个超级管理员")
     user.is_active = status_in.is_active
     await db.commit()
     await db.refresh(user)
@@ -93,8 +117,8 @@ async def delete_user(user_id: int, current_user_id: int, db: AsyncSession) -> d
     user = await get_user_or_404(user_id, db)
     if user.id == current_user_id:
         raise HTTPException(status_code=400, detail="不能删除当前登录账号")
-    if user.is_super_admin:
-        raise HTTPException(status_code=400, detail="不能删除超级管理员")
+    if await _is_last_super_admin(db, user.id):
+        raise HTTPException(status_code=400, detail="不能删除最后一个超级管理员")
     await db.execute(delete(user_roles).where(user_roles.c.user_id == user.id))
     await db.delete(user)
     await db.commit()

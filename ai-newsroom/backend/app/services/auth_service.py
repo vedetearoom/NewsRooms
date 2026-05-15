@@ -234,7 +234,6 @@ async def ensure_default_access_control_data(db: AsyncSession) -> None:
             display_name=settings.default_admin_display_name,
             password_hash=hash_password(settings.default_admin_password),
             is_active=True,
-            is_super_admin=True,
         )
         db.add(admin_user)
         await db.flush()
@@ -317,7 +316,6 @@ async def serialize_user(db: AsyncSession, user: User) -> UserOut:
         display_name=user.display_name,
         clerk_user_id=user.clerk_user_id,
         is_active=user.is_active,
-        is_super_admin=user.is_super_admin,
         roles=serialized_roles,
         permissions=[permission.code for permission in permissions],
         last_login_at=user.last_login_at,
@@ -405,7 +403,6 @@ async def register_user(register_in: RegisterRequest, db: AsyncSession) -> AuthR
         display_name=register_in.display_name,
         password_hash=hash_password(register_in.password),
         is_active=True,
-        is_super_admin=False,
         last_login_at=datetime.now(UTC),
     )
     db.add(user)
@@ -514,8 +511,6 @@ def require_permission(permission_code: str):
         current_user: User = Depends(resolve_current_user),
         db: AsyncSession = Depends(get_db),
     ) -> User:
-        if current_user.is_super_admin:
-            return current_user
         permissions = await load_user_permission_codes(db, current_user.id)
         if permission_code not in permissions:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied")

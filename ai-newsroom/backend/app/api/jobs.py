@@ -55,7 +55,7 @@ async def trigger_process(
 @router.get("/jobs")
 async def get_all_jobs(current_user=Depends(require_permission("network.view"))):
     """Retrieve all current jobs from the job manager."""
-    return await list_jobs(current_user.id, current_user.is_super_admin)
+    return await list_jobs(current_user.id)
 
 
 @router.get("/jobs/{job_id}")
@@ -64,7 +64,7 @@ async def get_job_status(
     current_user=Depends(resolve_current_user),
 ):
     """Poll the status of a background job."""
-    return await get_job_or_404(job_id, current_user.id, current_user.is_super_admin)
+    return await get_job_or_404(job_id, current_user.id)
 
 
 @router.post("/analyze/video")

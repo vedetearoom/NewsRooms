@@ -36,7 +36,6 @@ export interface AuthUser {
   display_name: string;
   clerk_user_id?: string | null;
   is_active: boolean;
-  is_super_admin: boolean;
   roles: AuthRole[];
   permissions: string[];
   last_login_at?: string | null;
@@ -165,7 +164,6 @@ export function logout() {
 
 export function hasPermission(user: AuthUser | null | undefined, permission: string): boolean {
   if (!user) return false;
-  if (user.is_super_admin) return true;
   return user.permissions.includes(permission);
 }
 

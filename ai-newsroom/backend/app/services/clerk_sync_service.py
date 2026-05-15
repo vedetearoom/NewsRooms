@@ -126,8 +126,6 @@ async def sync_clerk_user_created_or_updated(db: AsyncSession, data: ClerkUserDa
                 )
                 return email_user
 
-    role_codes = role_codes_for_clerk_email(email)
-
     if user:
         user.clerk_user_id = clerk_user_id
         if email:
@@ -137,11 +135,11 @@ async def sync_clerk_user_created_or_updated(db: AsyncSession, data: ClerkUserDa
         user.password_hash = None
         user.is_active = True
         user.clerk_deleted_at = None
-        await assign_roles_to_user(user.id, role_codes, db)
         await ensure_default_agents_for_user(db, user.id)
         await db.flush()
         return user
 
+    role_codes = role_codes_for_clerk_email(email)
     username = await derive_unique_username(db, data, email, clerk_user_id)
     user = User(
         username=username,
@@ -151,7 +149,6 @@ async def sync_clerk_user_created_or_updated(db: AsyncSession, data: ClerkUserDa
         clerk_user_id=clerk_user_id,
         clerk_deleted_at=None,
         is_active=True,
-        is_super_admin=False,
         last_login_at=datetime.now(UTC),
     )
     db.add(user)

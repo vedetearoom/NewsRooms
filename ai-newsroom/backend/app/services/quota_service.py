@@ -236,8 +236,9 @@ def _merge_role_limits(roles: list[Role]) -> dict[str, int | None]:
 
 
 async def get_effective_quota_limits(db: AsyncSession, user_id: int) -> dict[str, int | None]:
-    user = await _load_user(db, user_id)
-    if user and user.is_super_admin:
+    from app.services.auth_service import load_user_permission_codes
+    permissions = await load_user_permission_codes(db, user_id)
+    if "system.manage" in permissions:
         return unlimited_quota_limits()
     roles = await _load_user_roles(db, user_id)
     return _merge_role_limits(roles)

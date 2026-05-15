@@ -70,6 +70,7 @@ async def init_db():
         await conn.run_sync(_ensure_role_quota_columns)
         await conn.run_sync(_ensure_clerk_user_id_column)
         await conn.run_sync(_ensure_pinned_columns)
+        await conn.run_sync(_drop_is_super_admin_column)
 
     from app.models import User
     from app.services.agent_service import ensure_default_agents_for_user
@@ -239,3 +240,13 @@ def _ensure_pinned_columns(sync_conn) -> None:
     sync_conn.execute(
         text("CREATE INDEX IF NOT EXISTS ix_intelligence_cards_is_pinned ON intelligence_cards (is_pinned)")
     )
+
+
+def _drop_is_super_admin_column(sync_conn) -> None:
+    inspector = inspect(sync_conn)
+    if "users" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("users")}
+    if "is_super_admin" in columns:
+        sync_conn.execute(text("ALTER TABLE users DROP COLUMN is_super_admin"))

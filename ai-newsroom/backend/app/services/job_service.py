@@ -26,10 +26,8 @@ async def trigger_process_job(user_id: int) -> dict:
     return {"ok": True, "job_id": job_id}
 
 
-async def list_jobs(user_id: int, is_super_admin: bool = False) -> list[dict]:
+async def list_jobs(user_id: int) -> list[dict]:
     jobs = await job_manager.get_all_jobs()
-    if is_super_admin:
-        return jobs
     return [
         job
         for job in jobs
@@ -37,14 +35,13 @@ async def list_jobs(user_id: int, is_super_admin: bool = False) -> list[dict]:
     ]
 
 
-async def get_job_or_404(job_id: str, user_id: int, is_super_admin: bool = False) -> dict:
+async def get_job_or_404(job_id: str, user_id: int) -> dict:
     status = await job_manager.get_status(job_id)
     if not status:
         raise HTTPException(status_code=404, detail="Job not found")
-    if not is_super_admin:
-        meta = status.get("meta")
-        if not isinstance(meta, dict) or meta.get("owner_user_id") != user_id:
-            raise HTTPException(status_code=404, detail="Job not found")
+    meta = status.get("meta")
+    if not isinstance(meta, dict) or meta.get("owner_user_id") != user_id:
+        raise HTTPException(status_code=404, detail="Job not found")
     return status
 
 

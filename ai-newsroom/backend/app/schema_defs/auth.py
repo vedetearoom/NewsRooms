@@ -89,7 +89,6 @@ class UserOut(UserBase):
     id: int
     clerk_user_id: str | None = None
     is_active: bool
-    is_super_admin: bool
     roles: list[RoleOut] = []
     permissions: list[str] = []
     last_login_at: datetime | None = None
