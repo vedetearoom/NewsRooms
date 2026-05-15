@@ -6,9 +6,9 @@ import httpx
 
 from app.config import get_settings
 
-_clerk_api_cache: dict = {"base_url": None, "secret_key": None}
 _verified_user_cache: dict[str, tuple[float, dict]] = {}
 _VERIFIED_USER_CACHE_TTL_SECONDS = 60
+_jwks_clients: dict[str, jwt.PyJWKClient] = {}
 
 
 def _get_api_config() -> tuple[str, str]:
@@ -18,18 +18,55 @@ def _get_api_config() -> tuple[str, str]:
     return base_url, secret_key
 
 
-async def verify_clerk_token(token: str) -> dict:
-    """Verify a Clerk session token via the Clerk Backend API.
+def _get_jwks_url() -> str:
+    settings = get_settings()
+    if settings.clerk_jwks_url:
+        return settings.clerk_jwks_url
+    if settings.clerk_issuer:
+        return f"{settings.clerk_issuer.rstrip('/')}/.well-known/jwks.json"
+    return ""
 
-    1. Decode the JWT (without signature verification) to get the ``sub`` claim.
-    2. Call GET /v1/users/{user_id} to verify the user exists and is active.
-    3. Return the payload with Clerk user info.
 
-    Raises HTTPException(401) on any verification failure.
-    """
-    # Step 1: Decode JWT without verification to extract claims
+def _verify_token_with_jwks(token: str) -> dict:
+    settings = get_settings()
+    jwks_url = _get_jwks_url()
+    if not jwks_url:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Clerk JWKS URL not configured",
+        )
+
     try:
-        payload = jwt.decode(
+        jwks_client = _jwks_clients.setdefault(jwks_url, jwt.PyJWKClient(jwks_url))
+        signing_key = jwks_client.get_signing_key_from_jwt(token)
+        decode_options = {"verify_aud": False}
+        decode_kwargs = {
+            "algorithms": ["RS256"],
+            "options": decode_options,
+        }
+        if settings.clerk_issuer:
+            decode_kwargs["issuer"] = settings.clerk_issuer.rstrip("/")
+        return jwt.decode(token, signing_key.key, **decode_kwargs)
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Clerk token has expired",
+        )
+    except jwt.InvalidTokenError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid Clerk token: {exc}",
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Failed to verify Clerk token: {exc}",
+        )
+
+
+def _decode_unverified_token(token: str) -> dict:
+    try:
+        return jwt.decode(
             token,
             options={"verify_signature": False, "verify_exp": True},
         )
@@ -44,40 +81,24 @@ async def verify_clerk_token(token: str) -> dict:
             detail=f"Invalid Clerk token format: {exc}",
         )
 
-    clerk_user_id = payload.get("sub")
-    if not clerk_user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Clerk token missing 'sub' claim",
-        )
 
+async def _fetch_user_enrichment(clerk_user_id: str) -> dict:
     now_ts = datetime.now(UTC).timestamp()
     cached = _verified_user_cache.get(clerk_user_id)
     if cached and cached[0] > now_ts:
-        payload.update(cached[1])
-        return payload
+        return cached[1]
 
-    # Step 2: Verify user via Clerk Backend API
     base_url, secret_key = _get_api_config()
     if not secret_key:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Clerk secret key not configured",
-        )
+        return {}
 
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(
-                f"{base_url}/v1/users/{clerk_user_id}",
-                headers={
-                    "Authorization": f"Bearer {secret_key}",
-                    "Content-Type": "application/json",
-                },
-            )
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Failed to verify Clerk user: {exc}",
+    async with httpx.AsyncClient(timeout=10) as client:
+        resp = await client.get(
+            f"{base_url}/v1/users/{clerk_user_id}",
+            headers={
+                "Authorization": f"Bearer {secret_key}",
+                "Content-Type": "application/json",
+            },
         )
 
     if resp.status_code == 404:
@@ -86,14 +107,9 @@ async def verify_clerk_token(token: str) -> dict:
             detail="Clerk user not found",
         )
     if resp.status_code != 200:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Clerk API returned {resp.status_code}",
-        )
+        return {}
 
     user_data = resp.json()
-
-    # Check if user is banned or locked
     if user_data.get("banned"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -119,11 +135,33 @@ async def verify_clerk_token(token: str) -> dict:
         name = f'{name} {user_data["last_name"]}'.strip()
 
     enriched = {"email": email, "name": name}
-    payload.update(enriched)
-    token_exp = payload.get("exp")
-    token_ttl = max(0, int(token_exp) - int(now_ts)) if token_exp else _VERIFIED_USER_CACHE_TTL_SECONDS
-    cache_ttl = min(_VERIFIED_USER_CACHE_TTL_SECONDS, token_ttl)
-    if cache_ttl > 0:
-        _verified_user_cache[clerk_user_id] = (now_ts + cache_ttl, enriched)
+    _verified_user_cache[clerk_user_id] = (now_ts + _VERIFIED_USER_CACHE_TTL_SECONDS, enriched)
+    return enriched
+
+
+async def verify_clerk_token(token: str) -> dict:
+    """Verify a Clerk session token and enrich it with Clerk user info when available."""
+    if _get_jwks_url():
+        payload = _verify_token_with_jwks(token)
+    else:
+        payload = _decode_unverified_token(token)
+
+    clerk_user_id = payload.get("sub")
+    if not clerk_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Clerk token missing 'sub' claim",
+        )
+
+    try:
+        payload.update(await _fetch_user_enrichment(clerk_user_id))
+    except HTTPException:
+        raise
+    except Exception:
+        if not _get_jwks_url():
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Failed to verify Clerk user",
+            )
 
     return payload
