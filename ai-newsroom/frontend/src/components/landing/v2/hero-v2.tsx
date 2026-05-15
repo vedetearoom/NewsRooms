@@ -42,15 +42,31 @@ export function HeroV2({ accent = "#ffffff", onLogin, onRegister }: HeroV2Props)
       <div
         style={{
           position: "absolute",
-          top: "10%",
-          right: "0%",
-          width: "60%",
-          height: "70%",
-          background: `radial-gradient(ellipse at center, ${accent}1f 0%, ${accent}06 35%, transparent 70%)`,
-          filter: "blur(80px)",
+          top: zh ? "4%" : "10%",
+          right: zh ? "-6%" : "0%",
+          width: zh ? "68%" : "60%",
+          height: zh ? "76%" : "70%",
+          background: zh
+            ? `radial-gradient(ellipse at center, ${accent}26 0%, ${accent}0d 34%, transparent 70%)`
+            : `radial-gradient(ellipse at center, ${accent}1f 0%, ${accent}06 35%, transparent 70%)`,
+          filter: zh ? "blur(96px)" : "blur(80px)",
           pointerEvents: "none",
         }}
       />
+      {zh && (
+        <div
+          style={{
+            position: "absolute",
+            top: "18%",
+            left: "4%",
+            width: "520px",
+            height: "420px",
+            background: "radial-gradient(ellipse at center, rgba(126,140,255,0.14) 0%, rgba(91,103,255,0.05) 34%, transparent 72%)",
+            filter: "blur(72px)",
+            pointerEvents: "none",
+          }}
+        />
+      )}
 
       <V2Navbar accent={accent} onLogin={onLogin} onRegister={onRegister} />
 
@@ -69,17 +85,22 @@ export function HeroV2({ accent = "#ffffff", onLogin, onRegister }: HeroV2Props)
         }}
       >
         {/* Left column — text */}
-        <div style={{ flex: "0 1 520px", minWidth: 360, paddingTop: 28 }}>
+        <div style={{ flex: zh ? "0 1 560px" : "0 1 520px", minWidth: 360, paddingTop: 28 }}>
           <div
             style={{
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.07)",
+              background: zh
+                ? "linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.035))"
+                : "rgba(255,255,255,0.03)",
+              border: zh ? "1px solid rgba(255,255,255,0.12)" : "1px solid rgba(255,255,255,0.07)",
               borderRadius: 999,
-              padding: "6px 12px 6px 10px",
-              marginBottom: 32,
+              padding: zh ? "7px 13px 7px 10px" : "6px 12px 6px 10px",
+              marginBottom: zh ? 34 : 32,
+              boxShadow: zh ? "0 1px 0 rgba(255,255,255,0.12) inset, 0 18px 42px rgba(0,0,0,0.28)" : undefined,
+              backdropFilter: zh ? "blur(18px)" : undefined,
+              WebkitBackdropFilter: zh ? "blur(18px)" : undefined,
             }}
           >
             <span
@@ -98,37 +119,45 @@ export function HeroV2({ accent = "#ffffff", onLogin, onRegister }: HeroV2Props)
           </div>
 
           <h1
-            className={`hero-v2-title ${zh ? "font-serif text-balance" : ""}`}
+            className="hero-v2-title text-balance"
             style={{
-              fontSize: "clamp(56px, 5.6vw, 84px)",
-              fontWeight: 600,
-              letterSpacing: zh ? "0.02em" : "-0.045em",
-              lineHeight: zh ? 1.15 : 0.96,
+              fontSize: zh ? "clamp(56px, 6.4vw, 96px)" : "clamp(56px, 5.6vw, 84px)",
+              fontWeight: zh ? 800 : 600,
+              letterSpacing: zh ? "-0.035em" : "-0.045em",
+              lineHeight: zh ? 1.08 : 0.96,
               margin: 0,
-              color: "rgba(255,255,255,0.98)",
+              color: zh ? "transparent" : "rgba(255,255,255,0.98)",
+              backgroundImage: zh ? "linear-gradient(180deg, #ffffff 0%, #f1f2f8 42%, #9ea3b6 100%)" : undefined,
+              WebkitBackgroundClip: zh ? "text" : undefined,
+              backgroundClip: zh ? "text" : undefined,
+              textShadow: zh ? "0 24px 70px rgba(136,148,255,0.14)" : undefined,
             }}
           >
             {t("landing.hero.titleLine1")}
-            {zh ? "" : <br />}
+            <br />
             {t("landing.hero.titleLine2")}
-            {zh ? "" : <br />}
+            {!zh && <br />}
             <span
-              className={zh ? "font-serif" : "italic font-normal font-serif"}
-              style={{ color: accent }}
+              className={zh ? undefined : "italic font-normal font-serif"}
+              style={{
+                color: zh ? "#aeb4cb" : accent,
+                WebkitTextFillColor: zh ? "#aeb4cb" : undefined,
+              }}
             >
               {t("landing.hero.titleAccent")}
             </span>
           </h1>
 
           <p
-            className={zh ? "text-pretty" : ""}
+            className="text-pretty"
             style={{
-              marginTop: 28,
-              fontSize: zh ? 18 : 17,
-              lineHeight: zh ? 2 : 1.5,
-              color: "rgba(255,255,255,0.5)",
-              letterSpacing: zh ? "0.02em" : "-0.005em",
-              maxWidth: 460,
+              marginTop: zh ? 30 : 28,
+              fontSize: zh ? 17 : 17,
+              lineHeight: zh ? 1.9 : 1.5,
+              color: zh ? "rgba(226,231,255,0.52)" : "rgba(255,255,255,0.5)",
+              letterSpacing: zh ? "0.01em" : "-0.005em",
+              maxWidth: zh ? 520 : 460,
+              fontWeight: zh ? 350 : undefined,
             }}
           >
             {t("landing.hero.body")}
@@ -139,16 +168,18 @@ export function HeroV2({ accent = "#ffffff", onLogin, onRegister }: HeroV2Props)
               type="button"
               onClick={onRegister}
               style={{
-                background: "white",
+                background: zh ? "linear-gradient(180deg, #ffffff 0%, #dfe3f2 100%)" : "white",
                 color: "#08090b",
                 fontSize: 14,
-                fontWeight: 600,
+                fontWeight: zh ? 650 : 600,
                 padding: "11px 18px",
-                borderRadius: 8,
+                borderRadius: zh ? 9 : 8,
                 border: "none",
                 cursor: "pointer",
-                letterSpacing: "-0.005em",
-                boxShadow: "0 1px 0 rgba(255,255,255,0.4) inset, 0 8px 24px rgba(0,0,0,0.4)",
+                letterSpacing: zh ? "-0.01em" : "-0.005em",
+                boxShadow: zh
+                  ? `0 1px 0 rgba(255,255,255,0.75) inset, 0 12px 34px ${accent}26, 0 10px 28px rgba(0,0,0,0.46)`
+                  : "0 1px 0 rgba(255,255,255,0.4) inset, 0 8px 24px rgba(0,0,0,0.4)",
               }}
             >
               {t("landing.hero.primaryCta")}
@@ -157,12 +188,12 @@ export function HeroV2({ accent = "#ffffff", onLogin, onRegister }: HeroV2Props)
               href="#pipeline"
               style={{
                 background: "transparent",
-                color: "rgba(255,255,255,0.7)",
+                color: zh ? "rgba(235,238,255,0.72)" : "rgba(255,255,255,0.7)",
                 fontSize: 14,
                 fontWeight: 500,
                 padding: "11px 16px",
-                borderRadius: 8,
-                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: zh ? 9 : 8,
+                border: zh ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(255,255,255,0.08)",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",

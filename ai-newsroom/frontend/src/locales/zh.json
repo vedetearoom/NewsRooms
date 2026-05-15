@@ -991,8 +991,8 @@
       "passwordPlaceholder": "••••••",
       "signingIn": "正在登录...",
       "creatingAccount": "正在提交申请...",
-      "continue": "继续 →",
-      "create": "加入等待名单 →",
+      "continue": "登录",
+      "create": "加入等待名单",
       "needAccount": "还没有访问权限？申请加入",
       "haveAccount": "已有账号？登录",
       "failed": "认证失败",
@@ -1020,9 +1020,9 @@
     "hero": {
       "badge": "3 个智能体协同工作",
       "titleLine1": "让情报",
-      "titleLine2": "自动写成",
-      "titleAccent": "新闻稿。",
-      "body": "Extract、Writer、Assassin 三类专用智能体串成一条编辑流水线。从 RSS 信源到可发布报告，最快不到一分钟。",
+      "titleLine2": "自我编织",
+      "titleAccent": "。",
+      "body": "Extract、Writer、Assassin 三类智能体协同运转，重构情报生成链路。从 RSS 源流到成品研报，尽在一刻。",
       "primaryCta": "开始搭建",
       "secondaryCta": "查看架构",
       "trustedBy": "分析师团队正在使用"

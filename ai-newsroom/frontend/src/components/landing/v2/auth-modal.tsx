@@ -48,11 +48,13 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
   const [cardHeight, setCardHeight] = React.useState<number | null>(null);
   const [isFlipping, setIsFlipping] = React.useState(false);
   const [useLocalAuth, setUseLocalAuth] = React.useState(false);
+  const [waitlistSubmitted, setWaitlistSubmitted] = React.useState(false);
   const loginFaceRef = React.useRef<HTMLDivElement>(null);
   const registerFaceRef = React.useRef<HTMLDivElement>(null);
   const loginInputRef = React.useRef<HTMLInputElement>(null);
   const registerInputRef = React.useRef<HTMLInputElement>(null);
   const modalScrollRef = React.useRef<HTMLDivElement>(null);
+  const isPointerDownOnBackdrop = React.useRef(false);
   const [pageHeight, setPageHeight] = React.useState(0);
 
   const updateCardHeight = React.useCallback(() => {
@@ -149,6 +151,7 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
   const handleRegister = async () => {
     await clerk.joinWaitlist({ emailAddress: email });
     setError(t("landing.auth.waitlistSuccess"));
+    setWaitlistSubmitted(true);
     setLoading(false);
   };
 
@@ -511,7 +514,7 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
 
       <button
         type="submit"
-        disabled={loading || (faceMode === "login" ? !username || !password : !email)}
+        disabled={loading || (faceMode === "login" ? !username || !password : !email || waitlistSubmitted)}
         tabIndex={mode === faceMode ? 0 : -1}
         className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-[13px] font-semibold tracking-tight text-black transition-all hover:-translate-y-px hover:bg-white/90 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-40"
       >
@@ -629,12 +632,28 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
         WebkitBackdropFilter: "blur(40px)",
         animation: "authBackdropIn 320ms ease-out forwards",
       }}
-      onClick={onClose}
+      onPointerDown={() => {
+        isPointerDownOnBackdrop.current = true;
+      }}
+      onPointerUp={() => {
+        if (isPointerDownOnBackdrop.current) {
+          onClose();
+        }
+        isPointerDownOnBackdrop.current = false;
+      }}
     >
       <div
         ref={modalScrollRef}
         className="w-full max-w-[400px] max-h-full overflow-y-auto px-4 pt-[8vh] pb-[6vh] no-scrollbar"
         style={{ overscrollBehavior: "contain" }}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          isPointerDownOnBackdrop.current = false;
+        }}
+        onPointerUp={(e) => {
+          e.stopPropagation();
+          isPointerDownOnBackdrop.current = false;
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div

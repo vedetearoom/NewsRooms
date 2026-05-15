@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Ban, Check, PencilLine, RotateCcw } from "lucide-react";
+import { Ban, Check, Key, PencilLine, RotateCcw } from "lucide-react";
 import { api, type CurrentUser, type Role } from "@/lib/api";
 import { useAuthState } from "@/lib/auth";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -62,6 +62,9 @@ export default function SystemUsersPage() {
   const [loading, setLoading] = React.useState(true);
   const [modalOpen, setModalOpen] = React.useState(false);
   const [editingUser, setEditingUser] = React.useState<CurrentUser | null>(null);
+  const [passwordModalOpen, setPasswordModalOpen] = React.useState(false);
+  const [passwordResetUser, setPasswordResetUser] = React.useState<CurrentUser | null>(null);
+  const [newPassword, setNewPassword] = React.useState("");
   const [saving, setSaving] = React.useState(false);
   const [formErrors, setFormErrors] = React.useState<UserFormErrors>({});
   const [form, setForm] = React.useState({
@@ -108,6 +111,12 @@ export default function SystemUsersPage() {
     setModalOpen(true);
   };
 
+  const openPasswordReset = (target: CurrentUser) => {
+    setPasswordResetUser(target);
+    setNewPassword("");
+    setPasswordModalOpen(true);
+  };
+
   const validateUserForm = () => {
     const nextErrors: UserFormErrors = {};
     const email = form.email.trim();
@@ -142,6 +151,26 @@ export default function SystemUsersPage() {
     } catch (error) {
       console.error(error);
       toast.error(t("system.saveUserFailed"), t("system.saveUserFailedDesc"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      toast.error(t("system.formInvalidTitle"), t("system.validationPassword"));
+      return;
+    }
+    setSaving(true);
+    try {
+      if (!passwordResetUser) return;
+      await api.admin.resetUserPassword(passwordResetUser.id, newPassword);
+      toast.success(t("system.passwordResetSuccess"));
+      setPasswordModalOpen(false);
+    } catch (error) {
+      console.error(error);
+      toast.error(t("system.passwordResetFailed"), t("system.passwordResetFailedDesc"));
     } finally {
       setSaving(false);
     }
@@ -229,7 +258,18 @@ export default function SystemUsersPage() {
                     >
                       <td className="py-4 pl-8 pr-5 align-middle lg:pl-12">
                         <div className="min-w-0">
-                          <div className="truncate text-[15px] font-medium text-zinc-900 dark:text-white">{item.display_name}</div>
+                          <div className="truncate text-[15px] font-medium text-zinc-900 dark:text-white flex items-center gap-2">
+                            {item.display_name}
+                            {item.clerk_user_id ? (
+                              <span className="inline-flex items-center rounded-sm bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10 dark:bg-indigo-400/10 dark:text-indigo-400 dark:ring-indigo-400/20">
+                                SSO
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center rounded-sm bg-zinc-50 px-1.5 py-0.5 text-[10px] font-medium text-zinc-600 ring-1 ring-inset ring-zinc-500/10 dark:bg-white/5 dark:text-zinc-400 dark:ring-white/10">
+                                Local
+                              </span>
+                            )}
+                          </div>
                           <div className="mt-1 truncate font-mono text-[12px] text-zinc-500 dark:text-zinc-400">@{item.username}</div>
                         </div>
                       </td>
@@ -269,6 +309,11 @@ export default function SystemUsersPage() {
                           <button onClick={() => openEdit(item)} aria-label={t("system.edit")} title={t("system.edit")} className={actionButtonClass}>
                             <PencilLine className="h-4 w-4" />
                           </button>
+                          {!item.clerk_user_id && (
+                            <button onClick={() => openPasswordReset(item)} aria-label={t("system.resetPassword")} title={t("system.resetPassword")} className={actionButtonClass}>
+                              <Key className="h-4 w-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => handleToggleStatus(item)}
                             aria-label={item.is_active ? t("system.disable") : t("system.enable")}
@@ -397,6 +442,42 @@ export default function SystemUsersPage() {
                 </button>
                 <button disabled={saving} type="submit" className={primaryButtonClass}>
                   {saving ? t("system.saving") : t("system.saveUser")}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {passwordModalOpen && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center px-4">
+          <button className="absolute inset-0 bg-black/55 backdrop-blur-sm" onClick={() => setPasswordModalOpen(false)} />
+          <div className="relative z-10 w-full max-w-[420px] rounded-[32px] border border-zinc-200/80 bg-white p-7 text-zinc-950 shadow-[0_30px_90px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-[#121418] dark:text-white dark:shadow-2xl dark:shadow-black/60">
+            <h2 className="text-xl font-semibold tracking-tight">{t("system.resetPassword")}</h2>
+            <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
+              {t("system.resetPasswordDesc").replace("{name}", passwordResetUser?.display_name || "")}
+            </p>
+            <form className="mt-6 space-y-4" onSubmit={handlePasswordSubmit}>
+              <div>
+                <FieldLabel label={t("system.newPassword")} required />
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className={cn(modalInputClass, "font-mono")}
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setPasswordModalOpen(false)}
+                  className="rounded-xl px-4 py-2.5 text-sm text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-900 dark:text-white/45 dark:hover:bg-white/[0.05] dark:hover:text-white/75 dark:focus-visible:ring-white"
+                >
+                  {t("system.cancel")}
+                </button>
+                <button disabled={saving || newPassword.length < 6} type="submit" className={primaryButtonClass}>
+                  {saving ? t("system.saving") : t("system.confirmReset")}
                 </button>
               </div>
             </form>
