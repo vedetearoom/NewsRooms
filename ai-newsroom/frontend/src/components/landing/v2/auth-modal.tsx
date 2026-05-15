@@ -63,12 +63,18 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
   React.useEffect(() => {
     if (standalone) return;
     const scrollY = window.scrollY;
-    document.body.style.overflow = "hidden";
+    const html = document.documentElement;
+    const els = [html, document.body];
+    for (const el of els) {
+      el.style.overflow = "hidden";
+    }
     document.body.style.position = "fixed";
     document.body.style.top = `-${scrollY}px`;
     document.body.style.width = "100%";
     return () => {
-      document.body.style.overflow = "";
+      for (const el of els) {
+        el.style.overflow = "";
+      }
       document.body.style.position = "";
       document.body.style.top = "";
       document.body.style.width = "";
