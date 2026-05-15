@@ -41,9 +41,19 @@ export function InboxToolbar({
     <header className="sticky top-0 z-[120] bg-white/90 dark:bg-transparent frosted-bar backdrop-blur-xl">
       <div className="px-8 h-[52px] flex items-center justify-between group">
         <div className="flex items-center gap-5">
-          <h1 className="text-[14px] font-semibold tracking-[-0.02em]">{t('inbox.title')}</h1>
           {/* Content Type Tabs */}
           <div className="flex items-center gap-1">
+            <button
+              onClick={() => { setContentTab("pinned"); setActiveTag("all"); }}
+              className={cn(
+                "px-3 py-1 rounded-md text-[13px] transition-colors cursor-pointer",
+                contentTab === "pinned"
+                  ? "text-foreground font-semibold bg-[var(--pill-bg)]"
+                  : "text-muted-foreground hover:text-foreground hover:bg-[var(--pill-hover-bg)]"
+              )}
+            >
+              {t('inbox.pinnedTab')}
+            </button>
             <button
               onClick={() => { setContentTab("article"); setActiveTag("all"); }}
               className={cn(
@@ -65,17 +75,6 @@ export function InboxToolbar({
               )}
             >
               {t('inbox.videoIntel')}
-            </button>
-            <button
-              onClick={() => { setContentTab("pinned"); setActiveTag("all"); }}
-              className={cn(
-                "px-3 py-1 rounded-md text-[13px] transition-colors cursor-pointer",
-                contentTab === "pinned"
-                  ? "text-foreground font-semibold bg-[var(--pill-bg)]"
-                  : "text-muted-foreground hover:text-foreground hover:bg-[var(--pill-hover-bg)]"
-              )}
-            >
-              {t('inbox.pinnedTab')}
             </button>
           </div>
           {/* Dynamic Trending Tags */}

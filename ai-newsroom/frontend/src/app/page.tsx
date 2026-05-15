@@ -47,7 +47,7 @@ function DiscoverContent() {
 
   // Content type tab — article vs video
   const setContentTabAction = useTabsStore(s => s.setDiscoverContentTab);
-  const [contentTab, setContentTab] = useUrlTab<"pinned" | "article" | "video">("type", "article", setContentTabAction);
+  const [contentTab, setContentTab] = useUrlTab<"pinned" | "article" | "video">("type", "pinned", setContentTabAction);
 
   // Tag filter — resets when time tab changes
   const [activeTag, setActiveTag] = React.useState<string>("all");
