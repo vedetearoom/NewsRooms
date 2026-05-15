@@ -2,9 +2,8 @@
 
 import * as React from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { useAuthSafe, useSessionSafe, useClerkSafe } from "@/lib/clerk-safe";
-import { api } from "@/lib/api";
-import { hasPermission, updateStoredUser } from "@/lib/auth";
+import { useAuthSafe, useClerkSafe } from "@/lib/clerk-safe";
+import { fetchAndCacheMeUser, hasPermission } from "@/lib/auth";
 
 function getRouteRequirement(pathname: string | null): string | null {
   if (!pathname || pathname.startsWith("/landing")) return null;
@@ -28,7 +27,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { isSignedIn, isLoaded } = useAuthSafe();
-  const { session } = useSessionSafe();
   const clerk = useClerkSafe();
   const [ready, setReady] = React.useState(false);
 
@@ -51,14 +49,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      if (!session) return;
-      const token = await session.getToken();
-      if (!token) return;
-
       try {
-        const user = await api.auth.me();
+        const user = await fetchAndCacheMeUser({ throwOnError: true });
+        if (!user) return;
         if (!cancelled) {
-          updateStoredUser(user);
           const requiredPermission = getRouteRequirement(pathname);
           if (requiredPermission && !hasPermission(user, requiredPermission)) {
             router.replace(getFallbackPath(user.permissions));
@@ -78,7 +72,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [pathname, router, isLoaded, isSignedIn, session, clerk]);
+  }, [pathname, router, isLoaded, isSignedIn, clerk]);
 
   React.useEffect(() => {
     if (pathname?.startsWith("/landing") || pathname?.startsWith("/sign-in") || pathname?.startsWith("/sign-up")) {

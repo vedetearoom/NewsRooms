@@ -56,6 +56,12 @@ function isPublicApiPath(path: string): boolean {
   return path.startsWith("/api/auth/login") || path.startsWith("/api/auth/register") || path.startsWith("/api/health");
 }
 
+function isTokenRefreshableError(detail: ApiErrorDetail | string | null): boolean {
+  const message = typeof detail === "string" ? detail : detail?.message || detail?.code || "";
+  const normalized = message.toLowerCase();
+  return normalized.includes("token") || normalized.includes("bearer") || normalized.includes("authentication token");
+}
+
 async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
   let token = getAuthToken();
   if (!token) {
@@ -80,13 +86,16 @@ async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
       headers: buildHeaders(token),
     });
     if (res.status === 401) {
-      const { fetchClerkToken } = await import("@/lib/auth");
-      token = await fetchClerkToken(true);
-      if (token) {
-        res = await fetch(`${API_BASE}${path}`, {
-          ...options,
-          headers: buildHeaders(token),
-        });
+      const { detail } = await parseAPIErrorResponse(res.clone());
+      if (isTokenRefreshableError(detail)) {
+        const { fetchClerkToken } = await import("@/lib/auth");
+        token = await fetchClerkToken(true);
+        if (token) {
+          res = await fetch(`${API_BASE}${path}`, {
+            ...options,
+            headers: buildHeaders(token),
+          });
+        }
       }
     }
   } catch (error) {

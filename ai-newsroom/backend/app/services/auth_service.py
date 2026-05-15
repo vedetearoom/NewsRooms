@@ -8,6 +8,8 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy import Select, delete, func, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
@@ -337,17 +339,40 @@ async def get_role_by_code(role_code: str, db: AsyncSession) -> Role | None:
 
 
 async def assign_roles_to_user(user_id: int, role_codes: list[str], db: AsyncSession) -> None:
-    await db.execute(user_roles.delete().where(user_roles.c.user_id == user_id))
-    if not role_codes:
-        role_codes = ["user"]
+    role_codes = list(dict.fromkeys(role_codes or ["user"]))
+    await db.execute(select(User.id).where(User.id == user_id).with_for_update())
+
     result = await db.execute(select(Role).where(Role.code.in_(role_codes)))
     roles = list(result.scalars().all())
     found_codes = {role.code for role in roles}
     missing = sorted(set(role_codes) - found_codes)
     if missing:
         raise HTTPException(status_code=400, detail=f"Roles not found: {', '.join(missing)}")
-    for role in roles:
-        await db.execute(user_roles.insert().values(user_id=user_id, role_id=role.id))
+
+    desired_role_ids = {role.id for role in roles}
+    current_role_ids = set(
+        (
+            await db.execute(
+                select(user_roles.c.role_id).where(user_roles.c.user_id == user_id)
+            )
+        ).scalars().all()
+    )
+    stale_role_ids = current_role_ids - desired_role_ids
+    missing_role_ids = desired_role_ids - current_role_ids
+
+    if stale_role_ids:
+        await db.execute(
+            user_roles.delete().where(
+                user_roles.c.user_id == user_id,
+                user_roles.c.role_id.in_(stale_role_ids),
+            )
+        )
+    for role_id in missing_role_ids:
+        await db.execute(
+            pg_insert(user_roles)
+            .values(user_id=user_id, role_id=role_id)
+            .on_conflict_do_nothing()
+        )
 
 
 async def authenticate_user(login_in: LoginRequest, db: AsyncSession) -> AuthResponse:
@@ -399,6 +424,15 @@ async def get_or_create_user_from_clerk(
     display_name: str | None = None,
 ) -> User:
     from app.services.clerk_sync_service import sync_clerk_user_created_or_updated
+
+    result = await db.execute(select(User).where(User.clerk_user_id == clerk_user_id))
+    user = result.scalars().first()
+    if user:
+        now = datetime.now(UTC)
+        if not user.last_login_at or now - user.last_login_at > timedelta(minutes=15):
+            user.last_login_at = now
+            await db.flush()
+        return user
 
     data = {
         "id": clerk_user_id,
@@ -461,9 +495,12 @@ async def resolve_current_user(
                 return user
         except HTTPException:
             raise
+        except SQLAlchemyError as exc:
+            logger.exception("Failed to sync authenticated Clerk user")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="AUTH_SYNC_FAILED") from exc
         except Exception as exc:
-            logger.exception("Unexpected error while verifying Clerk token")
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token") from exc
+            logger.exception("Unexpected error while resolving Clerk user")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="AUTH_SYNC_FAILED") from exc
 
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
 

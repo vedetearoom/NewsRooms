@@ -56,6 +56,8 @@ export interface AuthSession {
 
 let _cachedToken: string | null = null;
 let _tokenGetter: ((forceRefresh?: boolean) => Promise<string | null>) | null = null;
+let _tokenFetchPromise: Promise<string | null> | null = null;
+let _forceTokenFetchPromise: Promise<string | null> | null = null;
 
 export function clearAuthTokenCache() {
   _cachedToken = null;
@@ -70,15 +72,35 @@ export function registerClerkTokenGetter(getter: ((forceRefresh?: boolean) => Pr
 }
 
 export async function fetchClerkToken(forceRefresh = false): Promise<string | null> {
-  if (forceRefresh) _cachedToken = null;
-  if (_tokenGetter) {
+  if (!_tokenGetter) return _cachedToken;
+  if (forceRefresh && _forceTokenFetchPromise) return _forceTokenFetchPromise;
+  if (!forceRefresh && _tokenFetchPromise) return _tokenFetchPromise;
+
+  const promise = (async () => {
+    if (forceRefresh) _cachedToken = null;
     try {
-      _cachedToken = await _tokenGetter(forceRefresh);
+      _cachedToken = await _tokenGetter?.(forceRefresh) ?? null;
     } catch {
       _cachedToken = null;
     }
+    return _cachedToken;
+  })();
+
+  if (forceRefresh) {
+    _forceTokenFetchPromise = promise;
+    try {
+      return await promise;
+    } finally {
+      _forceTokenFetchPromise = null;
+    }
   }
-  return _cachedToken;
+
+  _tokenFetchPromise = promise;
+  try {
+    return await promise;
+  } finally {
+    _tokenFetchPromise = null;
+  }
 }
 
 export async function getAuthHeader(): Promise<Record<string, string>> {
@@ -149,24 +171,31 @@ export function hasPermission(user: AuthUser | null | undefined, permission: str
 
 // --- Cached user from backend /api/auth/me ---
 let _clerkUser: AuthUser | null = null;
-let _clerkUserFetchPromise: Promise<AuthUser | null> | null = null;
+let _clerkUserFetchPromise: Promise<AuthUser> | null = null;
 
-export async function fetchAndCacheMeUser(): Promise<AuthUser | null> {
-  if (_clerkUserFetchPromise) return _clerkUserFetchPromise;
-  _clerkUserFetchPromise = (async () => {
-    try {
-      const user = await api.auth.me();
-      _clerkUser = user;
-      updateStoredUser(user);
-      return user;
-    } catch {
-      _clerkUser = null;
-      return null;
-    } finally {
-      _clerkUserFetchPromise = null;
-    }
-  })();
-  return _clerkUserFetchPromise;
+export async function fetchAndCacheMeUser(options?: { throwOnError?: boolean }): Promise<AuthUser | null> {
+  if (!_clerkUserFetchPromise) {
+    _clerkUserFetchPromise = (async () => {
+      try {
+        const user = await api.auth.me();
+        _clerkUser = user;
+        updateStoredUser(user);
+        return user;
+      } catch (error) {
+        _clerkUser = null;
+        throw error;
+      } finally {
+        _clerkUserFetchPromise = null;
+      }
+    })();
+  }
+
+  try {
+    return await _clerkUserFetchPromise;
+  } catch (error) {
+    if (options?.throwOnError) throw error;
+    return null;
+  }
 }
 
 export function useAuthState() {
