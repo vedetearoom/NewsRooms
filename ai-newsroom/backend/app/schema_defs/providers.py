@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 class ModelProviderCreate(BaseModel):
     name: str
-    provider: str  # google|alibaba
+    provider: str  # google|alibaba|deepseek
     category: str = "text"  # text|image
     api_key: str
     default_model: Optional[str] = None

@@ -143,9 +143,9 @@ async def analyze_video_transcript(
 
     logger.info(f"[VideoExtractor] Analyzing transcript with {target_model} (agent: {extractor.name if extractor else 'none'})")
 
-    if target_model.startswith("qwen"):
-        from openai import AsyncOpenAI
-        oai_client = AsyncOpenAI(api_key=api_key, base_url="https://dashscope.aliyuncs.com/compatible-mode/v1")
+    from app.services.llm_client import get_client
+    oai_client = get_client(target_model, api_key)
+    if oai_client is not None:
         response = await oai_client.chat.completions.create(
             model=target_model,
             messages=[

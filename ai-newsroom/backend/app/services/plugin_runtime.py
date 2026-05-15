@@ -170,11 +170,18 @@ def run_plugin_prepare_write_job(task_id: int, owner_user_id: int, writer_agent_
         model = "gemini-2.5-flash"
         api_key = (agent.api_key or settings.gemini_api_key or "").strip()
         base_url = None
-        if agent.model_ref and agent.model_ref.startswith("qwen"):
+        from app.services.llm_client import match_provider
+        compat = match_provider(agent.model_ref) if agent.model_ref else None
+        if compat:
             provider = "custom"
             model = agent.model_ref
-            base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-            api_key = (agent.api_key or settings.qwen_api_key or "").strip()
+            base_url = compat.base_url
+            if compat.name == "deepseek":
+                api_key = (agent.api_key or settings.deepseek_api_key or "").strip()
+            elif compat.name == "alibaba":
+                api_key = (agent.api_key or settings.qwen_api_key or "").strip()
+            else:
+                api_key = (agent.api_key or "").strip()
         elif agent.model_ref:
             model = agent.model_ref
 

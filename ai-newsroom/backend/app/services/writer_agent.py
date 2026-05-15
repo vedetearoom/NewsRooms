@@ -106,14 +106,15 @@ class WriterAgent:
         from app.config import get_settings
         settings = get_settings()
         self.api_key = api_key
-        
-        # We don't initialize genai.Client if we only have qwen key and no gemini key
+
+        # We don't initialize genai.Client if we only have qwen/deepseek key and no gemini key
         self.gemini_key = self.api_key or settings.gemini_api_key
         self.qwen_key = self.api_key or settings.qwen_api_key
-        
-        if not self.gemini_key and not self.qwen_key:
+        self.deepseek_key = self.api_key or settings.deepseek_api_key
+
+        if not self.gemini_key and not self.qwen_key and not self.deepseek_key:
             raise Exception("Writer agent API key is not configured for any model.")
-            
+
         if self.gemini_key:
             self.client = genai.Client(api_key=self.gemini_key)
         else:
@@ -177,16 +178,11 @@ class WriterAgent:
         if config.get("custom_instructions"):
             user_message += f"\n\nAdditional instructions: {config['custom_instructions']}"
 
-        if model_ref.startswith("qwen"):
-            import openai
-            from openai import AsyncOpenAI
-            api_key = self.qwen_key
-            if not api_key:
-                raise Exception(f"Qwen API key is not configured for model {model_ref}.")
-            oai_client = AsyncOpenAI(
-                api_key=api_key,
-                base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
-            )
+        from app.services.llm_client import get_client
+        oai_client = get_client(model_ref, self.api_key)
+        if oai_client is not None:
+            if not self.api_key:
+                raise Exception(f"API key is not configured for model {model_ref}.")
             response = await oai_client.chat.completions.create(
                 model=model_ref,
                 messages=[

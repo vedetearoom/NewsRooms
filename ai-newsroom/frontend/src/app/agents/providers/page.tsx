@@ -14,6 +14,7 @@ import { PageEmptyState, PageStateBoundary } from "@/components/shared/page-stat
 const PROVIDER_OPTIONS = [
   { value: "google", label: "Gemini" },
   { value: "alibaba", label: "Qwen" },
+  { value: "deepseek", label: "DeepSeek" },
 ];
 
 const CATEGORY_OPTIONS = [
@@ -29,6 +30,9 @@ const MODEL_CATALOG: Record<string, Record<string, string[]>> = {
   alibaba: {
     text: ["qwen-plus", "qwen-max"],
     image: ["qwen-image-2.0-pro"],
+  },
+  deepseek: {
+    text: ["deepseek-v4-flash", "deepseek-v4-pro"],
   },
 };
 
@@ -226,7 +230,7 @@ export default function ModelProvidersPage() {
                 <div className="p-5 pb-0">
                   <div className="w-full flex items-start justify-between">
                     <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-zinc-900 text-white dark:bg-gradient-to-br dark:from-white/[0.15] dark:to-white/[0.06] dark:text-zinc-200 font-bold text-lg dark:ring-1 dark:ring-white/[0.08] dark:shadow-[0_2px_8px_rgba(0,0,0,0.4)]">
-                      {p.provider === "google" ? "G" : "Q"}
+                      {p.provider === "google" ? "G" : p.provider === "deepseek" ? "DS" : "Q"}
                     </div>
                     <div className="flex items-center gap-1">
                       <button
@@ -311,7 +315,7 @@ export default function ModelProvidersPage() {
                 <label className="text-[13px] font-semibold text-foreground">{mp("providerLabel")}</label>
                 <AgentCustomSelect
                   value={form.provider}
-                  onChange={(v) => setForm({ ...form, provider: v, default_model: "" })}
+                  onChange={(v) => setForm({ ...form, provider: v, default_model: "", category: v === "deepseek" ? "text" : form.category })}
                   className={inputClass}
                   popoverClassName="z-[160]"
                   options={providerSelectOptions}

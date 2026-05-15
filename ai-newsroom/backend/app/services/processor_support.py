@@ -5,7 +5,6 @@ from typing import Any
 
 from google import genai
 from google.genai import types
-from openai import AsyncOpenAI
 
 from app.models import Agent, RawArticle
 
@@ -123,12 +122,10 @@ async def generate_cards_response(
 ) -> str:
     api_key = get_extractor_api_key(extractor)
 
-    if target_model.startswith("qwen"):
-        client = AsyncOpenAI(
-            api_key=api_key,
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        )
-        response = await client.chat.completions.create(
+    from app.services.llm_client import get_client
+    oai_client = get_client(target_model, api_key)
+    if oai_client is not None:
+        response = await oai_client.chat.completions.create(
             model=target_model,
             messages=[
                 {"role": "system", "content": system_prompt},
@@ -172,12 +169,10 @@ async def repair_cards_output_language(
         f"Cards JSON:\n{json.dumps(cards_data, ensure_ascii=False)}"
     )
 
-    if target_model.startswith("qwen"):
-        client = AsyncOpenAI(
-            api_key=api_key,
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        )
-        response = await client.chat.completions.create(
+    from app.services.llm_client import get_client
+    oai_client = get_client(target_model, api_key)
+    if oai_client is not None:
+        response = await oai_client.chat.completions.create(
             model=target_model,
             messages=[
                 {"role": "system", "content": "Return strict JSON only."},

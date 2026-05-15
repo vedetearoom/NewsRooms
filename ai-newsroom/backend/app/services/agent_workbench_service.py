@@ -9,7 +9,6 @@ from typing import Any
 from fastapi import HTTPException
 from google import genai
 from google.genai import types
-from openai import AsyncOpenAI
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -872,12 +871,10 @@ def _build_read_tool_results_reply(tool_results: list[dict[str, Any]]) -> str | 
 
 async def _generate_json(agent: Agent, system_prompt: str, user_prompt: str) -> dict[str, Any]:
     model_ref = agent.model_ref or "gemini-2.5-flash"
-    if model_ref.startswith("qwen"):
-        client = AsyncOpenAI(
-            api_key=agent.api_key,
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        )
-        response = await client.chat.completions.create(
+    from app.services.llm_client import get_client
+    oai_client = get_client(model_ref, agent.api_key)
+    if oai_client is not None:
+        response = await oai_client.chat.completions.create(
             model=model_ref,
             messages=[
                 {"role": "system", "content": system_prompt},

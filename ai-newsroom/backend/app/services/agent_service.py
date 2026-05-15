@@ -4,7 +4,6 @@ from collections.abc import AsyncGenerator
 from fastapi import HTTPException
 from google import genai
 from google.genai import types
-from openai import AsyncOpenAI
 from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -261,12 +260,10 @@ async def rewrite_with_writer(req: AgentRewriteRequest, db: AsyncSession, user_i
     system_prompt = build_rewrite_system_prompt(agent)
     user_prompt = f"Instruction: {req.instruction}\n\nText to revise:\n{req.text}"
 
-    if model_ref.startswith("qwen"):
-        client = AsyncOpenAI(
-            api_key=agent.api_key,
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        )
-        res = await client.chat.completions.create(
+    from app.services.llm_client import get_client
+    oai_client = get_client(model_ref, agent.api_key)
+    if oai_client is not None:
+        res = await oai_client.chat.completions.create(
             model=model_ref,
             messages=[
                 {"role": "system", "content": system_prompt},
@@ -365,12 +362,10 @@ async def stream_chat_with_inspirations(
     model_ref = agent.model_ref or "gemini-2.5-flash"
 
     try:
-        if model_ref.startswith("qwen"):
-            client = AsyncOpenAI(
-                api_key=agent.api_key,
-                base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-            )
-            stream = await client.chat.completions.create(
+        from app.services.llm_client import get_client
+        oai_client = get_client(model_ref, agent.api_key)
+        if oai_client is not None:
+            stream = await oai_client.chat.completions.create(
                 model=model_ref,
                 messages=[
                     {"role": "system", "content": system_prompt},

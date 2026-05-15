@@ -95,14 +95,13 @@ class AssassinAgent:
         else:
             prompt += "\n\nCRITICAL: Review the text strictly in English."
 
-        if model_ref.startswith("qwen"):
-            import openai
-            from openai import AsyncOpenAI
-            api_key = self.api_key
-            oai_client = AsyncOpenAI(
-                api_key=api_key,
-                base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
-            )
+        from app.services.llm_client import get_client, is_deepseek
+        oai_client = get_client(model_ref, self.api_key)
+        if oai_client is not None:
+            if is_deepseek(model_ref):
+                kwargs = {"response_format": {"type": "json_object"}}
+            else:
+                kwargs = self._build_qwen_request_kwargs(structured_output=True)
             response = await oai_client.chat.completions.create(
                 model=model_ref,
                 messages=[
@@ -111,7 +110,7 @@ class AssassinAgent:
                 ],
                 temperature=0.3,
                 max_tokens=4096,
-                **self._build_qwen_request_kwargs(structured_output=True),
+                **kwargs,
             )
             text = (response.choices[0].message.content or "").strip()
         else:
@@ -152,14 +151,9 @@ class AssassinAgent:
         if agent_context:
             prompt += f"\n\n=== KNOWLEDGE & EXAMPLES ===\n{agent_context}\n=====================\n"
 
-        if model_ref.startswith("qwen"):
-            import openai
-            from openai import AsyncOpenAI
-            api_key = self.api_key
-            oai_client = AsyncOpenAI(
-                api_key=api_key,
-                base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
-            )
+        from app.services.llm_client import get_client
+        oai_client = get_client(model_ref, self.api_key)
+        if oai_client is not None:
             response = await oai_client.chat.completions.create(
                 model=model_ref,
                 messages=[
@@ -196,14 +190,9 @@ class AssassinAgent:
         else:
             prompt += "\n\nCRITICAL: Output the revised text strictly in English."
 
-        if model_ref.startswith("qwen"):
-            import openai
-            from openai import AsyncOpenAI
-            api_key = self.api_key
-            oai_client = AsyncOpenAI(
-                api_key=api_key,
-                base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
-            )
+        from app.services.llm_client import get_client
+        oai_client = get_client(model_ref, self.api_key)
+        if oai_client is not None:
             response = await oai_client.chat.completions.create(
                 model=model_ref,
                 messages=[

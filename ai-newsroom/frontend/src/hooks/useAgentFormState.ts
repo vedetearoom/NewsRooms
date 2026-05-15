@@ -155,8 +155,9 @@ export function useAgentFormState({ activeId, activeAgent, getLocalizedAgentName
   const isPromptDirty = React.useMemo(() => {
     if (activeId === "new") return systemPrompt !== "";
     if (!activeAgent) return false;
-    return systemPrompt !== activeAgent.system_prompt;
-  }, [activeAgent, activeId, systemPrompt]);
+    const initial = getAgentFormState(activeAgent, getLocalizedAgentName, localizedPrompts);
+    return systemPrompt !== initial.systemPrompt;
+  }, [activeAgent, activeId, systemPrompt, getLocalizedAgentName, localizedPrompts]);
 
   const isKnowledgeDirty = React.useMemo(() => {
     if (activeId === "new") return contextText !== "";

@@ -14,7 +14,7 @@ from app.services.auth_service import require_permission
 
 router = APIRouter(prefix="/api/model-providers", tags=["model-providers"])
 
-VALID_PROVIDERS = {"google", "alibaba"}
+VALID_PROVIDERS = {"google", "alibaba", "deepseek"}
 
 MODEL_CATALOG = {
     "google": {
@@ -24,6 +24,9 @@ MODEL_CATALOG = {
     "alibaba": {
         "text": ["qwen-plus", "qwen-max"],
         "image": ["qwen-image-2.0-pro"],
+    },
+    "deepseek": {
+        "text": ["deepseek-v4-flash", "deepseek-v4-pro"],
     },
 }
 
