@@ -1036,6 +1036,8 @@
       "displayNamePlaceholder": "Jay",
       "email": "邮箱",
       "emailPlaceholder": "you@newsroom.ai",
+      "emailOrUsername": "邮箱 / 用户名",
+      "emailOrUsernamePlaceholder": "you@newsroom.ai / weide",
       "username": "用户名",
       "usernamePlaceholder": "Jay",
       "password": "密码",

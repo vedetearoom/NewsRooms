@@ -1033,6 +1033,8 @@
       "displayNamePlaceholder": "Jay",
       "email": "Email",
       "emailPlaceholder": "you@newsroom.ai",
+      "emailOrUsername": "Email / username",
+      "emailOrUsernamePlaceholder": "you@newsroom.ai / weide",
       "username": "Username",
       "usernamePlaceholder": "Jay",
       "password": "Password",

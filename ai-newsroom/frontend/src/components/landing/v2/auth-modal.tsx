@@ -448,15 +448,15 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
       {faceMode === "login" ? (
         <div>
           <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-widest text-white/35">
-            {useLocalAuth ? t("landing.auth.username") : t("landing.auth.email")}
+            {useLocalAuth ? t("landing.auth.username") : t("landing.auth.emailOrUsername")}
           </label>
           <input
             ref={loginInputRef}
-            type={useLocalAuth ? "text" : "email"}
+            type="text"
             value={username}
             onChange={(event) => setUsername(event.target.value)}
-            placeholder={useLocalAuth ? t("landing.auth.usernamePlaceholder") : t("landing.auth.emailPlaceholder")}
-            autoComplete={useLocalAuth ? "username" : "email"}
+            placeholder={useLocalAuth ? t("landing.auth.usernamePlaceholder") : t("landing.auth.emailOrUsernamePlaceholder")}
+            autoComplete="username"
             tabIndex={mode === faceMode ? 0 : -1}
             className="w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3.5 py-3 text-[13px] text-white outline-none transition-all placeholder:text-white/20 focus:border-white/20 focus:bg-white/[0.06] focus:shadow-[0_0_0_1px_rgba(255,255,255,0.1)]"
           />
