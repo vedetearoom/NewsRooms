@@ -1,6 +1,7 @@
 import logging
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.attributes import set_committed_value
 
 from app.model_defs.agents import Agent
 
@@ -29,11 +30,7 @@ async def resolve_agent_api_key(agent: Agent, db: AsyncSession) -> str | None:
 
 
 async def resolve_agents_api_keys(db: AsyncSession, agents: list[Agent]) -> None:
-    """Batch-resolve api_key on a list of Agent objects by loading providers.
-
-    Mutates each agent's api_key attribute in-place from the provider,
-    so downstream code continues working unchanged.
-    """
+    """Batch-resolve api_key on a list of Agent objects by loading providers."""
     from app.model_defs.providers import ModelProvider
 
     provider_ids = {a.provider_id for a in agents if a.provider_id}
@@ -47,4 +44,4 @@ async def resolve_agents_api_keys(db: AsyncSession, agents: list[Agent]) -> None
 
     for agent in agents:
         if agent.provider_id and agent.provider_id in provider_map:
-            agent.api_key = provider_map[agent.provider_id]
+            set_committed_value(agent, "api_key", provider_map[agent.provider_id])

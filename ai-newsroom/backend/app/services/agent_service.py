@@ -12,6 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import Agent, InspirationAsset
 from app.schemas import AgentChatRequest, AgentCreate, AgentRewriteRequest, AgentUpdate
 from app.services.agent_skill_service import get_default_system_skills_for_role, normalize_agent_system_skills
+from sqlalchemy.orm.attributes import set_committed_value
+
 from app.services.plugin_service import build_agent_output, build_agent_outputs
 from app.services.quota_service import CUSTOM_AGENTS, ensure_resource_quota
 from app.services.writer_agent import TASK_PROMPTS
@@ -169,7 +171,7 @@ async def get_agent_or_404(agent_id: int, db: AsyncSession, user_id: int) -> Age
         from app.services.provider_resolution import resolve_agent_api_key
         resolved = await resolve_agent_api_key(agent, db)
         if resolved:
-            agent.api_key = resolved
+            set_committed_value(agent, "api_key", resolved)
     return agent
 
 

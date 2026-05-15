@@ -1,6 +1,7 @@
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm.attributes import set_committed_value
 from app.models import Agent
 
 
@@ -10,7 +11,7 @@ async def _resolve_agent(agent: Agent, db: AsyncSession) -> Agent:
         from app.services.provider_resolution import resolve_agent_api_key
         resolved = await resolve_agent_api_key(agent, db)
         if resolved:
-            agent.api_key = resolved
+            set_committed_value(agent, "api_key", resolved)
     return agent
 
 
