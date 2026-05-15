@@ -172,8 +172,9 @@ async def get_image_generation_settings(db, user_id: int) -> tuple[str, str, str
             style_prefix = illustrator.system_prompt.strip() + "\n\n"
         if illustrator.model_ref:
             model_ref = illustrator.model_ref
-        if illustrator.api_key:
-            agent_api_key = illustrator.api_key
+        from app.services.provider_resolution import resolve_agent_api_key
+        resolved = await resolve_agent_api_key(illustrator, db)
+        agent_api_key = resolved or illustrator.api_key
 
     return style_prefix, model_ref, agent_api_key
 

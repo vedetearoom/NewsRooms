@@ -136,6 +136,14 @@ def run_plugin_prepare_write_job(task_id: int, owner_user_id: int, writer_agent_
         if not agent:
             return job_failure("plugin_prepare_write", "Writer agent not found", task_id=task_id)
 
+        if agent.provider_id and not agent.api_key:
+            from app.model_defs.providers import ModelProvider
+            provider = db.execute(
+                select(ModelProvider).where(ModelProvider.id == agent.provider_id)
+            ).scalar_one_or_none()
+            if provider:
+                agent.api_key = provider.api_key
+
         bindings = load_bound_plugins_sync(db, owner_user_id, writer_agent_id)
         if not bindings:
             return job_success(

@@ -244,7 +244,13 @@ async def get_active_writer_agent(db: AsyncSession, user_id: int) -> Agent:
         )
     )
     agent = result.scalars().first()
-    if not agent or not agent.api_key:
+    if not agent:
+        raise HTTPException(status_code=400, detail="Writer agent API key is not configured.")
+    from app.services.provider_resolution import resolve_agent_api_key
+    resolved = await resolve_agent_api_key(agent, db)
+    if resolved:
+        set_committed_value(agent, "api_key", resolved)
+    if not agent.api_key:
         raise HTTPException(status_code=400, detail="Writer agent API key is not configured.")
     return agent
 
@@ -351,11 +357,11 @@ async def get_chat_context(req: AgentChatRequest, db: AsyncSession, user_id: int
 
 
 async def stream_chat_with_inspirations(
-    req: AgentChatRequest,
+    context: tuple[Agent, str, str],
     db: AsyncSession,
     user_id: int,
 ) -> AsyncGenerator[str, None]:
-    agent, system_prompt, user_prompt = await get_chat_context(req, db, user_id)
+    agent, system_prompt, user_prompt = context
     model_ref = agent.model_ref or "gemini-2.5-flash"
 
     try:

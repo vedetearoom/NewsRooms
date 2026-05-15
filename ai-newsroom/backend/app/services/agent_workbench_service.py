@@ -563,8 +563,8 @@ async def stream_agent_thread_chat(
         for chunk in _chunk_text(assistant_text):
             yield _serialize_sse("chunk", {"text": chunk})
         yield _serialize_sse("done", {})
-    except HTTPException:
-        raise
+    except HTTPException as exc:
+        yield _serialize_sse("error", {"message": str(exc.detail)})
     except Exception as exc:
         yield _serialize_sse("error", {"message": str(exc)})
 

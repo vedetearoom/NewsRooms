@@ -6,7 +6,7 @@ from sqlalchemy import delete, select
 
 from app.database import SyncSession, async_session
 from app.job_results import job_failure, job_success
-from app.models import Agent, Critique, Draft, RawArticle, Source, Task
+from app.models import Agent, Critique, Draft, ModelProvider, RawArticle, Source, Task
 from app.task_status import TaskStatus
 
 logger = logging.getLogger(__name__)
@@ -128,6 +128,14 @@ def run_review_job(task_id: int, owner_user_id: int, reviewer_id: int | None = N
             ).scalar_one_or_none()
 
         api_key = reviewer.api_key if reviewer else None
+        if reviewer and reviewer.provider_id:
+            provider_api_key = db.execute(
+                select(ModelProvider.api_key).where(
+                    ModelProvider.id == reviewer.provider_id,
+                    ModelProvider.owner_user_id == owner_user_id,
+                )
+            ).scalar_one_or_none()
+            api_key = provider_api_key or api_key
         agent_prompt = reviewer.system_prompt if reviewer else None
         agent_context = reviewer.context_text if reviewer else None
         model_ref = reviewer.model_ref if reviewer else "gemini-2.5-flash"

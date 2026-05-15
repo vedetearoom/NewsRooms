@@ -25,6 +25,7 @@ from app.services.agent_service import (
     create_agent_record,
     delete_agent_record,
     get_agent_response_or_404,
+    get_chat_context,
     list_agents as list_agent_records,
     rewrite_with_writer,
     stream_chat_with_inspirations,
@@ -69,7 +70,8 @@ async def chat_with_inspirations(
 ):
     await consume_daily_quota(db, current_user.id, DAILY_AGENT_MESSAGES)
     await db.commit()
-    return StreamingResponse(stream_chat_with_inspirations(req, db, current_user.id), media_type="text/event-stream")
+    context = await get_chat_context(req, db, current_user.id)
+    return StreamingResponse(stream_chat_with_inspirations(context, db, current_user.id), media_type="text/event-stream")
 
 
 @skills_router.get("/catalog", response_model=list[AgentSkillCatalogItemOut])

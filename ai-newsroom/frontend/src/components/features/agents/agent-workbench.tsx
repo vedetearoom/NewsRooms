@@ -534,7 +534,6 @@ async function consumeEventStream(
     onChunk: (text: string) => void;
     onToolCall: (call: StreamToolCall) => void;
     onActionProposed: (proposal: AgentActionProposal) => void;
-    onError: (message: string) => void;
   },
   fallbackErrorMessage: string,
 ) {
@@ -568,7 +567,7 @@ async function consumeEventStream(
     }
     if (event === "error") {
       const parsed = parseEventData<{ message?: string }>(data);
-      handlers.onError(parsed?.message || fallbackErrorMessage);
+      throw new Error(parsed?.message || fallbackErrorMessage);
     }
   };
 
@@ -734,9 +733,6 @@ export function AgentWorkbench({ activeAgent }: AgentWorkbenchProps) {
         onChunk: (text) => setLiveAssistant((current) => current + text),
         onToolCall: (call) => setLiveToolCalls((current) => [...current, call]),
         onActionProposed: (proposal) => setLiveProposals((current) => [...current, proposal]),
-        onError: (message) => {
-          throw new Error(message);
-        },
       }, t("agents.workbench.toast.streamRequestFailed"));
       await refreshCurrentThread();
     } catch (error) {

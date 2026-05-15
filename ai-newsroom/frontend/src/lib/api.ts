@@ -757,17 +757,43 @@ export const api = {
     fetchAPI<Agent>(`/api/agents/${agentId}/plugins/${pluginId}`, { method: "DELETE" }),
 
   // Context Lab Stream
-  streamLabChat: async (inspirationIds: number[], prompt: string, agentType: string, signal?: AbortSignal) =>
-    fetch(`${API_BASE}/api/agents/chat`, {
+  streamLabChat: async (inspirationIds: number[], prompt: string, agentType: string, signal?: AbortSignal) => {
+    const buildHeaders = (token: string | null) => ({
+      "Content-Type": "application/json",
+      "Accept": "text/event-stream",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    });
+
+    let token = getAuthToken();
+    if (!token) {
+      const { fetchClerkToken, hasClerkTokenGetter } = await import("@/lib/auth");
+      if (hasClerkTokenGetter()) {
+        token = await fetchClerkToken();
+      }
+    }
+
+    let res = await fetch(`${API_BASE}/api/agents/chat`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "text/event-stream",
-        ...(await getAuthHeader()),
-      },
+      headers: buildHeaders(token),
       body: JSON.stringify({ inspiration_ids: inspirationIds, prompt, agent_type: agentType }),
-      signal
-    }),
+      signal,
+    });
+
+    if (res.status === 401) {
+      const { fetchClerkToken } = await import("@/lib/auth");
+      token = await fetchClerkToken(true);
+      if (token) {
+        res = await fetch(`${API_BASE}/api/agents/chat`, {
+          method: "POST",
+          headers: buildHeaders(token),
+          body: JSON.stringify({ inspiration_ids: inspirationIds, prompt, agent_type: agentType }),
+          signal,
+        });
+      }
+    }
+
+    return res;
+  },
 
   // Jobs
   getJobStatus: (jobId: string) => fetchAPI<JobStatus>(`/api/jobs/${jobId}`),
