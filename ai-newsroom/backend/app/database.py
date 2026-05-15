@@ -279,6 +279,10 @@ def _ensure_model_providers_table(sync_conn) -> None:
         mp_columns = {column["name"] for column in inspector.get_columns("model_providers")}
         if "category" not in mp_columns:
             sync_conn.execute(text("ALTER TABLE model_providers ADD COLUMN category VARCHAR(20) NOT NULL DEFAULT 'text'"))
+        else:
+            sync_conn.execute(text("ALTER TABLE model_providers ALTER COLUMN category SET DEFAULT 'text'"))
+            sync_conn.execute(text("UPDATE model_providers SET category = 'text' WHERE category IS NULL OR category = ''"))
+            sync_conn.execute(text("ALTER TABLE model_providers ALTER COLUMN category SET NOT NULL"))
 
     # 2. Add provider_id to agents if missing
     if "agents" in inspector.get_table_names():
@@ -306,8 +310,8 @@ def _ensure_model_providers_table(sync_conn) -> None:
                 provider_id = existing[0]
             else:
                 result = sync_conn.execute(text(
-                    "INSERT INTO model_providers (owner_user_id, name, provider, api_key, default_model) "
-                    "VALUES (:owner, :name, :provider, :api_key, :model) RETURNING id"
+                    "INSERT INTO model_providers (owner_user_id, name, provider, api_key, category, default_model) "
+                    "VALUES (:owner, :name, :provider, :api_key, 'text', :model) RETURNING id"
                 ), {
                     "owner": owner_user_id,
                     "name": f"{provider.title()} Key",
