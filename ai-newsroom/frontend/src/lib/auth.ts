@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { useAuth as useClerkAuth } from "@clerk/nextjs";
 import { api } from "@/lib/api";
+import { useAuthSafe } from "@/lib/clerk-safe";
 
 const AUTH_TOKEN_KEY = "ai_newsroom_token";
 const AUTH_USER_KEY = "ai_newsroom_user";
@@ -169,10 +169,8 @@ export async function fetchAndCacheMeUser(): Promise<AuthUser | null> {
   return _clerkUserFetchPromise;
 }
 
-const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-
 export function useAuthState() {
-  const clerkAuth = clerkKey ? useClerkAuth() : { isSignedIn: false, isLoaded: true };
+  const clerkAuth = useAuthSafe();
   const { isSignedIn, isLoaded: clerkLoaded } = clerkAuth;
   const [user, setUser] = React.useState<AuthUser | null>(null);
   const [ready, setReady] = React.useState(false);

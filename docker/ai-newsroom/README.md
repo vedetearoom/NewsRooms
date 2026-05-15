@@ -65,8 +65,8 @@ cp /Users/jay/Desktop/claude/docker/ai-newsroom/config/backend.env.example /User
 
 这两个文件不重复：
 
-- `.env` 负责 compose 层和构建层配置，比如端口、镜像名、基础镜像源、npm/pip/apt 镜像源
-- `config/backend.env` 负责后端运行时业务配置，比如数据库、Redis、MinIO、模型 key、认证密钥
+- `.env` 负责 compose 层、构建层和前端运行时配置，比如端口、镜像名、基础镜像源、npm/pip/apt 镜像源、前端 Clerk 公开 key
+- `config/backend.env` 负责后端运行时业务配置，比如数据库、Redis、MinIO、模型 key、Clerk 认证密钥
 
 ## 最常用命令
 
