@@ -85,7 +85,7 @@ export function HeroV2({ accent = "#ffffff", onLogin, onRegister }: HeroV2Props)
         }}
       >
         {/* Left column — text */}
-        <div style={{ flex: zh ? "0 1 560px" : "0 1 520px", minWidth: 360, paddingTop: 28 }}>
+        <div style={{ flex: "0 1 520px", minWidth: 360, paddingTop: 28 }}>
           <div
             style={{
               display: "inline-flex",
