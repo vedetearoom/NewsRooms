@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import ReactDOM from "react-dom";
 import { useRouter } from "next/navigation";
 import { useClerk, useSignIn, useSignUp } from "@clerk/nextjs";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -48,6 +49,8 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
   const registerFaceRef = React.useRef<HTMLDivElement>(null);
   const loginInputRef = React.useRef<HTMLInputElement>(null);
   const registerInputRef = React.useRef<HTMLInputElement>(null);
+  const modalScrollRef = React.useRef<HTMLDivElement>(null);
+  const [pageHeight, setPageHeight] = React.useState(0);
 
   const updateCardHeight = React.useCallback(() => {
     const activeFace = mode === "login" ? loginFaceRef.current : registerFaceRef.current;
@@ -60,21 +63,21 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
     updateCardHeight();
   }, [mode, error, loading, oauthLoading, resetStep, updateCardHeight]);
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     if (standalone) return;
     const scrollY = window.scrollY;
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = "100%";
-    const preventScroll = (e: Event) => e.preventDefault();
-    window.addEventListener("wheel", preventScroll, { passive: false });
-    window.addEventListener("touchmove", preventScroll, { passive: false });
+    const html = document.documentElement;
+    const body = document.body;
+
+    // Standard body scroll lock
+    // Since the modal is fixed inset-0 and uses overscroll-behavior: contain,
+    // this CSS lock is sufficient. JS event blockers can interfere with native scroll.
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+
     return () => {
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.width = "";
-      window.removeEventListener("wheel", preventScroll);
-      window.removeEventListener("touchmove", preventScroll);
+      html.style.overflow = "";
+      body.style.overflow = "";
       window.scrollTo(0, scrollY);
     };
   }, [standalone]);
@@ -588,22 +591,46 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
     );
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex justify-center overflow-y-auto px-4 pb-[6vh] pt-[8vh]">
-      <div
-        className="absolute inset-0 bg-black/70 opacity-100 backdrop-blur-2xl"
-        style={{ animation: "authBackdropIn 320ms ease-out forwards" }}
-        onClick={onClose}
-      />
-      <div
-        className="relative z-10 w-full max-w-[400px] self-start"
-        style={{
-          animation: "authCardIn 360ms cubic-bezier(0.16,1,0.3,1) forwards",
-          transformOrigin: "50% 28%",
-        }}
-      >
+  if (standalone) {
+    return (
+      <div className="w-full max-w-[400px]" style={{ animation: "authCardIn 360ms cubic-bezier(0.16,1,0.3,1) forwards" }}>
         {card}
+      </div>
+    );
+  }
+
+  const modalContent = (
+    <div
+      className="fixed inset-0 z-[9999] flex justify-center overflow-hidden"
+      style={{
+        background: "rgba(0,0,0,0.70)",
+        backdropFilter: "blur(40px)",
+        WebkitBackdropFilter: "blur(40px)",
+        animation: "authBackdropIn 320ms ease-out forwards",
+      }}
+      onClick={onClose}
+    >
+      <div
+        ref={modalScrollRef}
+        className="w-full max-w-[400px] max-h-full overflow-y-auto px-4 pt-[8vh] pb-[6vh] no-scrollbar"
+        style={{ overscrollBehavior: "contain" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          style={{
+            animation: "authCardIn 360ms cubic-bezier(0.16,1,0.3,1) forwards",
+            transformOrigin: "50% 28%",
+          }}
+        >
+          {card}
+        </div>
       </div>
     </div>
   );
+
+  // Portal to document.body ensures we break out of any ancestor CSS contexts
+  if (typeof document !== "undefined") {
+    return ReactDOM.createPortal(modalContent, document.body);
+  }
+  return modalContent;
 }
