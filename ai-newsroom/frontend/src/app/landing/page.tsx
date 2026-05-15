@@ -45,7 +45,7 @@ export default function LandingPage() {
   return (
     <div
       className="relative min-h-screen bg-[#08090b] text-white overflow-x-hidden"
-      style={{ fontFamily: "'Inter Tight', 'Inter', system-ui, sans-serif" }}
+      style={{ fontFamily: "var(--font-inter-tight), 'Inter', system-ui, sans-serif" }}
     >
       <ScaledHero>
         <HeroV2 accent={accent} onLogin={openLogin} onRegister={openRegister} />
@@ -70,7 +70,7 @@ export default function LandingPage() {
       )}
 
       <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif&display=swap");
+        @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif&display=swap");
         @keyframes modalIn {
           from {
             opacity: 0;

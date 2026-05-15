@@ -77,7 +77,7 @@ export function ModulePage({
   const goToModuleOrRegister = () => (authed ? router.push(appPath) : openRegister());
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#08090b] text-white" style={{ fontFamily: "'Inter Tight', 'Inter', system-ui, sans-serif" }}>
+    <div className="relative min-h-screen overflow-x-hidden bg-[#08090b] text-white" style={{ fontFamily: "var(--font-inter-tight), 'Inter', system-ui, sans-serif" }}>
       <div className="pointer-events-none absolute inset-0" style={{ background: `radial-gradient(ellipse at 74% 8%, ${accent}1c, transparent 42%), radial-gradient(ellipse at 18% 36%, rgba(255,255,255,0.04), transparent 38%), linear-gradient(180deg, rgba(255,255,255,0.025), transparent 22%)` }} />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-white/[0.035] to-transparent" />
 
@@ -203,7 +203,7 @@ export function ModulePage({
       {authOpen && <AuthModal mode={authMode} onModeChange={setAuthMode} onClose={() => setAuthOpen(false)} />}
 
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif&display=swap');
         @keyframes modalIn {
           from { opacity: 0; transform: scale(0.95) translateY(10px); }
           to { opacity: 1; transform: scale(1) translateY(0); }

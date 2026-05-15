@@ -21,7 +21,7 @@ export function HeroV2({ accent = "#ffffff", onLogin, onRegister }: HeroV2Props)
         minHeight: "100vh",
         background: "#08090b",
         color: "white",
-        fontFamily: "'Inter Tight', 'Inter', system-ui, sans-serif",
+        fontFamily: "var(--font-inter-tight), 'Inter', system-ui, sans-serif",
         position: "relative",
         overflow: "hidden",
       }}

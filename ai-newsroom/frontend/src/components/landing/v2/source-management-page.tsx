@@ -61,7 +61,7 @@ export function SourceManagementPage() {
   const goToSourcesOrRegister = () => (authed ? router.push("/sources") : openRegister());
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#08090b] text-white" style={{ fontFamily: "'Inter Tight', 'Inter', system-ui, sans-serif" }}>
+    <div className="relative min-h-screen overflow-x-hidden bg-[#08090b] text-white" style={{ fontFamily: "var(--font-inter-tight), 'Inter', system-ui, sans-serif" }}>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_72%_10%,rgba(214,199,161,0.14),transparent_36%),radial-gradient(circle_at_8%_34%,rgba(134,239,172,0.08),transparent_32%)]" />
       <div className="pointer-events-none absolute inset-0 opacity-[0.08] [background-image:linear-gradient(rgba(255,255,255,0.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.7)_1px,transparent_1px)] [background-size:64px_64px]" />
 
@@ -199,7 +199,7 @@ export function SourceManagementPage() {
       {authOpen && <AuthModal mode={authMode} onModeChange={setAuthMode} onClose={() => setAuthOpen(false)} />}
 
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif&display=swap');
         @keyframes modalIn {
           from { opacity: 0; transform: scale(0.95) translateY(10px); }
           to { opacity: 1; transform: scale(1) translateY(0); }

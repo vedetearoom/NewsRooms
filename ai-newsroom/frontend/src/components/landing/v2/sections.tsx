@@ -193,7 +193,7 @@ export function MetricsStrip({ accent = "#22d3ee" }: AccentProps) {
                   fontWeight: 600,
                   letterSpacing: "-0.04em",
                   color: index === 0 ? accent : "#f4f3ee",
-                  fontFamily: "'Inter Tight', sans-serif",
+                  fontFamily: "var(--font-inter-tight), sans-serif",
                   marginBottom: 8,
                 }}
               >
