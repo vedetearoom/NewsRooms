@@ -26,6 +26,7 @@ interface InboxCardGridProps {
   onToggleCard: (id: number) => void;
   onClearArchiveFilter: () => void;
   canPin?: boolean;
+  canSaveInspiration?: boolean;
   onTogglePin?: (cardId: number) => void;
 }
 
@@ -41,6 +42,7 @@ export function InboxCardGrid({
   onToggleCard,
   onClearArchiveFilter,
   canPin,
+  canSaveInspiration,
   onTogglePin,
 }: InboxCardGridProps) {
   const isPinnedView = contentTab === "pinned";
@@ -119,6 +121,7 @@ export function InboxCardGrid({
                   onClick={onCardClick}
                   isFeatured={index === 0 && activeTag === "all"}
                   canPin={isPinnedView ? false : canPin}
+                  canSaveInspiration={isPinnedView ? false : canSaveInspiration}
                   onTogglePin={isPinnedView ? undefined : onTogglePin}
                   selectable={!isPinnedView}
                 />
@@ -131,6 +134,7 @@ export function InboxCardGrid({
                   onClick={onCardClick}
                   isFeatured={index === 0 && activeTag === "all"}
                   canPin={isPinnedView ? false : canPin}
+                  canSaveInspiration={isPinnedView ? false : canSaveInspiration}
                   onTogglePin={isPinnedView ? undefined : onTogglePin}
                   selectable={!isPinnedView}
                 />

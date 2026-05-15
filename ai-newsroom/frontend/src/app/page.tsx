@@ -119,6 +119,7 @@ function DiscoverContent() {
 
   const { hasPermission: checkPermission } = useAuthState();
   const canPin = checkPermission("system.manage");
+  const canSaveInspiration = checkPermission("workspace.view");
 
   const handleTogglePin = async (cardId: number) => {
     try {
@@ -219,6 +220,7 @@ function DiscoverContent() {
               onToggleCard={toggleCard}
               onClearArchiveFilter={() => setArchiveDateFilter(null)}
               canPin={canPin}
+              canSaveInspiration={false}
               onTogglePin={handleTogglePin}
             />
           </div>
@@ -250,6 +252,7 @@ function DiscoverContent() {
               onToggleCard={toggleCard}
               onClearArchiveFilter={() => setArchiveDateFilter(null)}
               canPin={canPin}
+              canSaveInspiration={canSaveInspiration}
               onTogglePin={handleTogglePin}
             />
           </div>

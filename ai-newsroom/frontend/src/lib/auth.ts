@@ -216,21 +216,22 @@ export function useAuthState() {
   React.useEffect(() => {
     if (!clerkLoaded) return;
 
+    let cancelled = false;
+
     if (!isSignedIn && !getAuthToken()) {
       setUser(null);
       setReady(true);
-      return;
+      // We do NOT return early here, because we must still register the AUTH_EVENT listener.
+    } else {
+      // Clerk is signed in or local token exists — fetch the full user from our backend
+      (async () => {
+        const meUser = await fetchAndCacheMeUser();
+        if (!cancelled) {
+          setUser(meUser);
+          setReady(true);
+        }
+      })();
     }
-
-    // Clerk is signed in or local token exists — fetch the full user from our backend
-    let cancelled = false;
-    (async () => {
-      const meUser = await fetchAndCacheMeUser();
-      if (!cancelled) {
-        setUser(meUser);
-        setReady(true);
-      }
-    })();
 
     // Listen for legacy auth events (e.g., admin creates user via local login)
     const sync = () => {

@@ -15,6 +15,7 @@ interface VideoCardProps {
   onClick: (card: IntelligenceCard, rect: DOMRect) => void;
   isFeatured?: boolean;
   canPin?: boolean;
+  canSaveInspiration?: boolean;
   onTogglePin?: (cardId: number) => void;
   selectable?: boolean;
 }
@@ -47,7 +48,7 @@ function formatDuration(seconds: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-export function VideoCard({ card, isSelected, onToggle, onClick, isFeatured = false, canPin, onTogglePin, selectable = true }: VideoCardProps) {
+export function VideoCard({ card, isSelected, onToggle, onClick, isFeatured = false, canPin, canSaveInspiration, onTogglePin, selectable = true }: VideoCardProps) {
   const { language } = useTranslation();
   const meta = (card.extra_data || {}) as Record<string, unknown>;
   const platform = (meta.platform as string) || "";
@@ -277,50 +278,47 @@ export function VideoCard({ card, isSelected, onToggle, onClick, isFeatured = fa
           ) : <div className="flex-1" />}
 
           <div className="flex items-center gap-2">
-            {canPin && onTogglePin && (
-              <>
-                <div
-                  className={cn(
-                    "p-1 rounded-full cursor-pointer transition-all duration-200 pointer-events-auto shrink-0",
-                    card.is_pinned
-                      ? "text-amber-400 hover:text-amber-300 opacity-100"
-                      : "text-white/40 hover:text-white/80 opacity-0 group-hover:opacity-100"
-                  )}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onTogglePin(card.id);
-                  }}
-                  title={card.is_pinned ? "取消精选" : "设为精选"}
-                >
-                  <Star className={cn("w-3.5 h-3.5", card.is_pinned ? "fill-amber-400" : "fill-none")} />
-                </div>
-                <div
-                  className={cn(
-                    "overflow-hidden transition-all duration-200 pointer-events-auto shrink-0",
-                    isSavedInspiration
-                      ? "w-6 p-1 opacity-100"
-                      : "w-0 p-0 opacity-0 group-hover:w-6 group-hover:p-1 group-hover:opacity-100",
-                    "text-white/40 hover:text-white/80 rounded-full cursor-pointer"
-                  )}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSaveInspiration();
-                  }}
-                  title={isSavedInspiration ? "已收藏至灵感武器库" : "收藏结构至灵感武器库"}
-                >
-                  {isSavingInspiration ? (
-                    <Loader2 className="w-3.5 h-3.5 text-white/70 animate-spin drop-shadow-md" />
-                  ) : (
-                    <Bookmark
-                      className={cn(
-                        "w-3.5 h-3.5 drop-shadow-md transition-colors",
-                        isSavedInspiration ? "text-white/90 fill-white/90" : "text-white/40 hover:text-white/90"
-                      )}
-                    />
-                  )}
-                </div>
-              </>
-            )}
+            {canPin && onTogglePin ? (
+              <div
+                className={cn(
+                  "p-1 rounded-full cursor-pointer transition-all duration-200 pointer-events-auto shrink-0",
+                  card.is_pinned
+                    ? "text-amber-400 hover:text-amber-300 opacity-100"
+                    : "text-white/40 hover:text-white/80 opacity-0 group-hover:opacity-100"
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTogglePin(card.id);
+                }}
+                title={card.is_pinned ? "取消精选" : "设为精选"}
+              >
+                <Star className={cn("w-3.5 h-3.5", card.is_pinned ? "fill-amber-400" : "fill-none")} />
+              </div>
+            ) : null}
+            {canSaveInspiration ? (
+              <div
+                className={cn(
+                  "overflow-hidden transition-all duration-200 pointer-events-auto shrink-0",
+                  isSavedInspiration
+                    ? "w-6 p-1 opacity-100"
+                    : "w-0 p-0 opacity-0 group-hover:w-6 group-hover:p-1 group-hover:opacity-100",
+                  "text-white/40 hover:text-white/80 rounded-full cursor-pointer"
+                )}
+                onClick={handleSaveInspiration}
+                title={isSavedInspiration ? "已收藏至灵感武器库" : "收藏结构至灵感武器库"}
+              >
+                {isSavingInspiration ? (
+                  <Loader2 className="w-3.5 h-3.5 text-white/70 animate-spin drop-shadow-md" />
+                ) : (
+                  <Bookmark
+                    className={cn(
+                      "w-3.5 h-3.5 drop-shadow-md transition-colors",
+                      isSavedInspiration ? "text-white/90 fill-white/90" : "text-white/40 hover:text-white/90"
+                    )}
+                  />
+                )}
+              </div>
+            ) : null}
             <span className="text-[10.5px] font-medium text-white/40 tracking-wide mt-0.5 shrink-0 tabular-nums">
               {new Date(card.created_at).toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US', { month: "short", day: "numeric" })}
             </span>
