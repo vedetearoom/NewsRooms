@@ -469,7 +469,8 @@
       "network": "情报网络",
       "agents": "智能体工作室",
       "system": "系统管理"
-    }
+    },
+    "paginationTotal": "共 {total} 条"
   },
   "sources": {
     "title": "订阅源库",

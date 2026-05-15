@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Ban, Check, Key, PencilLine, RotateCcw } from "lucide-react";
+import { Ban, Check, ChevronLeft, ChevronRight, Key, PencilLine, RotateCcw } from "lucide-react";
 import { api, type CurrentUser, type Role } from "@/lib/api";
 import { useAuthState } from "@/lib/auth";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -54,6 +54,8 @@ const actionButtonClass =
 const modalInputClass =
   "w-full rounded-2xl bg-zinc-50/85 px-4 py-3 text-sm text-zinc-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(15,23,42,0.06)] outline-none transition-all placeholder:text-zinc-400 focus:bg-white focus:ring-1 focus:ring-zinc-300 disabled:cursor-not-allowed disabled:bg-zinc-100/90 disabled:text-zinc-400 dark:bg-white/[0.06] dark:text-white dark:placeholder:text-white/20 dark:focus:bg-white/[0.08] dark:focus:ring-white/20";
 
+const PAGE_SIZE = 10;
+
 export default function SystemUsersPage() {
   const { ready, hasPermission, user: currentUser } = useAuthState();
   const { t, language } = useTranslation();
@@ -65,6 +67,7 @@ export default function SystemUsersPage() {
   const [passwordModalOpen, setPasswordModalOpen] = React.useState(false);
   const [passwordResetUser, setPasswordResetUser] = React.useState<CurrentUser | null>(null);
   const [newPassword, setNewPassword] = React.useState("");
+  const [page, setPage] = React.useState(1);
   const [saving, setSaving] = React.useState(false);
   const [formErrors, setFormErrors] = React.useState<UserFormErrors>({});
   const [form, setForm] = React.useState({
@@ -82,6 +85,7 @@ export default function SystemUsersPage() {
       const [nextUsers, nextRoles] = await Promise.all([api.admin.getUsers(), api.admin.getRoles()]);
       setUsers(nextUsers);
       setRoles(nextRoles.filter((role) => role.code !== "admin"));
+      setPage(1);
     } catch (error) {
       console.error(error);
       toast.error(t("system.loadUsersFailed"), t("system.tryLater"));
@@ -212,6 +216,16 @@ export default function SystemUsersPage() {
         }).format(new Date(value))
       : t("system.neverLoggedIn");
 
+  const sortedUsers = [...users].sort((a, b) => {
+    if (!a.clerk_user_id && b.clerk_user_id) return -1;
+    if (a.clerk_user_id && !b.clerk_user_id) return 1;
+    return 0;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(sortedUsers.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageUsers = sortedUsers.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-white dark:bg-[#0b0c0f]">
       <div className="shrink-0 px-8 pt-8 lg:px-12">
@@ -251,7 +265,7 @@ export default function SystemUsersPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((item) => (
+                  {pageUsers.map((item) => (
                     <tr
                       key={item.id}
                       className="group border-b border-zinc-200/60 transition-colors last:border-b-0 hover:bg-zinc-100/60 dark:border-white/[0.05] dark:hover:bg-white/[0.03]"
@@ -328,6 +342,40 @@ export default function SystemUsersPage() {
                   ))}
                 </tbody>
               </table>
+            {sortedUsers.length > PAGE_SIZE && (
+              <div className="flex items-center justify-center border-t border-zinc-200/60 px-8 py-3.5 lg:px-12 dark:border-white/[0.06]">
+                <div className="flex items-center gap-0.5">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={safePage <= 1}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 transition-all hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-white/[0.06] dark:hover:text-zinc-300"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={cn(
+                        "inline-flex h-7 min-w-[28px] items-center justify-center rounded-full px-1.5 text-[12px] font-medium transition-all",
+                        p === safePage
+                          ? "bg-zinc-200/80 text-zinc-900 dark:bg-white/[0.1] dark:text-white"
+                          : "text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-white/[0.06] dark:hover:text-zinc-300",
+                      )}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={safePage >= totalPages}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 transition-all hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-white/[0.06] dark:hover:text-zinc-300"
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

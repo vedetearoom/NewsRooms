@@ -468,7 +468,8 @@
       "network": "Intelligence Network",
       "agents": "Agent Studio",
       "system": "System Management"
-    }
+    },
+    "paginationTotal": "{total} total"
   },
   "sources": {
     "title": "Source Library",
