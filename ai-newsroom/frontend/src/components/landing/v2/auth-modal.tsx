@@ -588,7 +588,7 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
   return (
     <div className="fixed inset-0 z-50 flex justify-center overflow-y-auto px-4 pb-[6vh] pt-[8vh]">
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-2xl"
+        className="absolute inset-0 bg-black/70 opacity-100 backdrop-blur-2xl"
         style={{ animation: "authBackdropIn 320ms ease-out forwards" }}
         onClick={onClose}
       />

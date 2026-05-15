@@ -81,32 +81,6 @@ export default function LandingPage() {
             transform: scale(1) translateY(0);
           }
         }
-        @keyframes authBackdropIn {
-          from {
-            opacity: 0;
-            backdrop-filter: blur(0px);
-          }
-          to {
-            opacity: 1;
-            backdrop-filter: blur(24px);
-          }
-        }
-        @keyframes authCardIn {
-          from {
-            opacity: 0;
-            transform: translateY(14px) scale(0.96) rotateX(5deg);
-            filter: blur(3px);
-          }
-          62% {
-            opacity: 1;
-            filter: blur(0);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1) rotateX(0deg);
-            filter: blur(0);
-          }
-        }
       `}</style>
     </div>
   );
