@@ -2,6 +2,7 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
 import secrets
 from datetime import UTC, datetime, timedelta
 
@@ -24,6 +25,8 @@ from app.schema_defs.auth import (
 )
 from app.services.quota_service import default_quota_limits, normalize_quota_limits, unlimited_quota_limits
 
+
+logger = logging.getLogger(__name__)
 
 _clerk_configured: bool | None = None
 
@@ -459,6 +462,7 @@ async def resolve_current_user(
         except HTTPException:
             raise
         except Exception as exc:
+            logger.exception("Unexpected error while verifying Clerk token")
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token") from exc
 
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
