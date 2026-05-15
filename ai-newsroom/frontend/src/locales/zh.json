@@ -1013,7 +1013,9 @@
       "resetPasswordFailed": "验证失败，请检查验证码后重试。",
       "passwordTooWeak": "密码不符合要求，至少需要 8 个字符，并包含字母和数字的组合。",
       "resetSuccess": "密码已重置成功，正在跳转...",
-      "backToLogin": "← 返回登录"
+      "backToLogin": "← 返回登录",
+      "useLocalLogin": "使用本地账号登录",
+      "useClerkLogin": "使用第三方登录"
     },
     "hero": {
       "badge": "3 个智能体协同工作",

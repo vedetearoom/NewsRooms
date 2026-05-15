@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthSafe, useClerkSafe } from "@/lib/clerk-safe";
-import { fetchAndCacheMeUser, hasPermission } from "@/lib/auth";
+import { fetchAndCacheMeUser, getLocalAuthToken, hasPermission } from "@/lib/auth";
 
 function getRouteRequirement(pathname: string | null): string | null {
   if (!pathname || pathname.startsWith("/landing")) return null;
@@ -29,6 +29,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isSignedIn, isLoaded } = useAuthSafe();
   const clerk = useClerkSafe();
   const [ready, setReady] = React.useState(false);
+  const hasLocalToken = Boolean(getLocalAuthToken());
 
   React.useEffect(() => {
     let cancelled = false;
@@ -40,10 +41,30 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      // Local token auth — bypass Clerk entirely
+      if (hasLocalToken) {
+        try {
+          const user = await fetchAndCacheMeUser();
+          if (!cancelled) {
+            if (user) {
+              const requiredPermission = getRouteRequirement(pathname);
+              if (requiredPermission && !hasPermission(user, requiredPermission)) {
+                router.replace(getFallbackPath(user.permissions));
+                return;
+              }
+            }
+            setReady(true);
+          }
+        } catch {
+          if (!cancelled) setReady(true);
+        }
+        return;
+      }
+
       // Wait for Clerk to initialize
       if (!isLoaded) return;
 
-      // Not signed in via Clerk
+      // Not signed in via Clerk and no local token
       if (!isSignedIn) {
         router.replace("/landing");
         return;
@@ -51,12 +72,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
       try {
         const user = await fetchAndCacheMeUser({ throwOnError: true });
-        if (!user) return;
         if (!cancelled) {
-          const requiredPermission = getRouteRequirement(pathname);
-          if (requiredPermission && !hasPermission(user, requiredPermission)) {
-            router.replace(getFallbackPath(user.permissions));
-            return;
+          if (user) {
+            const requiredPermission = getRouteRequirement(pathname);
+            if (requiredPermission && !hasPermission(user, requiredPermission)) {
+              router.replace(getFallbackPath(user.permissions));
+              return;
+            }
           }
           setReady(true);
         }
@@ -72,7 +94,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [pathname, router, isLoaded, isSignedIn, clerk]);
+  }, [pathname, router, isLoaded, isSignedIn, clerk, hasLocalToken]);
 
   React.useEffect(() => {
     if (pathname?.startsWith("/landing") || pathname?.startsWith("/sign-in") || pathname?.startsWith("/sign-up")) {

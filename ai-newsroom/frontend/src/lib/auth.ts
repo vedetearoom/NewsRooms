@@ -116,12 +116,16 @@ function dispatchAuthChanged() {
   }
 }
 
+export function getLocalAuthToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(AUTH_TOKEN_KEY);
+}
+
 export function getAuthToken(): string | null {
   if (typeof window === "undefined") return null;
-  // Prefer cached Clerk token if available
-  if (_cachedToken) return _cachedToken;
-  // Fall back to legacy localStorage (for backward compat)
-  return window.localStorage.getItem(AUTH_TOKEN_KEY);
+  const localToken = getLocalAuthToken();
+  if (localToken) return localToken;
+  return _cachedToken;
 }
 
 export function getStoredUser(): AuthUser | null {
@@ -150,6 +154,13 @@ export function login(session: AuthSession) {
 export function updateStoredUser(user: AuthUser) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+  dispatchAuthChanged();
+}
+
+export function clearLocalAuthStorage() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(AUTH_TOKEN_KEY);
+  window.localStorage.removeItem(AUTH_USER_KEY);
   dispatchAuthChanged();
 }
 
@@ -199,19 +210,19 @@ export async function fetchAndCacheMeUser(options?: { throwOnError?: boolean }):
 export function useAuthState() {
   const clerkAuth = useAuthSafe();
   const { isSignedIn, isLoaded: clerkLoaded } = clerkAuth;
-  const [user, setUser] = React.useState<AuthUser | null>(null);
-  const [ready, setReady] = React.useState(false);
+  const [user, setUser] = React.useState<AuthUser | null>(() => getStoredUser());
+  const [ready, setReady] = React.useState(() => Boolean(getStoredUser()));
 
   React.useEffect(() => {
     if (!clerkLoaded) return;
 
-    if (!isSignedIn) {
+    if (!isSignedIn && !getAuthToken()) {
       setUser(null);
       setReady(true);
       return;
     }
 
-    // Clerk is signed in — fetch the full user from our backend
+    // Clerk is signed in or local token exists — fetch the full user from our backend
     let cancelled = false;
     (async () => {
       const meUser = await fetchAndCacheMeUser();

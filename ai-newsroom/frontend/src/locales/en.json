@@ -1010,7 +1010,9 @@
       "resetPasswordFailed": "Verification failed. Please check the code and try again.",
       "passwordTooWeak": "Password does not meet requirements. It must be at least 8 characters with a mix of letters and numbers.",
       "resetSuccess": "Password has been reset successfully. Redirecting...",
-      "backToLogin": "← Back to log in"
+      "backToLogin": "← Back to log in",
+      "useLocalLogin": "Sign in with local account",
+      "useClerkLogin": "Sign in with third-party"
     },
     "hero": {
       "badge": "3 agents working in lockstep",

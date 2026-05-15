@@ -5,6 +5,8 @@ import ReactDOM from "react-dom";
 import { useRouter } from "next/navigation";
 import { useClerk, useSignIn, useSignUp } from "@clerk/nextjs";
 import { useTranslation } from "@/hooks/useTranslation";
+import { api } from "@/lib/api";
+import { login as storeLogin } from "@/lib/auth";
 
 export type AuthMode = "login" | "register";
 
@@ -45,6 +47,7 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
   const [newPassword, setNewPassword] = React.useState("");
   const [cardHeight, setCardHeight] = React.useState<number | null>(null);
   const [isFlipping, setIsFlipping] = React.useState(false);
+  const [useLocalAuth, setUseLocalAuth] = React.useState(false);
   const loginFaceRef = React.useRef<HTMLDivElement>(null);
   const registerFaceRef = React.useRef<HTMLDivElement>(null);
   const loginInputRef = React.useRef<HTMLInputElement>(null);
@@ -123,6 +126,13 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
   };
 
   const handleLogin = async () => {
+    if (useLocalAuth) {
+      const result = await api.auth.login({ username, password });
+      storeLogin(result);
+      router.push("/");
+      setLoading(false);
+      return;
+    }
     if (!signInLoaded || !signIn) {
       setLoading(false);
       return;
@@ -422,9 +432,9 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
 
     return (
     <form onSubmit={(event) => handleSubmit(event, faceMode)} className="space-y-4">
-      {faceMode === "login" ? renderGoogleButton(faceMode) : null}
+      {faceMode === "login" && !useLocalAuth ? renderGoogleButton(faceMode) : null}
 
-      {faceMode === "login" ? (
+      {faceMode === "login" && !useLocalAuth ? (
         <div className="flex items-center gap-3 py-1">
           <div className="h-px flex-1 bg-white/[0.08]" />
           <span className="text-[11px] text-white/30">or</span>
@@ -435,15 +445,15 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
       {faceMode === "login" ? (
         <div>
           <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-widest text-white/35">
-            {t("landing.auth.username")}
+            {useLocalAuth ? t("landing.auth.username") : t("landing.auth.email")}
           </label>
           <input
             ref={loginInputRef}
-            type="text"
+            type={useLocalAuth ? "text" : "email"}
             value={username}
             onChange={(event) => setUsername(event.target.value)}
-            placeholder={t("landing.auth.usernamePlaceholder")}
-            autoComplete="username"
+            placeholder={useLocalAuth ? t("landing.auth.usernamePlaceholder") : t("landing.auth.emailPlaceholder")}
+            autoComplete={useLocalAuth ? "username" : "email"}
             tabIndex={mode === faceMode ? 0 : -1}
             className="w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3.5 py-3 text-[13px] text-white outline-none transition-all placeholder:text-white/20 focus:border-white/20 focus:bg-white/[0.06] focus:shadow-[0_0_0_1px_rgba(255,255,255,0.1)]"
           />
@@ -528,6 +538,17 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
       >
         {faceMode === "login" ? t("landing.auth.needAccount") : t("landing.auth.haveAccount")}
       </button>
+
+      {faceMode === "login" ? (
+        <button
+          type="button"
+          onClick={() => setUseLocalAuth((prev) => !prev)}
+          tabIndex={mode === faceMode ? 0 : -1}
+          className="mt-1 w-full text-center text-[11px] text-white/25 transition-colors hover:text-white/50"
+        >
+          {useLocalAuth ? t("landing.auth.useClerkLogin") : t("landing.auth.useLocalLogin")}
+        </button>
+      ) : null}
     </form>
     );
   };

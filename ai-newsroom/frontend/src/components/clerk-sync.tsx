@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useAuthSafe, useSessionSafe } from "@/lib/clerk-safe";
-import { clearAuthTokenCache, registerClerkTokenGetter, fetchClerkToken } from "@/lib/auth";
+import { clearAuthTokenCache, clearLocalAuthStorage, getLocalAuthToken, registerClerkTokenGetter, fetchClerkToken } from "@/lib/auth";
 
 export function ClerkSync() {
   const { isSignedIn, isLoaded } = useAuthSafe();
@@ -12,11 +12,16 @@ export function ClerkSync() {
     if (!isLoaded) return;
 
     if (!isSignedIn || !session) {
-      clearAuthTokenCache();
+      if (!getLocalAuthToken()) {
+        clearAuthTokenCache();
+      }
       registerClerkTokenGetter(null);
       return;
     }
 
+    if (getLocalAuthToken()) {
+      clearLocalAuthStorage();
+    }
     registerClerkTokenGetter(async (forceRefresh?: boolean) => {
       return session.getToken({ skipCache: forceRefresh });
     });
