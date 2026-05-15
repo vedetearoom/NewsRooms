@@ -233,7 +233,16 @@ def run_process_job(owner_user_id: int):
         logger.exception("[Celery] Processing failed")
         return job_failure("process_all", str(exc))
     logger.info("[Celery] Processing completed: %s cards", count)
+    try:
+        run_async(_refresh_auto_pins_async())
+    except Exception:
+        logger.exception("[Celery] Auto-pin refresh failed (non-fatal)")
     return job_success("process_all", cards_created=count)
+
+
+async def _refresh_auto_pins_async():
+    from app.services.auto_pin_service import refresh_auto_pins
+    await refresh_auto_pins()
 
 
 async def _process_selected_async(article_ids: list[int], owner_user_id: int):
@@ -276,6 +285,10 @@ def run_process_selected_job(article_ids: list[int], owner_user_id: int):
     logger.info("[Celery] Starting process job for selected articles: %s", article_ids)
     result = run_async(_process_selected_async(article_ids, owner_user_id))
     logger.info("[Celery] Processing completed: %s", result)
+    try:
+        run_async(_refresh_auto_pins_async())
+    except Exception:
+        logger.exception("[Celery] Auto-pin refresh failed (non-fatal)")
     return result
 
 
