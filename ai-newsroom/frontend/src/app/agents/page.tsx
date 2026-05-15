@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useAgents, usePlugins, useAgentSkillCatalog } from "@/hooks/useApi";
+import { useAgents, usePlugins, useAgentSkillCatalog, useModelProviders } from "@/hooks/useApi";
 import { useTranslation } from "@/hooks/useTranslation";
 import { api } from "@/lib/api";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
@@ -12,7 +12,7 @@ import { Suspense } from "react";
 import { Zap, Pen, Search, Image as ImageIcon } from "lucide-react";
 import { AgentSidebar } from "@/components/features/agents/agent-sidebar";
 import { AgentPageHeader } from "@/components/features/agents/agent-page-header";
-import { useAgentFormState, type AgentWithAudio } from "@/hooks/useAgentFormState";
+import { useAgentFormState, denormalizePrompt, type AgentWithAudio } from "@/hooks/useAgentFormState";
 import { AgentKnowledgeSection, AgentProfileSection, AgentPromptSection } from "@/components/features/agents/agent-form-sections";
 import { AgentSettingsCard } from "@/components/features/agents/agent-settings-card";
 import { PageShellFallback } from "@/components/shared/page-shell-fallback";
@@ -61,6 +61,7 @@ function AgentStudioContent() {
   const [isInstallingPlugin, setIsInstallingPlugin] = React.useState(false);
   const [activePane, setActivePane] = React.useState<"config" | "workbench">("config");
   const [pluginDeleteTarget, setPluginDeleteTarget] = React.useState<{ id: number; name: string } | null>(null);
+  const { providers } = useModelProviders();
 
   const activeAgent: AgentWithAudio | null = activeId === "new"
     ? null
@@ -90,8 +91,8 @@ function AgentStudioContent() {
     setRole,
     modelType,
     setModelType,
-    apiKey,
-    setApiKey,
+    providerId,
+    setProviderId,
     audioModelType,
     audioApiKey,
     systemPrompt,
@@ -108,6 +109,7 @@ function AgentStudioContent() {
     activeId,
     activeAgent,
     getLocalizedAgentName,
+    t,
   });
 
   React.useEffect(() => {
@@ -119,8 +121,8 @@ function AgentStudioContent() {
       toast.error(t("agents.validationNameRequired"));
       return;
     }
-    if (section === "profile" && !apiKey.trim()) {
-      toast.error(t("agents.validationApiKeyRequired"));
+    if (section === "profile" && !providerId) {
+      toast.error("Please select a model provider");
       return;
     }
     if (section === "prompt" && !systemPrompt.trim()) {
@@ -129,15 +131,30 @@ function AgentStudioContent() {
     }
     
     setSavingSection(section);
-    
+
+    // Resolve model_ref from provider's default_model
+    let resolvedModel = modelType;
+    if (providerId) {
+      const p = providers.find((pr) => pr.id === providerId);
+      if (p?.default_model) resolvedModel = p.default_model;
+    }
+
+    // Denormalize: if prompt matches localized default, save back English version
+    const localizedPrompts = {
+      extractor: t("agents.defaultPrompts.extractor"),
+      writer: t("agents.defaultPrompts.writer"),
+      reviewer: t("agents.defaultPrompts.reviewer"),
+    };
+    const savedPrompt = denormalizePrompt(role, systemPrompt, localizedPrompts);
+
     const payload = {
       name: isSystem ? activeAgent!.name : name,
       role,
-      model_ref: modelType,
-      api_key: apiKey || null,
+      model_ref: resolvedModel,
+      provider_id: providerId,
       audio_model_ref: audioModelType || null,
       audio_api_key: audioApiKey || null,
-      system_prompt: systemPrompt,
+      system_prompt: savedPrompt,
       context_text: contextText || null,
       system_skills: systemSkills,
     };
@@ -154,7 +171,7 @@ function AgentStudioContent() {
           partialPayload.name = payload.name;
           partialPayload.role = payload.role;
           partialPayload.model_ref = payload.model_ref;
-          partialPayload.api_key = payload.api_key;
+          partialPayload.provider_id = payload.provider_id;
           partialPayload.audio_model_ref = payload.audio_model_ref;
           partialPayload.audio_api_key = payload.audio_api_key;
           partialPayload.system_skills = payload.system_skills;
@@ -372,7 +389,7 @@ function AgentStudioContent() {
               onClick={() => setActivePane("config")}
               className={tabClassName("config")}
             >
-              Config
+              {t("agents.configTab")}
             </button>
             <button
               type="button"
@@ -380,7 +397,7 @@ function AgentStudioContent() {
               disabled={activeId === "new"}
               className={cn(tabClassName("workbench"), "disabled:opacity-40")}
             >
-              Workbench
+              {t("agents.workbenchTab")}
             </button>
           </div>
 
@@ -392,8 +409,8 @@ function AgentStudioContent() {
           <AgentProfileSection
             name={name}
             role={role}
-            modelType={modelType}
-            apiKey={apiKey}
+            providerId={providerId}
+            providers={providers}
             isSystem={isSystem}
             activeAgentCreatedAt={activeAgent?.created_at}
             isProfileDirty={isProfileDirty}
@@ -402,8 +419,7 @@ function AgentStudioContent() {
             t={t}
             onNameChange={setName}
             onRoleChange={setRole}
-            onModelTypeChange={setModelType}
-            onApiKeyChange={setApiKey}
+            onProviderChange={setProviderId}
             onSave={() => handleSave("profile")}
           />
 

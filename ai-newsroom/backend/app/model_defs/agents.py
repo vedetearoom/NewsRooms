@@ -12,6 +12,7 @@ class Agent(Base):
     name = Column(String(255), nullable=False)
     role = Column(String(50), nullable=False)
     model_ref = Column(String(100), default="gemini-2.5-flash")
+    provider_id = Column(Integer, nullable=True, index=True)
     api_key = Column(String(255), nullable=True)
     audio_model_ref = Column(String(100), nullable=True)
     audio_api_key = Column(String(255), nullable=True)

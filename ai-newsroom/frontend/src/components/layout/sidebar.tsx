@@ -59,6 +59,10 @@ const getNavItems = (t: TranslationFn) => [
         <path d="M12 8V4H8" /><rect width="16" height="12" x="4" y="8" rx="2" /><path d="M2 14h2" /><path d="M20 14h2" /><path d="M15 13v2" /><path d="M9 13v2" />
       </svg>
     ),
+    subItems: [
+      { label: t('sidebar.agentConfig'), href: "/agents" },
+      { label: t('sidebar.modelManagement'), href: "/agents/providers" },
+    ],
   },
 ];
 
@@ -113,6 +117,9 @@ export function Sidebar() {
       if (tabs.agentsActiveId !== null) params.set("id", String(tabs.agentsActiveId));
       const qs = params.toString();
       return qs ? `${href}?${qs}` : href;
+    }
+    if (href === "/agents/providers") {
+      return href;
     }
     return href;
   }, [tabs]);
@@ -171,7 +178,7 @@ export function Sidebar() {
   if (pathname.startsWith("/editor") || pathname.startsWith("/landing") || pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) return null;
 
   return (
-    <aside className="w-[220px] min-w-[220px] h-screen sticky top-0 flex flex-col bg-[var(--sidebar-bg)] border-r border-[var(--sidebar-border)] dark:border-white/[0.04]">
+    <aside className="w-[220px] min-w-[220px] h-screen sticky top-0 flex flex-col bg-[var(--sidebar-bg)]">
       {/* Subtle top glow in dark mode */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-white/[0.02] to-transparent dark:block hidden" />
       {/* Logo */}

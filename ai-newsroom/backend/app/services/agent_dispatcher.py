@@ -3,9 +3,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models import Agent
 
+
+async def _resolve_agent(agent: Agent, db: AsyncSession) -> Agent:
+    """Resolve api_key from provider for a single agent."""
+    if agent.provider_id:
+        from app.services.provider_resolution import resolve_agent_api_key
+        resolved = await resolve_agent_api_key(agent, db)
+        if resolved:
+            agent.api_key = resolved
+    return agent
+
+
 class AgentDispatcher:
     """Centralized service to resolve Agent configurations from the Database.
-    
+
     Prevents duplicate Agent lookups and fallback chains across different workflow stages.
     """
 
@@ -17,27 +28,31 @@ class AgentDispatcher:
         owner_user_id: Optional[int] = None,
     ) -> Optional[Agent]:
         """Fetch an Agent by explicit ID, or fallback to the top active agent for a given role."""
+        agent = None
         if agent_id:
             query = select(Agent).where(Agent.id == agent_id)
             if owner_user_id is not None:
                 query = query.where(Agent.owner_user_id == owner_user_id)
             result = await db.execute(query)
-            return result.scalar_one_or_none()
-            
-        if role:
+            agent = result.scalar_one_or_none()
+        elif role:
             query = select(Agent).where(Agent.role.ilike(f"%{role}%"))
             if owner_user_id is not None:
                 query = query.where(Agent.owner_user_id == owner_user_id)
             result = await db.execute(
                 query.order_by(Agent.is_active.desc(), Agent.is_system.desc()).limit(1)
             )
-            return result.scalar_one_or_none()
-            
-        return None
+            agent = result.scalar_one_or_none()
+
+        if agent:
+            await _resolve_agent(agent, db)
+        return agent
 
     @staticmethod
     async def get_audio_transcriber_config(db: AsyncSession, owner_user_id: Optional[int] = None) -> dict:
         """Find a valid API key and model config specifically suitable for native audio transcription (Gemini or Qwen)."""
+        from app.services.provider_resolution import resolve_agents_api_keys
+
         # Try 1: Explicit audio API key configured on any active agent
         query0 = (
             select(Agent)
@@ -63,6 +78,8 @@ class AgentDispatcher:
             query.order_by(Agent.is_active.desc(), Agent.is_system.desc()).limit(1)
         )
         extractor = result.scalar_one_or_none()
+        if extractor:
+            await _resolve_agent(extractor, db)
         if extractor and extractor.api_key:
             model = extractor.audio_model_ref or extractor.model_ref
             if model and (model.startswith("gemini") or model.startswith("qwen")):
@@ -77,7 +94,8 @@ class AgentDispatcher:
         if owner_user_id is not None:
             query2 = query2.where(Agent.owner_user_id == owner_user_id)
         result2 = await db.execute(query2)
-        agents = result2.scalars().all()
+        agents = list(result2.scalars().all())
+        await resolve_agents_api_keys(db, agents)
         for fallback in agents:
             model = fallback.audio_model_ref or fallback.model_ref
             if model and (model.startswith("gemini") or model.startswith("qwen")):

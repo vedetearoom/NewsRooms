@@ -9,6 +9,7 @@ class AgentCreate(BaseModel):
     name: str
     role: str
     model_ref: Optional[str] = "gemini-2.5-flash"
+    provider_id: Optional[int] = None
     api_key: Optional[str] = None
     audio_model_ref: Optional[str] = None
     audio_api_key: Optional[str] = None
@@ -24,6 +25,7 @@ class AgentUpdate(BaseModel):
     name: Optional[str] = None
     role: Optional[str] = None
     model_ref: Optional[str] = None
+    provider_id: Optional[int] = None
     api_key: Optional[str] = None
     audio_model_ref: Optional[str] = None
     audio_api_key: Optional[str] = None
@@ -50,6 +52,8 @@ class AgentOut(BaseModel):
     name: str
     role: str
     model_ref: str
+    provider_id: Optional[int] = None
+    provider_name: Optional[str] = None
     api_key: Optional[str] = None
     audio_model_ref: Optional[str] = None
     audio_api_key: Optional[str] = None

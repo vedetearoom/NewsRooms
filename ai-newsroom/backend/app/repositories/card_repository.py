@@ -90,7 +90,6 @@ class CardRepository:
     ) -> Sequence[IntelligenceCard]:
         q = select(IntelligenceCard).where(
             IntelligenceCard.is_pinned == True,
-            IntelligenceCard.is_archived == False,
         )
         if date_from:
             q = q.where(IntelligenceCard.published_date >= date_from)

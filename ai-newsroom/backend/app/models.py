@@ -4,6 +4,7 @@ from app.model_defs.content import IntelligenceCard, RawArticle, Source
 from app.model_defs.inspirations import InspirationAsset
 from app.model_defs.monitors import ManualVideoInboxItem, MonitorTarget, UserPlatformCredential
 from app.model_defs.plugins import AgentPluginBinding, AgentRunEvent, CustomPlugin
+from app.model_defs.providers import ModelProvider
 from app.model_defs.quotas import QuotaUsageCounter
 from app.model_defs.tasks import Critique, Draft, Task
 from app.model_defs.workbench import AgentActionProposal, AgentMessage, AgentThread
@@ -22,6 +23,7 @@ __all__ = [
     "IntelligenceCard",
     "ManualVideoInboxItem",
     "MonitorTarget",
+    "ModelProvider",
     "UserPlatformCredential",
     "Permission",
     "QuotaUsageCounter",

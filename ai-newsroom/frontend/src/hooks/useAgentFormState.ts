@@ -10,6 +10,30 @@ const DEFAULT_ROLE = "extractor";
 const DEFAULT_MODEL = "gemini-2.5-flash";
 const DEFAULT_AUDIO_MODEL = "gemini-2.5-flash";
 
+// English default prompts (matching backend DEFAULT_USER_AGENTS)
+const EN_DEFAULT_PROMPTS: Record<string, string> = {
+  extractor: "You are an expert news analyst. Extract key points and entities from the provided source text.",
+  writer: "You are a professional journalist. Synthesize the provided intelligence cards into a cohesive, neutral, and well-structured article.",
+  reviewer: "You are a strict editorial reviewer. Read the draft text and ensure it adheres to professional journalistic standards. Provide specific quotes to fix if there are overly speculative or biased statements.",
+};
+
+function localizePrompt(role: string, prompt: string, localizedPrompts?: Record<string, string>): string {
+  if (EN_DEFAULT_PROMPTS[role] && prompt === EN_DEFAULT_PROMPTS[role] && localizedPrompts?.[role]) {
+    return localizedPrompts[role];
+  }
+  return prompt;
+}
+
+export function denormalizePrompt(role: string, prompt: string, localizedPrompts: Record<string, string>): string {
+  if (EN_DEFAULT_PROMPTS[role]) {
+    const localized = localizedPrompts[role];
+    if (localized && prompt === localized) {
+      return EN_DEFAULT_PROMPTS[role];
+    }
+  }
+  return prompt;
+}
+
 function getDefaultSkillsForRole(role: string) {
   if (role === "extractor") {
     return ["sources.list", "sources.create", "sources.scrape", "sources.delete", "sources.read_recent_articles"];
@@ -24,6 +48,7 @@ interface UseAgentFormStateParams {
   activeId: number | "new" | null;
   activeAgent: AgentWithAudio | null;
   getLocalizedAgentName: (agent: AgentWithAudio | null | undefined) => string;
+  t: (key: string) => string;
 }
 
 function getDefaultFormState() {
@@ -31,7 +56,7 @@ function getDefaultFormState() {
     name: "",
     role: DEFAULT_ROLE,
     modelType: DEFAULT_MODEL,
-    apiKey: "",
+    providerId: null as number | null,
     audioModelType: DEFAULT_AUDIO_MODEL,
     audioApiKey: "",
     systemPrompt: "",
@@ -40,25 +65,25 @@ function getDefaultFormState() {
   };
 }
 
-function getAgentFormState(activeAgent: AgentWithAudio, getLocalizedAgentName: (agent: AgentWithAudio | null | undefined) => string) {
+function getAgentFormState(activeAgent: AgentWithAudio, getLocalizedAgentName: (agent: AgentWithAudio | null | undefined) => string, localizedPrompts: Record<string, string>) {
   return {
     name: getLocalizedAgentName(activeAgent),
     role: activeAgent.role,
     modelType: activeAgent.model_ref,
-    apiKey: activeAgent.api_key || "",
+    providerId: (activeAgent as Agent).provider_id ?? null,
     audioModelType: activeAgent.audio_model_ref || DEFAULT_AUDIO_MODEL,
     audioApiKey: activeAgent.audio_api_key || "",
-    systemPrompt: activeAgent.system_prompt,
+    systemPrompt: localizePrompt(activeAgent.role, activeAgent.system_prompt, localizedPrompts),
     contextText: activeAgent.context_text || "",
     systemSkills: activeAgent.system_skills || [],
   };
 }
 
-export function useAgentFormState({ activeId, activeAgent, getLocalizedAgentName }: UseAgentFormStateParams) {
+export function useAgentFormState({ activeId, activeAgent, getLocalizedAgentName, t }: UseAgentFormStateParams) {
   const [name, setName] = React.useState("");
   const [role, setRole] = React.useState(DEFAULT_ROLE);
   const [modelType, setModelType] = React.useState(DEFAULT_MODEL);
-  const [apiKey, setApiKey] = React.useState("");
+  const [providerId, setProviderId] = React.useState<number | null>(null);
   const [audioModelType, setAudioModelType] = React.useState(DEFAULT_AUDIO_MODEL);
   const [audioApiKey, setAudioApiKey] = React.useState("");
   const [systemPrompt, setSystemPrompt] = React.useState("");
@@ -69,7 +94,7 @@ export function useAgentFormState({ activeId, activeAgent, getLocalizedAgentName
     setName(next.name);
     setRole(next.role);
     setModelType(next.modelType);
-    setApiKey(next.apiKey);
+    setProviderId(next.providerId);
     setAudioModelType(next.audioModelType);
     setAudioApiKey(next.audioApiKey);
     setSystemPrompt(next.systemPrompt);
@@ -77,21 +102,27 @@ export function useAgentFormState({ activeId, activeAgent, getLocalizedAgentName
     setSystemSkills(next.systemSkills);
   }, []);
 
+  const localizedPrompts = React.useMemo(() => ({
+    extractor: t("agents.defaultPrompts.extractor"),
+    writer: t("agents.defaultPrompts.writer"),
+    reviewer: t("agents.defaultPrompts.reviewer"),
+  }), [t]);
+
   React.useEffect(() => {
     if (activeAgent) {
-      applyFormState(getAgentFormState(activeAgent, getLocalizedAgentName));
+      applyFormState(getAgentFormState(activeAgent, getLocalizedAgentName, localizedPrompts));
       return;
     }
 
     applyFormState(getDefaultFormState());
-  }, [activeAgent, applyFormState, getLocalizedAgentName]);
+  }, [activeAgent, applyFormState, getLocalizedAgentName, localizedPrompts]);
 
   const isProfileDirty = React.useMemo(() => {
     const current = {
       name,
       role,
       modelType,
-      apiKey,
+      providerId,
       audioModelType,
       audioApiKey,
       systemSkills,
@@ -102,7 +133,7 @@ export function useAgentFormState({ activeId, activeAgent, getLocalizedAgentName
         name: "",
         role: DEFAULT_ROLE,
         modelType: DEFAULT_MODEL,
-        apiKey: "",
+        providerId: null,
         audioModelType: DEFAULT_AUDIO_MODEL,
         audioApiKey: "",
         systemSkills: getDefaultSkillsForRole(DEFAULT_ROLE),
@@ -111,15 +142,15 @@ export function useAgentFormState({ activeId, activeAgent, getLocalizedAgentName
 
     if (!activeAgent) return false;
 
-    const initial = getAgentFormState(activeAgent, getLocalizedAgentName);
+    const initial = getAgentFormState(activeAgent, getLocalizedAgentName, localizedPrompts);
     return current.name !== initial.name ||
       current.role !== initial.role ||
       current.modelType !== initial.modelType ||
-      current.apiKey !== initial.apiKey ||
+      current.providerId !== initial.providerId ||
       current.audioModelType !== initial.audioModelType ||
       current.audioApiKey !== initial.audioApiKey ||
       JSON.stringify(current.systemSkills) !== JSON.stringify(initial.systemSkills);
-  }, [activeAgent, activeId, apiKey, audioApiKey, audioModelType, getLocalizedAgentName, modelType, name, role, systemSkills]);
+  }, [activeAgent, activeId, audioApiKey, audioModelType, getLocalizedAgentName, localizedPrompts, modelType, name, providerId, role, systemSkills]);
 
   const isPromptDirty = React.useMemo(() => {
     if (activeId === "new") return systemPrompt !== "";
@@ -134,12 +165,12 @@ export function useAgentFormState({ activeId, activeAgent, getLocalizedAgentName
   }, [activeAgent, activeId, contextText]);
 
   const populateFromAgent = React.useCallback((agent: AgentWithAudio, suffix = "") => {
-    const next = getAgentFormState(agent, getLocalizedAgentName);
+    const next = getAgentFormState(agent, getLocalizedAgentName, localizedPrompts);
     applyFormState({
       ...next,
       name: `${next.name}${suffix}`,
     });
-  }, [applyFormState, getLocalizedAgentName]);
+  }, [applyFormState, getLocalizedAgentName, localizedPrompts]);
 
   const updateRoleWithDefaults = React.useCallback((nextRole: string) => {
     setRole(nextRole);
@@ -156,8 +187,8 @@ export function useAgentFormState({ activeId, activeAgent, getLocalizedAgentName
     setRole: updateRoleWithDefaults,
     modelType,
     setModelType,
-    apiKey,
-    setApiKey,
+    providerId,
+    setProviderId,
     audioModelType,
     setAudioModelType,
     audioApiKey,

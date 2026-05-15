@@ -62,6 +62,7 @@ function buildTimeGroups(
   cards: IntelligenceCard[],
   archivedCards: IntelligenceCard[],
   archiveDateFilter: string | null,
+  contentTab: InboxContentTab,
 ): TimeGroupedCards {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -77,6 +78,12 @@ function buildTimeGroups(
   };
 
   cards.forEach((card) => {
+    // Pinned tab: archived cards always go to 归档 regardless of age
+    if (contentTab === "pinned" && card.is_archived) {
+      groups.older.push(card);
+      return;
+    }
+
     const cardDate = new Date(card.created_at);
     cardDate.setHours(0, 0, 0, 0);
 
@@ -87,6 +94,8 @@ function buildTimeGroups(
       groups.today.push(card);
     } else if (diffDays <= 7) {
       groups.thisWeek.push(card);
+    } else {
+      groups.older.push(card);
     }
   });
 
@@ -118,8 +127,8 @@ export function useInboxCardsView({
   }, [archivedCards, contentTab]);
 
   const timeGroupedCards = React.useMemo(
-    () => buildTimeGroups(contentFilteredCards, contentFilteredArchived, archiveDateFilter),
-    [contentFilteredCards, contentFilteredArchived, archiveDateFilter],
+    () => buildTimeGroups(contentFilteredCards, contentFilteredArchived, archiveDateFilter, contentTab),
+    [contentFilteredCards, contentFilteredArchived, archiveDateFilter, contentTab],
   );
 
   const currentSliceCards = timeGroupedCards[activeTab];

@@ -48,6 +48,11 @@ from app.schema_defs.plugins import (
     PluginInstallRequest,
     PluginOut,
 )
+from app.schema_defs.providers import (
+    ModelProviderCreate,
+    ModelProviderOut,
+    ModelProviderUpdate,
+)
 from app.schema_defs.tasks import CritiqueItem, CritiqueOut, DraftOut, DraftUpdate, TaskCreate, TaskOut
 from app.schema_defs.workbench import (
     AgentActionProposalOut,
@@ -97,6 +102,9 @@ __all__ = [
     "MonitorTargetCreate",
     "MonitorTargetOut",
     "MonitorTargetUpdate",
+    "ModelProviderCreate",
+    "ModelProviderOut",
+    "ModelProviderUpdate",
     "PermissionOut",
     "PluginInstallQueuedOut",
     "PluginInstallRequest",

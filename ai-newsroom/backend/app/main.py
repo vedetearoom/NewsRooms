@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import admin, agents, auth, cards, clerk_webhooks, inspirations, jobs, monitors, plugins, quota, raw_articles, seed, sources, stream, tasks, upload
+from app.api import admin, agents, auth, cards, clerk_webhooks, inspirations, jobs, monitors, plugins, providers, quota, raw_articles, seed, sources, stream, tasks, upload
 from app.config import get_settings
 from app.database import init_db
 from app.workers.cron_jobs import start_scheduler, stop_scheduler
@@ -45,6 +45,7 @@ app.include_router(tasks.router)
 app.include_router(stream.router)
 app.include_router(agents.router)
 app.include_router(agents.skills_router)
+app.include_router(providers.router)
 app.include_router(plugins.router)
 app.include_router(auth.router)
 app.include_router(clerk_webhooks.router)

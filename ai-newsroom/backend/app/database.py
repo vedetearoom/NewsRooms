@@ -44,6 +44,7 @@ OWNER_SCOPED_TABLES = [
     "custom_plugins",
     "agent_plugin_bindings",
     "agent_run_events",
+    "model_providers",
 ]
 
 
@@ -71,6 +72,7 @@ async def init_db():
         await conn.run_sync(_ensure_clerk_user_id_column)
         await conn.run_sync(_ensure_pinned_columns)
         await conn.run_sync(_drop_is_super_admin_column)
+        await conn.run_sync(_ensure_model_providers_table)
 
     from app.models import User
     from app.services.agent_service import ensure_default_agents_for_user
@@ -250,3 +252,71 @@ def _drop_is_super_admin_column(sync_conn) -> None:
     columns = {column["name"] for column in inspector.get_columns("users")}
     if "is_super_admin" in columns:
         sync_conn.execute(text("ALTER TABLE users DROP COLUMN is_super_admin"))
+
+
+def _ensure_model_providers_table(sync_conn) -> None:
+    inspector = inspect(sync_conn)
+
+    # 1. Create model_providers table if not exists
+    if "model_providers" not in inspector.get_table_names():
+        sync_conn.execute(text("""
+            CREATE TABLE model_providers (
+                id SERIAL PRIMARY KEY,
+                owner_user_id INTEGER,
+                name VARCHAR(100) NOT NULL,
+                provider VARCHAR(20) NOT NULL,
+                api_key VARCHAR(255) NOT NULL,
+                category VARCHAR(20) NOT NULL DEFAULT 'text',
+                default_model VARCHAR(100),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+            )
+        """))
+        sync_conn.execute(text("CREATE INDEX IF NOT EXISTS ix_model_providers_owner_user_id ON model_providers (owner_user_id)"))
+
+    # Add category column to model_providers if missing
+    if "model_providers" in inspector.get_table_names():
+        mp_columns = {column["name"] for column in inspector.get_columns("model_providers")}
+        if "category" not in mp_columns:
+            sync_conn.execute(text("ALTER TABLE model_providers ADD COLUMN category VARCHAR(20) NOT NULL DEFAULT 'text'"))
+
+    # 2. Add provider_id to agents if missing
+    if "agents" in inspector.get_table_names():
+        agent_columns = {column["name"] for column in inspector.get_columns("agents")}
+        if "provider_id" not in agent_columns:
+            sync_conn.execute(text("ALTER TABLE agents ADD COLUMN provider_id INTEGER"))
+            sync_conn.execute(text("CREATE INDEX IF NOT EXISTS ix_agents_provider_id ON agents (provider_id)"))
+
+        # 3. Data migration: create ModelProvider rows from existing agent api_keys
+        rows = sync_conn.execute(text(
+            "SELECT id, owner_user_id, api_key, model_ref FROM agents "
+            "WHERE api_key IS NOT NULL AND api_key != ''"
+        )).fetchall()
+
+        for agent_id, owner_user_id, api_key, model_ref in rows:
+            model_ref = model_ref or ""
+            provider = "alibaba" if "qwen" in model_ref.lower() else "google"
+
+            # Check if a provider already exists for this user+provider combo
+            existing = sync_conn.execute(text(
+                "SELECT id FROM model_providers WHERE owner_user_id = :owner AND provider = :provider"
+            ), {"owner": owner_user_id, "provider": provider}).fetchone()
+
+            if existing:
+                provider_id = existing[0]
+            else:
+                result = sync_conn.execute(text(
+                    "INSERT INTO model_providers (owner_user_id, name, provider, api_key, default_model) "
+                    "VALUES (:owner, :name, :provider, :api_key, :model) RETURNING id"
+                ), {
+                    "owner": owner_user_id,
+                    "name": f"{provider.title()} Key",
+                    "provider": provider,
+                    "api_key": api_key,
+                    "model": model_ref,
+                })
+                provider_id = result.fetchone()[0]
+
+            sync_conn.execute(text(
+                "UPDATE agents SET provider_id = :pid WHERE id = :aid AND (provider_id IS NULL)"
+            ), {"pid": provider_id, "aid": agent_id})

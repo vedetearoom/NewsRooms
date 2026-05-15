@@ -6,26 +6,15 @@ import { cn } from "@/lib/utils";
 import { Sparkles, Zap, Pen, Search, Image as ImageIcon } from "lucide-react";
 import { AgentCustomSelect, type AgentSelectOption } from "@/components/features/agents/agent-custom-select";
 import { AgentSettingsCard } from "@/components/features/agents/agent-settings-card";
+import { api, type ModelProvider } from "@/lib/api";
 
 type SavingSection = "profile" | "prompt" | "knowledge" | null;
-
-const BASE_MODEL_OPTIONS: AgentSelectOption[] = [
-  { value: "gemini-2.5-flash", label: "gemini-2.5-flash (Default)" },
-  { value: "gemini-2.5-pro", label: "gemini-2.5-pro (Pro)" },
-  { value: "qwen-plus", label: "qwen-plus" },
-  { value: "qwen-max", label: "qwen-max (Pro)" },
-];
-
-const ILLUSTRATOR_MODEL_OPTIONS: AgentSelectOption[] = [
-  { value: "qwen-image-2.0-pro", label: "qwen-image-2.0-pro" },
-  { value: "gemini-2.5-flash-image", label: "gemini-2.5-flash-image" },
-];
 
 interface AgentProfileSectionProps {
   name: string;
   role: string;
-  modelType: string;
-  apiKey: string;
+  providerId: number | null;
+  providers: ModelProvider[];
   isSystem: boolean;
   activeAgentCreatedAt?: string;
   isProfileDirty: boolean;
@@ -34,16 +23,15 @@ interface AgentProfileSectionProps {
   t: (key: string, fallback?: string) => string;
   onNameChange: (value: string) => void;
   onRoleChange: (value: string) => void;
-  onModelTypeChange: (value: string) => void;
-  onApiKeyChange: (value: string) => void;
+  onProviderChange: (value: number | null) => void;
   onSave: () => void;
 }
 
 export function AgentProfileSection({
   name,
   role,
-  modelType,
-  apiKey,
+  providerId,
+  providers,
   isSystem,
   activeAgentCreatedAt,
   isProfileDirty,
@@ -52,16 +40,23 @@ export function AgentProfileSection({
   t,
   onNameChange,
   onRoleChange,
-  onModelTypeChange,
-  onApiKeyChange,
+  onProviderChange,
   onSave,
 }: AgentProfileSectionProps) {
+
   const roleOptions: AgentSelectOption[] = [
     { value: "extractor", label: t("agents.extractors"), icon: <Zap className="w-3.5 h-3.5 text-muted-foreground" /> },
     { value: "writer", label: t("agents.writersGroup"), icon: <Pen className="w-3.5 h-3.5 text-muted-foreground" /> },
     { value: "reviewer", label: t("agents.reviewers"), icon: <Search className="w-3.5 h-3.5 text-muted-foreground" /> },
     { value: "illustrator", label: t("agents.illustrators"), icon: <ImageIcon className="w-3.5 h-3.5 text-muted-foreground" /> },
   ];
+
+  const requiredCategory = role === "illustrator" ? "image" : "text";
+  const filteredProviders = providers.filter((p) => p.category === requiredCategory);
+  const providerOptions: AgentSelectOption[] = filteredProviders.map((p) => ({
+    value: String(p.id),
+    label: p.default_model ? `${p.name} · ${p.default_model}` : p.name,
+  }));
 
   return (
     <AgentSettingsCard
@@ -111,27 +106,20 @@ export function AgentProfileSection({
         <div className="grid grid-cols-2 gap-5">
           <div className="space-y-4">
             <label className="block text-[11px] font-semibold text-foreground mb-1.5 ml-0.5">
-              {t("agents.llmModel")} <span className="text-red-500">*</span>
+              {t("agents.provider")} <span className="text-red-500">*</span>
             </label>
-            <AgentCustomSelect
-              value={modelType}
-              onChange={onModelTypeChange}
-              className={cn(inputClass, "font-mono text-[12px]")}
-              options={role === "illustrator" ? ILLUSTRATOR_MODEL_OPTIONS : BASE_MODEL_OPTIONS}
-            />
+            {filteredProviders.length > 0 ? (
+              <AgentCustomSelect
+                value={providerId ? String(providerId) : ""}
+                onChange={(v) => onProviderChange(v ? Number(v) : null)}
+                className={inputClass}
+                options={providerOptions}
+              />
+            ) : (
+              <span className={cn(inputClass, "text-muted-foreground text-xs block")}>No providers configured</span>
+            )}
           </div>
-          <div className="space-y-4 relative">
-            <label className="block text-[11px] font-semibold text-foreground mb-1.5 ml-0.5">
-              {t("agents.apiKey")} <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(event) => onApiKeyChange(event.target.value)}
-              className={cn(inputClass, "font-mono text-[12px]")}
-              placeholder={t("agents.apiKeyPlaceholder")}
-            />
-          </div>
+          <div />
         </div>
       </div>
     </AgentSettingsCard>

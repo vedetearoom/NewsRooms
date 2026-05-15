@@ -98,6 +98,14 @@ async def _load_plugin_summary_map(
     return summary_map
 
 
+def _mask_api_key(key: str | None) -> str | None:
+    if not key:
+        return None
+    if len(key) <= 8:
+        return "****"
+    return f"{key[:4]}****{key[-4:]}"
+
+
 def build_agent_out(
     agent: Agent,
     attached_plugins: list[AgentPluginSummaryOut] | None = None,
@@ -109,9 +117,11 @@ def build_agent_out(
         name=agent.name,
         role=agent.role,
         model_ref=agent.model_ref,
-        api_key=agent.api_key,
+        provider_id=getattr(agent, "provider_id", None),
+        provider_name=getattr(agent, "_provider_name", None),
+        api_key=_mask_api_key(agent.api_key),
         audio_model_ref=agent.audio_model_ref,
-        audio_api_key=agent.audio_api_key,
+        audio_api_key=_mask_api_key(agent.audio_api_key),
         system_prompt=agent.system_prompt,
         context_text=agent.context_text,
         system_skills=list(agent.system_skills or []),
@@ -136,6 +146,23 @@ async def build_agent_outputs(
     agents: list[Agent],
 ) -> list[AgentOut]:
     summary_map = await _load_plugin_summary_map(db, owner_user_id, [agent.id for agent in agents])
+
+    # Batch-resolve provider names
+    provider_ids = {a.provider_id for a in agents if getattr(a, "provider_id", None)}
+    provider_name_map: dict[int, str] = {}
+    if provider_ids:
+        from app.model_defs.providers import ModelProvider
+        from sqlalchemy import select as sa_select
+        result = await db.execute(
+            sa_select(ModelProvider.id, ModelProvider.name).where(ModelProvider.id.in_(provider_ids))
+        )
+        provider_name_map = {row[0]: row[1] for row in result.fetchall()}
+
+    for agent in agents:
+        pid = getattr(agent, "provider_id", None)
+        if pid and pid in provider_name_map:
+            agent._provider_name = provider_name_map[pid]
+
     return [build_agent_out(agent, summary_map.get(agent.id, [])) for agent in agents]
 
 

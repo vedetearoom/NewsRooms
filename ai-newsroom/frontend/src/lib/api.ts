@@ -153,6 +153,8 @@ export interface Agent {
   name: string;
   role: string;
   model_ref: string;
+  provider_id?: number | null;
+  provider_name?: string | null;
   system_prompt: string;
   api_key?: string | null;
   audio_model_ref?: string | null;
@@ -164,6 +166,17 @@ export interface Agent {
   execution_mode: "native" | "plugin_augmented";
   sandbox_enabled: boolean;
   attached_plugins: AgentPluginSummary[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ModelProvider {
+  id: number;
+  name: string;
+  provider: string;
+  category: string;
+  api_key_masked: string;
+  default_model: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -677,6 +690,14 @@ export const api = {
     fetchAPI<{ rewritten_text: string }>("/api/agents/rewrite", { method: "POST", body: JSON.stringify({ text, instruction }) }),
   activateAgent: (id: number) => fetchAPI<Agent>(`/api/agents/${id}/activate`, { method: "PATCH" }),
   getAgentSkillCatalog: () => fetchAPI<AgentSkillCatalogItem[]>("/api/agent-skills/catalog"),
+  getModelProviders: () => fetchAPI<ModelProvider[]>("/api/model-providers"),
+  createModelProvider: (data: { name: string; provider: string; category: string; api_key: string; default_model?: string | null }) =>
+    fetchAPI<ModelProvider>("/api/model-providers", { method: "POST", body: JSON.stringify(data) }),
+  updateModelProvider: (id: number, data: Partial<{ name: string; provider: string; category: string; api_key: string; default_model: string | null }>) =>
+    fetchAPI<ModelProvider>(`/api/model-providers/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+  deleteModelProvider: (id: number) =>
+    fetchAPI<{ ok: boolean }>(`/api/model-providers/${id}`, { method: "DELETE" }),
+  getModelCatalog: () => fetchAPI<Record<string, string[]>>("/api/model-providers/catalog/models"),
   getAgentThreads: (agentId: number) => fetchAPI<AgentThread[]>(`/api/agents/${agentId}/threads`),
   createAgentThread: (agentId: number, data: { title?: string | null } = {}) =>
     fetchAPI<AgentThread>(`/api/agents/${agentId}/threads`, {

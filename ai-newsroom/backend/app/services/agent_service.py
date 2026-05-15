@@ -138,7 +138,10 @@ async def list_agents(db: AsyncSession, user_id: int):
         .where(Agent.owner_user_id == user_id)
         .order_by(Agent.created_at.desc())
     )
-    return await build_agent_outputs(db, user_id, list(result.scalars().all()))
+    agents = list(result.scalars().all())
+    from app.services.provider_resolution import resolve_agents_api_keys
+    await resolve_agents_api_keys(db, agents)
+    return await build_agent_outputs(db, user_id, agents)
 
 
 async def create_agent_record(agent_in: AgentCreate, db: AsyncSession, user_id: int):
@@ -162,6 +165,11 @@ async def get_agent_or_404(agent_id: int, db: AsyncSession, user_id: int) -> Age
     agent = result.scalar_one_or_none()
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
+    if agent.provider_id:
+        from app.services.provider_resolution import resolve_agent_api_key
+        resolved = await resolve_agent_api_key(agent, db)
+        if resolved:
+            agent.api_key = resolved
     return agent
 
 
