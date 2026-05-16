@@ -34,13 +34,17 @@ export function AgentSidebar({
   return (
     <div className="flex h-full w-[260px] shrink-0 flex-col bg-white/95 dark:bg-[#0a0b0d]">
       <div className="flex h-[56px] shrink-0 items-center justify-between px-5">
-        <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onSelect(null)}
+          className="flex cursor-pointer items-center gap-2 py-1.5 transition-colors"
+        >
           <Bot className="h-4 w-4 text-muted-foreground/80" />
           <span className="text-[13px] font-semibold tracking-tight text-foreground">{t("agents.title")}</span>
-        </div>
+        </button>
         <button
           onClick={() => onSelect("new")}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-zinc-100 hover:text-foreground dark:hover:bg-white/[0.06]"
+          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-zinc-100 hover:text-foreground dark:hover:bg-white/[0.06]"
           title={t("agents.createNewAgent")}
         >
           <Plus className="h-4 w-4" />
@@ -129,7 +133,7 @@ export function AgentSidebar({
       <div className="shrink-0 p-3">
         <button
           onClick={() => onSelect("new")}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200/80 bg-white px-3 py-2.5 text-[13px] font-medium text-foreground transition-all hover:bg-zinc-50 dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:bg-white/[0.07] dark:hover:border-white/[0.14] dark:hover:shadow-[0_0_0_1px_rgba(255,255,255,0.03)]"
+          className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-zinc-200/80 bg-white px-3 py-2.5 text-[13px] font-medium text-foreground transition-all hover:bg-zinc-50 dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:bg-white/[0.07] dark:hover:border-white/[0.14] dark:hover:shadow-[0_0_0_1px_rgba(255,255,255,0.03)]"
         >
           <Plus className="h-3.5 w-3.5" />
           {t("agents.createNewAgent")}

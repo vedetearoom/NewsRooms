@@ -201,16 +201,11 @@ export function Sidebar() {
             return (
               <div key={item.href} className="flex flex-col">
                 <button
-                  onClick={() => {
-                    if (item.subItems) {
-                      setExpanded(prev => ({ ...prev, [item.href]: !prev[item.href] }));
-                    }
-                    router.push(getHrefWithParams(item.href));
-                  }}
+                  onClick={() => router.push(getHrefWithParams(item.href))}
                   className={cn(
                     "w-full flex items-center gap-2.5 px-2.5 py-[6px] rounded-lg text-[13px] font-medium transition-all cursor-pointer text-zinc-900 dark:text-zinc-100 relative",
                     isExactActive && !item.subItems
-                      ? "bg-[var(--nav-active-bg)]" 
+                      ? "bg-[var(--nav-active-bg)]"
                       : "hover:bg-[var(--nav-hover-bg)] dark:hover:bg-white/[0.05]"
                   )}
                 >

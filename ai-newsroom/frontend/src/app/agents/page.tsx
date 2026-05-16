@@ -480,11 +480,19 @@ function AgentStudioContent() {
                   return (
                     <label
                       key={skill.key}
-                      className="rounded-xl border border-zinc-200/80 dark:border-white/[0.08] bg-white/70 dark:bg-white/[0.02] px-4 py-3 flex items-start gap-3 cursor-pointer"
+                      className={cn(
+                        "relative flex cursor-pointer items-start gap-3 rounded-2xl px-4 py-3.5 transition-colors",
+                        checked
+                          ? "bg-zinc-100/90 text-foreground dark:bg-white/[0.07]"
+                          : "bg-zinc-50/80 text-foreground hover:bg-zinc-100/70 dark:bg-white/[0.035] dark:hover:bg-white/[0.055]"
+                      )}
                     >
+                      {checked && (
+                        <span className="absolute inset-y-5 left-0 w-[2px] rounded-r-full bg-zinc-300/80 dark:bg-white/25" />
+                      )}
                       <input
                         type="checkbox"
-                        className="mt-1 h-4 w-4"
+                        className="peer sr-only"
                         checked={checked}
                         onChange={(event) => {
                           setSystemSkills((current) => {
@@ -495,6 +503,13 @@ function AgentStudioContent() {
                           });
                         }}
                       />
+                      <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] bg-zinc-200 text-white transition-colors peer-checked:bg-zinc-600 dark:bg-white/15 dark:peer-checked:bg-white/45">
+                        {checked && (
+                          <svg viewBox="0 0 16 16" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M3.5 8.5 6.5 11.5 12.5 4.5" />
+                          </svg>
+                        )}
+                      </span>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-[13px] font-semibold text-foreground">{localizedSkill.label}</p>
@@ -503,7 +518,6 @@ function AgentStudioContent() {
                           </span>
                         </div>
                         <p className="mt-1 text-[12px] text-muted-foreground">{localizedSkill.description}</p>
-                        <p className="mt-2 text-[11px] text-muted-foreground font-mono">{skill.key}</p>
                       </div>
                     </label>
                   );
