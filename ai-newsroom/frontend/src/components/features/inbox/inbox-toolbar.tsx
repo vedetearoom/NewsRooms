@@ -35,6 +35,15 @@ export function InboxToolbar({
     onClickOutside: () => setMoreOpen(false),
   });
 
+  const [subsOpen, setSubsOpen] = React.useState(false);
+  const subsRef = React.useRef<HTMLDivElement>(null);
+  const subsTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  useClickOutside({
+    ref: subsRef,
+    enabled: subsOpen,
+    onClickOutside: () => { if (subsTimer.current) { clearTimeout(subsTimer.current); subsTimer.current = null; } setSubsOpen(false); },
+  });
+
   const overflowCount = overflowTags.reduce((sum, [, count]) => sum + count, 0);
 
   return (
@@ -54,28 +63,55 @@ export function InboxToolbar({
             >
               {t('inbox.pinnedTab')}
             </button>
-            <button
-              onClick={() => { setContentTab("article"); setActiveTag("all"); }}
-              className={cn(
-                "px-3 py-1 rounded-md text-[13px] transition-colors cursor-pointer",
-                contentTab === "article"
-                  ? "text-foreground font-semibold bg-[var(--pill-bg)]"
-                  : "text-muted-foreground hover:text-foreground hover:bg-[var(--pill-hover-bg)]"
-              )}
+            <div
+              className="relative"
+              ref={subsRef}
+              onMouseEnter={() => { if (subsTimer.current) { clearTimeout(subsTimer.current); subsTimer.current = null; } setSubsOpen(true); }}
+              onMouseLeave={() => { subsTimer.current = setTimeout(() => setSubsOpen(false), 150); }}
             >
-              {t('inbox.textIntel')}
-            </button>
-            <button
-              onClick={() => { setContentTab("video"); setActiveTag("all"); }}
-              className={cn(
-                "px-3 py-1 rounded-md text-[13px] transition-colors cursor-pointer",
-                contentTab === "video"
-                  ? "text-foreground font-semibold bg-[var(--pill-bg)]"
-                  : "text-muted-foreground hover:text-foreground hover:bg-[var(--pill-hover-bg)]"
+              <button
+                onClick={() => { if (contentTab !== "article" && contentTab !== "video") { setContentTab("article"); setActiveTag("all"); } setSubsOpen(false); }}
+                className={cn(
+                  "px-3 py-1 rounded-md text-[13px] transition-colors cursor-pointer flex items-center gap-0.5",
+                  (contentTab === "article" || contentTab === "video")
+                    ? "text-foreground font-semibold bg-[var(--pill-bg)]"
+                    : "text-muted-foreground hover:text-foreground hover:bg-[var(--pill-hover-bg)]"
+                )}
+              >
+                {t('inbox.mySubscriptions')}
+                <ChevronDown className={cn(
+                  "w-2.5 h-2.5 transition-transform opacity-40",
+                  subsOpen && "rotate-180"
+                )} />
+              </button>
+
+              {subsOpen && (
+                <div className="absolute top-full left-0 z-[140] mt-1 min-w-[120px] rounded-lg border border-zinc-200/60 bg-white py-1.5 shadow-lg shadow-black/10 animate-fade-in dark:border-white/[0.08] dark:bg-[#111214] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] dark:backdrop-blur-xl">
+                  <button
+                    onClick={() => { setContentTab("article"); setActiveTag("all"); setSubsOpen(false); }}
+                    className={cn(
+                      "w-full text-left px-3 py-1.5 text-[12px] transition-colors",
+                      contentTab === "article"
+                        ? "text-foreground font-medium bg-zinc-100 dark:bg-white/10"
+                        : "text-muted-foreground hover:text-foreground hover:bg-zinc-50 dark:hover:bg-white/5"
+                    )}
+                  >
+                    {t('inbox.mySubscriptionsArticle')}
+                  </button>
+                  <button
+                    onClick={() => { setContentTab("video"); setActiveTag("all"); setSubsOpen(false); }}
+                    className={cn(
+                      "w-full text-left px-3 py-1.5 text-[12px] transition-colors",
+                      contentTab === "video"
+                        ? "text-foreground font-medium bg-zinc-100 dark:bg-white/10"
+                        : "text-muted-foreground hover:text-foreground hover:bg-zinc-50 dark:hover:bg-white/5"
+                    )}
+                  >
+                    {t('inbox.mySubscriptionsVideo')}
+                  </button>
+                </div>
               )}
-            >
-              {t('inbox.videoIntel')}
-            </button>
+            </div>
           </div>
           {/* Dynamic Trending Tags */}
           <div className="flex items-center gap-0.5">
