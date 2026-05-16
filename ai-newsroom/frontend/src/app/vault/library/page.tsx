@@ -181,7 +181,7 @@ export default function KnowledgeCenterPage() {
                   const badge = statusBadge(task.status, t);
                   const isChecked = selectedTaskIds.has(task.id);
                   return (
-                    <tr key={task.id} className={cn("group border-b border-zinc-200/50 dark:border-white/[0.04] h-14 transition-colors cursor-pointer", isChecked ? "bg-blue-50/60 dark:bg-blue-500/[0.08]" : "hover:bg-zinc-100/60 dark:hover:bg-white/[0.04]")} onClick={() => toggleTask(task.id)}>
+                    <tr key={task.id} className={cn("group h-14 transition-colors cursor-pointer", isChecked ? "bg-blue-50/60 dark:bg-blue-500/[0.08]" : "hover:bg-zinc-100/60 dark:hover:bg-white/[0.04]")} onClick={() => toggleTask(task.id)}>
                       <td className="pl-8 lg:pl-12 pr-2 align-middle">
                         <div className="flex items-center h-full justify-start">
                           <div className={cn(
@@ -198,13 +198,13 @@ export default function KnowledgeCenterPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="pr-4">
+                      <td className="pr-4 border-b border-zinc-200/50 dark:border-white/[0.04]">
                         <div className="flex items-center gap-3">
                           <FileText className="w-4 h-4 text-zinc-400 dark:text-zinc-500 shrink-0" />
                           <span className="text-[14px] font-normal text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors truncate max-w-[400px]">{task.title || "Untitled Task"}</span>
                         </div>
                       </td>
-                      <td>
+                      <td className="border-b border-zinc-200/50 dark:border-white/[0.04]">
                         {badge.type === "completed" ? (
                           <span className="text-[11.5px] font-medium text-zinc-400 dark:text-zinc-600 whitespace-nowrap">{badge.label}</span>
                         ) : (
@@ -214,9 +214,9 @@ export default function KnowledgeCenterPage() {
                           </span>
                         )}
                       </td>
-                      <td><span className="font-mono text-[12px] text-zinc-500 dark:text-zinc-400">TSK-{task.id}</span></td>
-                      <td><span className="text-[13px] text-zinc-500 dark:text-zinc-400">{formatDate(task.created_at)}</span></td>
-                      <td className="text-right pr-8 lg:pr-12">
+                      <td className="border-b border-zinc-200/50 dark:border-white/[0.04]"><span className="font-mono text-[12px] text-zinc-500 dark:text-zinc-400">TSK-{task.id}</span></td>
+                      <td className="border-b border-zinc-200/50 dark:border-white/[0.04]"><span className="text-[13px] text-zinc-500 dark:text-zinc-400">{formatDate(task.created_at)}</span></td>
+                      <td className="text-right pr-8 lg:pr-12 border-b border-zinc-200/50 dark:border-white/[0.04]">
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button onClick={(e) => { e.stopPropagation(); router.push(`/editor/${task.id}`); }} className="flex items-center gap-1 h-7 px-2 rounded-md text-[12px] font-medium text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-white/10 transition-colors whitespace-nowrap"><Eye className="w-3.5 h-3.5" />{t("vault.view")}</button>
                           <button onClick={(e) => e.stopPropagation()} className="w-7 h-7 rounded-md flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-white/10 transition-colors"><MoreHorizontal className="w-4 h-4" /></button>
