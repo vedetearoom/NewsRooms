@@ -156,7 +156,7 @@ export function useAgentFormState({ activeId, activeAgent, getLocalizedAgentName
   }, [systemSkills, autoSystemSkills]);
 
   const isPromptDirty = React.useMemo(() => {
-    if (activeId === "new") return systemPrompt !== (localizedPrompts[role] || EN_DEFAULT_PROMPTS[role] || "");
+    if (activeId === "new") return systemPrompt !== (localizedPrompts[role as keyof typeof localizedPrompts] || EN_DEFAULT_PROMPTS[role] || "");
     if (!activeAgent) return false;
     const initial = getAgentFormState(activeAgent, getLocalizedAgentName, localizedPrompts);
     return systemPrompt !== initial.systemPrompt;
