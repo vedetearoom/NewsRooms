@@ -73,6 +73,7 @@ async def init_db():
         await conn.run_sync(_ensure_pinned_columns)
         await conn.run_sync(_drop_is_super_admin_column)
         await conn.run_sync(_ensure_model_providers_table)
+        await conn.run_sync(_ensure_github_token_column)
 
     from app.models import User
     from app.services.agent_service import ensure_default_agents_for_user
@@ -283,6 +284,15 @@ def _ensure_model_providers_table(sync_conn) -> None:
             sync_conn.execute(text("ALTER TABLE model_providers ALTER COLUMN category SET DEFAULT 'text'"))
             sync_conn.execute(text("UPDATE model_providers SET category = 'text' WHERE category IS NULL OR category = ''"))
             sync_conn.execute(text("ALTER TABLE model_providers ALTER COLUMN category SET NOT NULL"))
+
+
+def _ensure_github_token_column(sync_conn) -> None:
+    inspector = inspect(sync_conn)
+    if "users" not in inspector.get_table_names():
+        return
+    columns = {column["name"] for column in inspector.get_columns("users")}
+    if "github_token" not in columns:
+        sync_conn.execute(text("ALTER TABLE users ADD COLUMN github_token VARCHAR(255)"))
 
     # 2. Add provider_id to agents if missing
     if "agents" in inspector.get_table_names():

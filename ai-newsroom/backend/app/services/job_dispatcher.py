@@ -122,10 +122,10 @@ async def dispatch_review_job(task_id: int, owner_user_id: int, reviewer_id: int
     )
 
 
-async def dispatch_plugin_install_job(plugin_id: int, owner_user_id: int) -> str:
+async def dispatch_plugin_install_job(plugin_id: int, owner_user_id: int, github_token: str | None = None) -> str:
     from app.workers.tasks import celery_plugin_install
 
-    result = celery_plugin_install.delay(plugin_id, owner_user_id)
+    result = celery_plugin_install.delay(plugin_id, owner_user_id, github_token)
     return await _track_celery_job(
         "plugin_install",
         result.id,

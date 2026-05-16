@@ -28,7 +28,7 @@ async def install_plugin(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(require_permission("agents.view")),
 ):
-    return await queue_plugin_install(request, db, current_user.id)
+    return await queue_plugin_install(request, db, current_user.id, getattr(current_user, "github_token", None))
 
 
 @router.get("/plugins", response_model=list[PluginOut])

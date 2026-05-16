@@ -454,6 +454,21 @@ async def update_own_password(current_user: User, password_in: ChangePasswordReq
     return CurrentUserOut.model_validate(await serialize_user(db, current_user))
 
 
+async def update_profile(current_user: User, profile_in, db: AsyncSession) -> CurrentUserOut:
+    if profile_in.display_name is not None:
+        current_user.display_name = profile_in.display_name
+    if profile_in.github_token is not None:
+        current_user.github_token = profile_in.github_token.strip() or None
+    await db.commit()
+    await db.refresh(current_user)
+    base = await serialize_user(db, current_user)
+    return CurrentUserOut(
+        **base.model_dump(),
+        github_token_set=bool(current_user.github_token),
+        github_token_masked=_mask_github_token(current_user.github_token),
+    )
+
+
 async def resolve_current_user(
     authorization: str | None = Header(default=None),
     db: AsyncSession = Depends(get_db),
@@ -502,8 +517,21 @@ async def resolve_current_user(
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
 
 
+def _mask_github_token(token: str | None) -> str | None:
+    if not token:
+        return None
+    if len(token) <= 8:
+        return "****"
+    return f"{token[:4]}****{token[-4:]}"
+
+
 async def get_current_user_out(current_user: User = Depends(resolve_current_user), db: AsyncSession = Depends(get_db)) -> CurrentUserOut:
-    return CurrentUserOut.model_validate(await serialize_user(db, current_user))
+    base = await serialize_user(db, current_user)
+    return CurrentUserOut(
+        **base.model_dump(),
+        github_token_set=bool(current_user.github_token),
+        github_token_masked=_mask_github_token(current_user.github_token),
+    )
 
 
 def require_permission(permission_code: str):

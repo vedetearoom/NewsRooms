@@ -51,7 +51,7 @@ interface UseAgentFormStateParams {
   t: (key: string) => string;
 }
 
-function getDefaultFormState() {
+function getDefaultFormState(localizedPrompts: Record<string, string>) {
   return {
     name: "",
     role: DEFAULT_ROLE,
@@ -59,7 +59,7 @@ function getDefaultFormState() {
     providerId: null as number | null,
     audioModelType: DEFAULT_AUDIO_MODEL,
     audioApiKey: "",
-    systemPrompt: "",
+    systemPrompt: localizedPrompts[DEFAULT_ROLE] || EN_DEFAULT_PROMPTS[DEFAULT_ROLE] || "",
     contextText: "",
     systemSkills: getDefaultSkillsForRole(DEFAULT_ROLE),
   };
@@ -89,6 +89,7 @@ export function useAgentFormState({ activeId, activeAgent, getLocalizedAgentName
   const [systemPrompt, setSystemPrompt] = React.useState("");
   const [contextText, setContextText] = React.useState("");
   const [systemSkills, setSystemSkills] = React.useState<string[]>(getDefaultSkillsForRole(DEFAULT_ROLE));
+  const [autoSystemSkills, setAutoSystemSkills] = React.useState<string[]>(getDefaultSkillsForRole(DEFAULT_ROLE));
 
   const applyFormState = React.useCallback((next: ReturnType<typeof getDefaultFormState>) => {
     setName(next.name);
@@ -100,6 +101,7 @@ export function useAgentFormState({ activeId, activeAgent, getLocalizedAgentName
     setSystemPrompt(next.systemPrompt);
     setContextText(next.contextText);
     setSystemSkills(next.systemSkills);
+    setAutoSystemSkills(next.systemSkills);
   }, []);
 
   const localizedPrompts = React.useMemo(() => ({
@@ -114,7 +116,7 @@ export function useAgentFormState({ activeId, activeAgent, getLocalizedAgentName
       return;
     }
 
-    applyFormState(getDefaultFormState());
+    applyFormState(getDefaultFormState(localizedPrompts));
   }, [activeAgent, applyFormState, getLocalizedAgentName, localizedPrompts]);
 
   const isProfileDirty = React.useMemo(() => {
@@ -125,7 +127,6 @@ export function useAgentFormState({ activeId, activeAgent, getLocalizedAgentName
       providerId,
       audioModelType,
       audioApiKey,
-      systemSkills,
     };
 
     if (activeId === "new") {
@@ -136,7 +137,6 @@ export function useAgentFormState({ activeId, activeAgent, getLocalizedAgentName
         providerId: null,
         audioModelType: DEFAULT_AUDIO_MODEL,
         audioApiKey: "",
-        systemSkills: getDefaultSkillsForRole(DEFAULT_ROLE),
       });
     }
 
@@ -148,12 +148,15 @@ export function useAgentFormState({ activeId, activeAgent, getLocalizedAgentName
       current.modelType !== initial.modelType ||
       current.providerId !== initial.providerId ||
       current.audioModelType !== initial.audioModelType ||
-      current.audioApiKey !== initial.audioApiKey ||
-      JSON.stringify(current.systemSkills) !== JSON.stringify(initial.systemSkills);
-  }, [activeAgent, activeId, audioApiKey, audioModelType, getLocalizedAgentName, localizedPrompts, modelType, name, providerId, role, systemSkills]);
+      current.audioApiKey !== initial.audioApiKey;
+  }, [activeAgent, activeId, audioApiKey, audioModelType, getLocalizedAgentName, localizedPrompts, modelType, name, providerId, role]);
+
+  const isSkillsDirty = React.useMemo(() => {
+    return JSON.stringify(systemSkills) !== JSON.stringify(autoSystemSkills);
+  }, [systemSkills, autoSystemSkills]);
 
   const isPromptDirty = React.useMemo(() => {
-    if (activeId === "new") return systemPrompt !== "";
+    if (activeId === "new") return systemPrompt !== (localizedPrompts[role] || EN_DEFAULT_PROMPTS[role] || "");
     if (!activeAgent) return false;
     const initial = getAgentFormState(activeAgent, getLocalizedAgentName, localizedPrompts);
     return systemPrompt !== initial.systemPrompt;
@@ -175,11 +178,13 @@ export function useAgentFormState({ activeId, activeAgent, getLocalizedAgentName
 
   const updateRoleWithDefaults = React.useCallback((nextRole: string) => {
     setRole(nextRole);
-    setSystemSkills((prev) => {
-      if (activeId !== "new") return prev;
-      return getDefaultSkillsForRole(nextRole);
-    });
-  }, [activeId]);
+    if (activeId === "new") {
+      const defaultSkills = getDefaultSkillsForRole(nextRole);
+      setSystemSkills(defaultSkills);
+      setAutoSystemSkills(defaultSkills);
+      setSystemPrompt(localizedPrompts[nextRole] || EN_DEFAULT_PROMPTS[nextRole] || "");
+    }
+  }, [activeId, localizedPrompts]);
 
   return {
     name,
@@ -201,6 +206,7 @@ export function useAgentFormState({ activeId, activeAgent, getLocalizedAgentName
     systemSkills,
     setSystemSkills,
     isProfileDirty,
+    isSkillsDirty,
     isPromptDirty,
     isKnowledgeDirty,
     populateFromAgent,

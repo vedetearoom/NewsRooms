@@ -173,10 +173,10 @@ def celery_manual_scrape(source_id: int, owner_user_id: int):
 
 
 @celery_app.task(name="newsroom.plugin_install", bind=True, max_retries=1, default_retry_delay=30)
-def celery_plugin_install(self, plugin_id: int, owner_user_id: int):
+def celery_plugin_install(self, plugin_id: int, owner_user_id: int, github_token: str | None = None):
     """Install a user-scoped third-party plugin from a pinned GitHub snapshot."""
     try:
-        return run_plugin_install_job(plugin_id, owner_user_id, self.request.id)
+        return run_plugin_install_job(plugin_id, owner_user_id, self.request.id, github_token)
     except SoftTimeLimitExceeded:
         logger.error("[Celery] Plugin install timed out for plugin %s", plugin_id)
         return job_failure("plugin_install", "任务执行超时", plugin_id=plugin_id)

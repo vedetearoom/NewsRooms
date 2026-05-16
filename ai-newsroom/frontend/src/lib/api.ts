@@ -532,6 +532,8 @@ export const api = {
     register: (data: { username: string; email: string; display_name: string; password: string }) =>
       fetchAPI<AuthResponse>("/api/auth/register", { method: "POST", body: JSON.stringify(data) }),
     me: () => fetchAPI<CurrentUser>("/api/auth/me"),
+    updateMe: (data: { display_name?: string; github_token?: string | null }) =>
+      fetchAPI<CurrentUser>("/api/auth/me", { method: "PATCH", body: JSON.stringify(data) }),
     changePassword: (data: { current_password: string; new_password: string }) =>
       fetchAPI<CurrentUser>("/api/auth/change-password", { method: "POST", body: JSON.stringify(data) }),
   },

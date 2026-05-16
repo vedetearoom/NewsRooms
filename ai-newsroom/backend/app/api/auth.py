@@ -2,13 +2,14 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.schema_defs.auth import AuthResponse, ChangePasswordRequest, CurrentUserOut, LoginRequest, RegisterRequest
+from app.schema_defs.auth import AuthResponse, ChangePasswordRequest, CurrentUserOut, LoginRequest, ProfileUpdate, RegisterRequest
 from app.services.auth_service import (
     authenticate_user,
     get_current_user_out,
     register_user,
     resolve_current_user,
     update_own_password,
+    update_profile,
 )
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -27,6 +28,15 @@ async def login(login_in: LoginRequest, db: AsyncSession = Depends(get_db)):
 @router.get("/me", response_model=CurrentUserOut)
 async def me(current_user: CurrentUserOut = Depends(get_current_user_out)):
     return current_user
+
+
+@router.patch("/me", response_model=CurrentUserOut)
+async def update_me(
+    profile_in: ProfileUpdate,
+    current_user=Depends(resolve_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await update_profile(current_user, profile_in, db)
 
 
 @router.post("/change-password", response_model=CurrentUserOut, deprecated=True)

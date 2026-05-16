@@ -38,6 +38,8 @@ export interface AuthUser {
   is_active: boolean;
   roles: AuthRole[];
   permissions: string[];
+  github_token_set?: boolean;
+  github_token_masked?: string | null;
   last_login_at?: string | null;
   created_at: string;
   updated_at: string;

@@ -7,6 +7,7 @@ from pathlib import PurePosixPath
 
 from fastapi import HTTPException
 from sqlalchemy import delete, select
+from sqlalchemy.orm.exc import StaleDataError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import SyncSession
@@ -197,6 +198,7 @@ async def queue_plugin_install(
     request: PluginInstallRequest,
     db: AsyncSession,
     owner_user_id: int,
+    github_token: str | None = None,
 ) -> PluginInstallQueuedOut:
     await ensure_resource_quota(db, owner_user_id, INSTALLED_PLUGINS)
     source = parse_github_plugin_source(request.source_url)
@@ -217,7 +219,7 @@ async def queue_plugin_install(
     await db.refresh(plugin)
 
     try:
-        job_id = await dispatch_plugin_install_job(plugin.id, owner_user_id)
+        job_id = await dispatch_plugin_install_job(plugin.id, owner_user_id, github_token)
     except Exception as exc:
         plugin.install_status = "failed"
         plugin.error_message = str(exc)
@@ -229,6 +231,11 @@ async def queue_plugin_install(
 
 async def delete_plugin_record(db: AsyncSession, owner_user_id: int, plugin_id: int) -> dict[str, bool]:
     plugin = await get_plugin_or_404(db, owner_user_id, plugin_id)
+    if plugin.install_status in ("queued", "installing"):
+        from datetime import datetime, timezone, timedelta
+        age = datetime.now(timezone.utc) - plugin.created_at.replace(tzinfo=timezone.utc) if plugin.created_at else timedelta(0)
+        if age < timedelta(minutes=5) and plugin.install_status == "queued":
+            raise HTTPException(status_code=409, detail="插件正在排队安装中，请稍后再试。")
     await db.execute(
         delete(AgentPluginBinding).where(
             AgentPluginBinding.owner_user_id == owner_user_id,
@@ -322,7 +329,7 @@ async def unbind_plugin_from_agent(
     return await build_agent_output(db, owner_user_id, agent)
 
 
-def run_plugin_install_job(plugin_id: int, owner_user_id: int, job_id: str):
+def run_plugin_install_job(plugin_id: int, owner_user_id: int, job_id: str, github_token: str | None = None):
     run_id = str(uuid.uuid4())
     seq = 0
 
@@ -363,7 +370,7 @@ def run_plugin_install_job(plugin_id: int, owner_user_id: int, job_id: str):
             source = parse_github_plugin_source(plugin.source_url)
 
             log("info", "log", "Resolving pinned commit SHA", {"git_ref": source.ref})
-            commit_sha = resolve_github_commit_sha(source)
+            commit_sha = resolve_github_commit_sha(source, github_token)
 
             plugin_root = ensure_user_plugins_root(owner_user_id) / str(plugin.id)
             if plugin_root.exists():
@@ -371,7 +378,7 @@ def run_plugin_install_job(plugin_id: int, owner_user_id: int, job_id: str):
 
             snapshot_dir = get_plugin_snapshot_dir(owner_user_id, plugin.id, commit_sha)
             log("info", "log", "Downloading and validating repository snapshot", {"commit_sha": commit_sha})
-            snapshot = install_snapshot_from_github(source, commit_sha, snapshot_dir)
+            snapshot = install_snapshot_from_github(source, commit_sha, snapshot_dir, github_token)
 
             plugin.name = plugin.name or _derive_plugin_name(None, source.repo, source.subdir)
             plugin.github_owner = source.owner
@@ -413,6 +420,10 @@ def run_plugin_install_job(plugin_id: int, owner_user_id: int, job_id: str):
                 owner_user_id,
                 error_message,
             )
+        except StaleDataError:
+            logger.warning("Plugin %s was deleted during installation, aborting commit", plugin_id)
+            db.rollback()
+            return job_failure("plugin_install", "Plugin was deleted during installation.", plugin_id=plugin_id)
         except Exception as exc:  # noqa: BLE001
             error_message = str(exc)
             logger.exception("Plugin installation failed for plugin=%s user=%s", plugin_id, owner_user_id)

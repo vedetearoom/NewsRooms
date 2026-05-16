@@ -11,6 +11,17 @@ import httpx
 from fastapi import HTTPException
 
 
+def _github_auth_headers(user_token: str | None = None) -> dict[str, str]:
+    token = (user_token or "").strip()
+    if not token:
+        from app.config import get_settings
+        token = get_settings().github_token.strip()
+    headers = {"Accept": "application/vnd.github+json"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    return headers
+
+
 MAX_ARCHIVE_BYTES = 50 * 1024 * 1024
 MAX_FILE_BYTES = 10 * 1024 * 1024
 SUPPORTED_RUNTIME_PROFILES = {"light"}
@@ -94,10 +105,10 @@ def parse_github_plugin_source(source_url: str) -> GithubPluginSource:
     raise HTTPException(status_code=400, detail="目前只允许 GitHub 公共仓库或 GitHub 官方归档链接。")
 
 
-def resolve_github_commit_sha(source: GithubPluginSource) -> str:
+def resolve_github_commit_sha(source: GithubPluginSource, github_token: str | None = None) -> str:
     url = f"https://api.github.com/repos/{source.owner}/{source.repo}/commits/{source.ref}"
     try:
-        response = httpx.get(url, headers={"Accept": "application/vnd.github+json"}, timeout=20)
+        response = httpx.get(url, headers=_github_auth_headers(github_token), timeout=20)
     except httpx.HTTPError as exc:
         raise HTTPException(status_code=502, detail=f"解析 GitHub commit 失败：{exc}") from exc
     if response.status_code >= 400:
@@ -113,6 +124,7 @@ def install_snapshot_from_github(
     source: GithubPluginSource,
     commit_sha: str,
     destination_dir: Path,
+    github_token: str | None = None,
 ) -> InstalledPluginSnapshot:
     destination_dir.mkdir(parents=True, exist_ok=True)
     if any(destination_dir.iterdir()):
@@ -122,7 +134,7 @@ def install_snapshot_from_github(
     archive_url = f"https://codeload.github.com/{source.owner}/{source.repo}/zip/{commit_sha}"
     with TemporaryDirectory(prefix="newsroom_plugin_install_") as temp_dir:
         archive_path = Path(temp_dir) / f"{source.repo}-{commit_sha}.zip"
-        _download_archive(archive_url, archive_path)
+        _download_archive(archive_url, archive_path, github_token)
         extracted_root = _extract_archive(archive_path, Path(temp_dir))
         selected_root = _resolve_selected_root(extracted_root, source.subdir)
         entry_hint, detected_files = _validate_and_discover_entries(selected_root)
@@ -136,10 +148,10 @@ def install_snapshot_from_github(
     )
 
 
-def _download_archive(archive_url: str, archive_path: Path) -> None:
+def _download_archive(archive_url: str, archive_path: Path, github_token: str | None = None) -> None:
     total_size = 0
     try:
-        with httpx.stream("GET", archive_url, follow_redirects=True, timeout=60) as response:
+        with httpx.stream("GET", archive_url, follow_redirects=True, timeout=60, headers=_github_auth_headers(github_token)) as response:
             if response.status_code >= 400:
                 raise HTTPException(status_code=400, detail="下载 GitHub 归档失败。")
             with archive_path.open("wb") as file_obj:

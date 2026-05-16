@@ -49,6 +49,7 @@ class Settings(BaseSettings):
     jina_api_key: str = ""  # Optional: enables Jina Reader for web URL extraction
     qwen_api_key: str = ""  # Optional: Qwen/DashScope API key for Alibaba models
     deepseek_api_key: str = ""  # Optional: DeepSeek API key for DeepSeek models
+    github_token: str = ""  # Optional: fallback GitHub PAT when user has no personal token configured
     minio_endpoint: str = "http://127.0.0.1:23016"
     minio_access_key: str = "minioadmin"
     minio_secret_key: str = "minioadmin"

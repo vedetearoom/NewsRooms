@@ -105,4 +105,10 @@ class AuthResponse(BaseModel):
 
 
 class CurrentUserOut(UserOut):
-    pass
+    github_token_set: bool = False
+    github_token_masked: str | None = None
+
+
+class ProfileUpdate(BaseModel):
+    display_name: str | None = Field(default=None, min_length=2, max_length=255)
+    github_token: str | None = None
