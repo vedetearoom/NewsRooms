@@ -182,7 +182,7 @@ export function useAgentFormState({ activeId, activeAgent, getLocalizedAgentName
       const defaultSkills = getDefaultSkillsForRole(nextRole);
       setSystemSkills(defaultSkills);
       setAutoSystemSkills(defaultSkills);
-      setSystemPrompt(localizedPrompts[nextRole] || EN_DEFAULT_PROMPTS[nextRole] || "");
+      setSystemPrompt(localizedPrompts[nextRole as keyof typeof localizedPrompts] || EN_DEFAULT_PROMPTS[nextRole] || "");
     }
   }, [activeId, localizedPrompts]);
 
