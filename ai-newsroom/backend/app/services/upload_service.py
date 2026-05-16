@@ -194,7 +194,7 @@ async def generate_image_asset(prompt: str, aspect_ratio: str = "16:9", user_id:
     final_prompt = style_prefix + prompt
 
     try:
-        if model_ref.startswith("qwen-image"):
+        if model_ref.startswith("qwen-image") or model_ref.startswith("z-image"):
             image_bytes, mime_type = await _generate_qwen(
                 final_prompt, model_ref, agent_api_key, aspect_ratio
             )

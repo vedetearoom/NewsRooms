@@ -23,7 +23,7 @@ MODEL_CATALOG = {
     },
     "alibaba": {
         "text": ["qwen-plus", "qwen-max"],
-        "image": ["qwen-image-2.0-pro"],
+        "image": ["qwen-image-plus", "z-image-turbo"],
     },
     "deepseek": {
         "text": ["deepseek-v4-flash", "deepseek-v4-pro"],
