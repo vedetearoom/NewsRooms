@@ -12,6 +12,7 @@ English documentation: [README.en.md](README.en.md)
 - **视频监控**：监控 YouTube、B 站等视频平台，自动发现新内容并进入分析流程。
 - **素材库与灵感库**：归档参考资料、灵感片段和可复用素材。
 - **Agent 配置**：支持按 Agent 配置模型、API Key，并通过 SSE 流式输出结果。
+- **插件系统**：支持从 GitHub 安装第三方插件并绑定至 Agent，每个用户独立配置 GitHub Token 以避免 API 速率限制。
 - **图片生成**：可为卡片和任务生成封面图或配图。
 - **权限与系统管理**：支持用户、角色、权限和配额管理，并可通过 Clerk 同步用户。
 
@@ -152,6 +153,8 @@ bash start-frontend.sh
 | `CLERK_SECRET_KEY` | 空 | 可选，Clerk Backend API secret key |
 | `CLERK_WEBHOOK_SECRET` | 空 | 可选，Clerk/Svix webhook signing secret |
 | `CLERK_ADMIN_EMAILS` | 空 | 逗号分隔的管理员邮箱白名单，命中后自动分配 `super_admin` |
+| `NEWSROOM_TENANT_ROOT` | `/var/lib/newsroom` | 用户数据存储根目录（插件、工作空间、运行记录等） |
+| `GITHUB_TOKEN` | 空 | 可选，全局 GitHub PAT 回退值；优先使用用户个人 Token |
 
 `GEMINI_API_KEY` 和 `QWEN_API_KEY` 不要求在启动时配置。更推荐在前端 Agent 页面里按 Agent 单独配置模型和密钥。
 
@@ -342,6 +345,7 @@ services/
 - **审稿改写**：`stream` 路由 → `job_dispatcher` → AssassinAgent → `drafts` / `critiques` → SSE 轮询
 - **视频监控**：`monitors` 路由 → `monitor_service` → RSS 检查或 Cookie 模式 → Celery 任务 → `VideoAnalyzer` → 视频智能卡片
 - **Clerk 同步**：`clerk_webhooks` 路由 → Svix 签名校验 → `clerk_sync_service` → 本地用户与角色同步
+- **插件安装**：`plugins` 路由 → `plugin_service` → Celery 任务 → `plugin_source` 从 GitHub 下载快照并验证 → 绑定至 Agent
 
 ## 测试与质量检查
 

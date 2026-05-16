@@ -12,6 +12,7 @@ AI Newsroom is an AI-assisted content production workbench for editors and conte
 - **Video monitoring**: Monitor YouTube, Bilibili, and other video platforms, then route new content into analysis pipelines.
 - **Vault and inspiration library**: Store references, reusable materials, and inspiration snippets.
 - **Agent configuration**: Configure models and API keys per agent, with SSE streaming output.
+- **Plugin system**: Install third-party plugins from GitHub and bind them to agents. Each user configures their own GitHub Token to avoid API rate limits.
 - **Image generation**: Generate cover images or illustrations for cards and tasks.
 - **Access control and system management**: Manage users, roles, permissions, quotas, and optional Clerk user sync.
 
@@ -152,6 +153,8 @@ Common variables:
 | `CLERK_SECRET_KEY` | empty | Optional Clerk Backend API secret key |
 | `CLERK_WEBHOOK_SECRET` | empty | Optional Clerk/Svix webhook signing secret |
 | `CLERK_ADMIN_EMAILS` | empty | Comma-separated admin email allowlist; matching users receive `super_admin` |
+| `NEWSROOM_TENANT_ROOT` | `/var/lib/newsroom` | Root directory for user data (plugins, workspace, run records, etc.) |
+| `GITHUB_TOKEN` | empty | Optional global GitHub PAT fallback; per-user tokens take precedence |
 
 `GEMINI_API_KEY` and `QWEN_API_KEY` are not required at startup. Prefer configuring model credentials per agent in the frontend Agent page.
 
@@ -326,6 +329,7 @@ Key flows:
 - **Review and rewrite**: `stream` route → `job_dispatcher` → AssassinAgent → `drafts` / `critiques` → SSE polling
 - **Video monitoring**: `monitors` route → `monitor_service` → RSS check or cookie mode → Celery task → `VideoAnalyzer` → video intelligence card
 - **Clerk sync**: `clerk_webhooks` route → Svix signature verification → `clerk_sync_service` → local user and role sync
+- **Plugin installation**: `plugins` route → `plugin_service` → Celery task → `plugin_source` downloads and validates GitHub snapshot → binds to agent
 
 ## Tests and quality checks
 
