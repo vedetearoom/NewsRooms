@@ -1,6 +1,8 @@
 """Celery task definitions for AI Newsroom background jobs."""
 import logging
 
+from billiard.exceptions import SoftTimeLimitExceeded
+
 from app.celery_app import celery_app
 from app.job_results import job_failure
 from app.task_status import TaskStatus
@@ -25,6 +27,9 @@ def celery_check_monitor(self, monitor_id: int, owner_user_id: int, platform: st
     """Run monitor discovery in the background."""
     try:
         return run_monitor_check_job(monitor_id, owner_user_id, platform)
+    except SoftTimeLimitExceeded:
+        logger.error("[Celery] Monitor check timed out for %s (%s)", monitor_id, platform)
+        return job_failure("check_monitor", "任务执行超时", monitor_id=monitor_id, platform=platform)
     except Exception as e:
         error_str = str(e)
         if any(keyword in error_str for keyword in ["Cookie", "未配置", "失效", "Unsupported monitor credential"]):
@@ -39,6 +44,20 @@ def celery_review_task(self, task_id: int, owner_user_id: int, reviewer_id: int 
     """Run AI review (critique + revision) as a Celery background task."""
     try:
         return run_review_job(task_id, owner_user_id, reviewer_id)
+    except SoftTimeLimitExceeded:
+        logger.error("[Celery] Review timed out for task %s", task_id)
+        from app.database import SyncSession
+        from app.models import Task
+        from sqlalchemy import select
+
+        with SyncSession() as db:
+            task = db.execute(
+                select(Task).where(Task.id == task_id, Task.owner_user_id == owner_user_id)
+            ).scalar_one_or_none()
+            if task:
+                task.status = TaskStatus.FAILED.value
+                db.commit()
+        return job_failure("review", "任务执行超时", task_id=task_id)
     except Exception as e:
         logger.error("[Celery] Review failed for task %s: %s", task_id, e)
         from app.database import SyncSession
@@ -95,6 +114,9 @@ def celery_analyze_video(
             original_filename=original_filename,
             mime_type=mime_type,
         )
+    except SoftTimeLimitExceeded:
+        logger.error("[Celery] Video analysis timed out for %s", video_url)
+        return job_failure("analyze_video", "任务执行超时")
     except Exception as e:
         error_str = str(e)
         # Don't retry on unrecoverable errors (bad URL, private video, missing config, etc.)
@@ -128,6 +150,9 @@ def celery_analyze_video_metadata(
             seed_metadata=seed_metadata or {},
             source_kind=source_kind,
         )
+    except SoftTimeLimitExceeded:
+        logger.error("[Celery] Metadata-only video analysis timed out for %s", video_url)
+        return job_failure("analyze_video_metadata", "任务执行超时")
     except Exception as e:
         error_str = str(e)
         if any(keyword in error_str for keyword in [
@@ -152,6 +177,9 @@ def celery_plugin_install(self, plugin_id: int, owner_user_id: int):
     """Install a user-scoped third-party plugin from a pinned GitHub snapshot."""
     try:
         return run_plugin_install_job(plugin_id, owner_user_id, self.request.id)
+    except SoftTimeLimitExceeded:
+        logger.error("[Celery] Plugin install timed out for plugin %s", plugin_id)
+        return job_failure("plugin_install", "任务执行超时", plugin_id=plugin_id)
     except Exception as e:
         logger.error("[Celery] Plugin install failed for plugin %s: %s", plugin_id, e)
         return job_failure("plugin_install", str(e), plugin_id=plugin_id)
@@ -162,6 +190,9 @@ def celery_plugin_prepare_write(self, task_id: int, owner_user_id: int, writer_a
     """Run Hermes sandbox preparation before native writing starts."""
     try:
         return run_plugin_prepare_write_job(task_id, owner_user_id, writer_agent_id, self.request.id)
+    except SoftTimeLimitExceeded:
+        logger.error("[Celery] Plugin prepare write timed out for task %s", task_id)
+        return job_failure("plugin_prepare_write", "任务执行超时", task_id=task_id, writer_agent_id=writer_agent_id)
     except Exception as e:
         logger.error("[Celery] Plugin prepare write failed for task %s: %s", task_id, e)
         return job_failure("plugin_prepare_write", str(e), task_id=task_id, writer_agent_id=writer_agent_id)

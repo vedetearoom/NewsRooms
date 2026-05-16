@@ -160,7 +160,7 @@ curl http://127.0.0.1:8000/api/health
 这套设计里：
 
 - `backend` 服务负责 FastAPI API
-- `celery` 服务复用同一份后端镜像，但用不同命令启动 worker
+- `celery-fast`、`celery-ai`、`celery-video` 服务复用同一份后端镜像，但分别消费轻任务、AI 任务和视频任务队列
 - `ENABLE_SCHEDULER=true` 只放在 API 容器里，避免把定时调度和 Celery worker 混在一起
 - 业务配置优先从挂载的 `backend.env` 读取，不再把所有变量都堆在 compose 里
 - 镜像内已经补齐 `ffmpeg` 和 Playwright Chromium，方便视频链路与监控发现逻辑直接运行
@@ -172,7 +172,7 @@ cd /Users/jay/Desktop/claude/ai-newsroom
 cp ../docker/ai-newsroom/.env.example ../docker/ai-newsroom/.env
 cp ../docker/ai-newsroom/config/backend.env.example ../docker/ai-newsroom/config/backend.env
 ./docker-local.sh local
-docker compose --env-file ../docker/ai-newsroom/.env -f ../docker/ai-newsroom/docker-compose.yml up -d backend celery
+docker compose --env-file ../docker/ai-newsroom/.env -f ../docker/ai-newsroom/docker-compose.yml up -d backend celery-fast celery-ai celery-video
 ```
 
 ## 关键运行链路

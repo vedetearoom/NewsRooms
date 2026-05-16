@@ -14,4 +14,4 @@ echo "Tenant root: $NEWSROOM_TENANT_ROOT"
 
 ensure_backend_venv
 cd "$BACKEND_DIR"
-exec .venv/bin/celery -A app.celery_app worker --loglevel=info --concurrency="${AI_NEWSROOM_CELERY_CONCURRENCY:-2}" -n newsroom@%h
+exec .venv/bin/celery -A app.celery_app worker --loglevel=info --concurrency="${AI_NEWSROOM_CELERY_CONCURRENCY:-2}" -Q newsroom_fast,newsroom_ai,newsroom_video,newsroom_default,celery -n newsroom-local@%h

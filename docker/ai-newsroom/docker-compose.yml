@@ -25,13 +25,51 @@ services:
       retries: 5
       start_period: 40s
 
-  celery:
+  celery-fast:
     image: ${AI_NEWSROOM_BACKEND_IMAGE:-ai-newsroom-backend:local}
     restart: unless-stopped
     depends_on:
       backend:
         condition: service_healthy
-    command: celery -A app.celery_app worker --loglevel=info --concurrency=${AI_NEWSROOM_CELERY_CONCURRENCY:-2} -n newsroom@%h
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=${AI_NEWSROOM_CELERY_FAST_CONCURRENCY:-2} -Q newsroom_fast,newsroom_default,celery -n newsroom-fast@%h
+    environment:
+      <<: *backend-env
+      ENABLE_SCHEDULER: "false"
+    volumes:
+      - ..:/opt/infra/docker
+      - ./config:/run/config:ro
+      - ${AI_NEWSROOM_TENANT_ROOT_HOST:-../../ai-newsroom/.tenant-data}:/var/lib/newsroom
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - app
+      - infra
+
+  celery-ai:
+    image: ${AI_NEWSROOM_BACKEND_IMAGE:-ai-newsroom-backend:local}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=${AI_NEWSROOM_CELERY_AI_CONCURRENCY:-1} -Q newsroom_ai -n newsroom-ai@%h
+    environment:
+      <<: *backend-env
+      ENABLE_SCHEDULER: "false"
+    volumes:
+      - ..:/opt/infra/docker
+      - ./config:/run/config:ro
+      - ${AI_NEWSROOM_TENANT_ROOT_HOST:-../../ai-newsroom/.tenant-data}:/var/lib/newsroom
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - app
+      - infra
+
+  celery-video:
+    image: ${AI_NEWSROOM_BACKEND_IMAGE:-ai-newsroom-backend:local}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=${AI_NEWSROOM_CELERY_VIDEO_CONCURRENCY:-1} -Q newsroom_video -n newsroom-video@%h
     environment:
       <<: *backend-env
       ENABLE_SCHEDULER: "false"

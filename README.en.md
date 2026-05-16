@@ -30,7 +30,7 @@ NewsRoom/
     ├── docker-compose.yml      # Infrastructure: PostgreSQL, Redis, MinIO, RSSHub
     ├── rsshub.env.example      # RSSHub cookie configuration template
     └── ai-newsroom/
-        ├── docker-compose.yml  # App services: backend, celery, frontend, nginx
+        ├── docker-compose.yml  # App services: backend, Celery workers, frontend, nginx
         ├── .env.example        # Compose / image / port configuration template
         ├── config/             # Runtime backend.env configuration
         └── nginx/default.conf  # Nginx reverse proxy configuration
@@ -202,7 +202,7 @@ If omitted, the frontend defaults to `localhost:8000`. In Nginx deployments, bro
 Deployment has two layers:
 
 - **Infrastructure**: `docker/docker-compose.yml`, containing PostgreSQL, Redis, MinIO, and RSSHub.
-- **Application services**: `docker/ai-newsroom/docker-compose.yml`, containing backend, celery, frontend, and nginx.
+- **Application services**: `docker/ai-newsroom/docker-compose.yml`, containing backend, Celery workers, frontend, and nginx.
 
 First-time startup example:
 
