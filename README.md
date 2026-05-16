@@ -218,7 +218,7 @@ cp ai-newsroom/frontend/.env.local.example ai-newsroom/frontend/.env.local
 部署分为两层：
 
 - **基础设施**：`docker/docker-compose.yml`，包含 PostgreSQL、Redis、MinIO、RSSHub。
-- **应用服务**：`docker/ai-newsroom/docker-compose.yml`，包含 backend、celery、frontend、nginx。
+- **应用服务**：`docker/ai-newsroom/docker-compose.yml`，包含 backend、3 个 Celery Worker、frontend、nginx。
 
 首次启动示例：
 
@@ -251,6 +251,16 @@ docker compose --env-file ../docker/ai-newsroom/.env \
 | Nginx 统一入口 | `http://localhost:8080` |
 | 前端直连 | `http://localhost:3000` |
 | 后端 API 直连 | `http://localhost:8000` |
+
+生产环境的 Celery 按任务类型拆分为 3 个独立 Worker：
+
+| Worker | 队列 | 默认并发 | 职责 |
+|---|---|---|---|
+| `celery-fast` | `newsroom_fast`、`newsroom_default`、`celery` | 2 | RSS 抓取、手动抓取、监控发现等快速 I/O 任务 |
+| `celery-ai` | `newsroom_ai` | 1 | 文章处理、AI 审稿、视频元数据分析、插件安装等 LLM 推理任务 |
+| `celery-video` | `newsroom_video` | 1 | 完整视频分析：下载音频、转写、LLM 分析、保存卡片 |
+
+本地开发使用 `start-celery.sh` 启动单个合并 Worker，同时监听所有队列。
 
 构建选项：
 
@@ -309,6 +319,20 @@ app/
 ├── repositories/        # 单领域数据访问
 └── config.py            # pydantic-settings 配置
 ```
+
+Celery Worker 拆分：
+
+```text
+celery_app.py          # Celery 实例定义、路由、全局配置
+workers/
+├── tasks.py           # 任务外壳：重试策略、超时、日志
+├── cron_jobs.py       # APScheduler 定时调度，仅 backend 进程启用
+└── worker_jobs.py     # 任务实际执行逻辑
+```
+
+- **celery-fast**：抓取类任务，I/O 密集但无 LLM 调用，可高并发。
+- **celery-ai**：AI 推理类任务，单任务 token 和内存消耗大，并发设为 1。
+- **celery-video**：视频全量分析，混合 I/O + CPU + AI 负载，超时最长（55 min），单独隔离避免阻塞。
 
 关键流程：
 

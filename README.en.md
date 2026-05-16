@@ -202,7 +202,7 @@ If omitted, the frontend defaults to `localhost:8000`. In Nginx deployments, bro
 Deployment has two layers:
 
 - **Infrastructure**: `docker/docker-compose.yml`, containing PostgreSQL, Redis, MinIO, and RSSHub.
-- **Application services**: `docker/ai-newsroom/docker-compose.yml`, containing backend, Celery workers, frontend, and nginx.
+- **Application services**: `docker/ai-newsroom/docker-compose.yml`, containing backend, 3 Celery workers, frontend, and nginx.
 
 First-time startup example:
 
@@ -235,6 +235,16 @@ Entrypoints:
 | Unified Nginx entrypoint | `http://localhost:8080` |
 | Direct frontend | `http://localhost:3000` |
 | Direct backend API | `http://localhost:8000` |
+
+Production deployments split Celery into 3 independent workers by task type:
+
+| Worker | Queues | Default concurrency | Responsibilities |
+|---|---|---|---|
+| `celery-fast` | `newsroom_fast`, `newsroom_default`, `celery` | 2 | RSS scraping, manual scraping, monitor discovery — fast I/O tasks |
+| `celery-ai` | `newsroom_ai` | 1 | Article processing, AI review, video metadata analysis, plugin install — LLM inference tasks |
+| `celery-video` | `newsroom_video` | 1 | Full video analysis: download audio, transcription, LLM analysis, save card |
+
+Local development uses `start-celery.sh` to run a single combined worker that listens on all queues.
 
 Build options:
 
@@ -293,6 +303,20 @@ app/
 ├── repositories/        # Single-domain data access
 └── config.py            # pydantic-settings configuration
 ```
+
+Celery worker split:
+
+```text
+celery_app.py          # Celery instance, task routing, global config
+workers/
+├── tasks.py           # Task wrappers: retry policies, timeouts, logging
+├── cron_jobs.py       # APScheduler cron scheduling, enabled only in the backend process
+└── worker_jobs.py     # Actual task execution logic
+```
+
+- **celery-fast**: Scraping tasks — I/O-bound with no LLM calls, can run at higher concurrency.
+- **celery-ai**: AI inference tasks — large per-task token and memory usage, concurrency set to 1.
+- **celery-video**: Full video analysis — mixed I/O + CPU + AI load, longest timeout (55 min), isolated to avoid blocking other tasks.
 
 Key flows:
 
