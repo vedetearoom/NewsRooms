@@ -111,7 +111,7 @@ export function InboxCardGrid({
           </div>
         ) : (
           <div className="bento-grid">
-            {displayCards.map((card, index) => (
+            {displayCards.map((card) => (
               card.content_type === "video" ? (
                 <VideoCard
                   key={card.id}
@@ -119,7 +119,7 @@ export function InboxCardGrid({
                   isSelected={isPinnedView ? false : selectedCardIds.has(card.id)}
                   onToggle={isPinnedView ? () => {} : onToggleCard}
                   onClick={onCardClick}
-                  isFeatured={index === 0 && activeTag === "all"}
+                  isFeatured={false}
                   canPin={isPinnedView ? false : canPin}
                   canSaveInspiration={isPinnedView ? false : canSaveInspiration}
                   onTogglePin={isPinnedView ? undefined : onTogglePin}
@@ -132,7 +132,7 @@ export function InboxCardGrid({
                   isSelected={isPinnedView ? false : selectedCardIds.has(card.id)}
                   onToggle={isPinnedView ? () => {} : onToggleCard}
                   onClick={onCardClick}
-                  isFeatured={index === 0 && activeTag === "all"}
+                  isFeatured={false}
                   canPin={isPinnedView ? false : canPin}
                   canSaveInspiration={isPinnedView ? false : canSaveInspiration}
                   onTogglePin={isPinnedView ? undefined : onTogglePin}

@@ -151,16 +151,18 @@ export function useInboxCardsView({
   }, [currentSliceCards, contentTab]);
 
   const displayCards = React.useMemo(() => {
+    let filtered: IntelligenceCard[];
+
     if (activeTag === "all") {
-      return currentSliceCards;
-    }
-
-    if (activeTag === "__other__") {
+      filtered = currentSliceCards;
+    } else if (activeTag === "__other__") {
       const overflowSet = new Set(overflowTags.map(([tag]) => tag));
-      return currentSliceCards.filter((card) => overflowSet.has(getCardTag(card, contentTab)));
+      filtered = currentSliceCards.filter((card) => overflowSet.has(getCardTag(card, contentTab)));
+    } else {
+      filtered = currentSliceCards.filter((card) => getCardTag(card, contentTab) === activeTag);
     }
 
-    return currentSliceCards.filter((card) => getCardTag(card, contentTab) === activeTag);
+    return [...filtered].sort((a, b) => (b.importance_score ?? 0) - (a.importance_score ?? 0));
   }, [currentSliceCards, activeTag, overflowTags, contentTab]);
 
   return {
