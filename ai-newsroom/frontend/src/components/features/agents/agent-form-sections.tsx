@@ -8,7 +8,7 @@ import { AgentCustomSelect, type AgentSelectOption } from "@/components/features
 import { AgentSettingsCard } from "@/components/features/agents/agent-settings-card";
 import { api, type ModelProvider } from "@/lib/api";
 
-type SavingSection = "profile" | "prompt" | "knowledge" | null;
+type SavingSection = "profile" | "prompt" | "knowledge" | "skills" | null;
 
 interface AgentProfileSectionProps {
   name: string;
