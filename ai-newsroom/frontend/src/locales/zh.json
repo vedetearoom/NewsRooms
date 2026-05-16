@@ -386,7 +386,16 @@
         "deleteThreadDesc": "确定删除“{title}”吗？该会话入口、消息、工具记录和确认卡都会被移除。"
       },
       "retryPrompt": "请重新生成 {actionType} 的确认卡，参数如下：\n{payload}"
-    }
+    },
+    "dashboardSubtitle": "自动化新闻流水线 · 点击节点配置智能体",
+    "pipelineInput": "情报采集",
+    "pipelineInputDesc": "RSS / API / 网页抓取",
+    "pipelineExtract": "内容提取",
+    "pipelineWrite": "文章写作",
+    "pipelineReview": "质量审核",
+    "pipelineIllustrate": "视觉配图",
+    "pipelineOutput": "发布输出",
+    "pipelineOutputDesc": "多渠道自动分发"
   },
   "system": {
     "loading": "加载中...",

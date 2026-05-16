@@ -19,7 +19,7 @@ interface AgentSidebarProps {
   roleGroups: RoleGroup[];
   t: (key: string, fallback?: string) => string;
   getLocalizedAgentName: (agent: Agent | null | undefined) => string;
-  onSelect: (id: number | "new") => void;
+  onSelect: (id: number | "new" | null) => void;
 }
 
 export function AgentSidebar({
@@ -32,7 +32,7 @@ export function AgentSidebar({
   onSelect,
 }: AgentSidebarProps) {
   return (
-    <div className="flex h-full w-[260px] shrink-0 flex-col border-r border-zinc-200/70 bg-white/95 dark:border-white/[0.05] dark:bg-[#0a0b0d]">
+    <div className="flex h-full w-[260px] shrink-0 flex-col bg-white/95 dark:bg-[#0a0b0d]">
       <div className="flex h-[56px] shrink-0 items-center justify-between px-5">
         <div className="flex items-center gap-2">
           <Bot className="h-4 w-4 text-muted-foreground/80" />
@@ -80,7 +80,7 @@ export function AgentSidebar({
                     return (
                       <button
                         key={agent.id}
-                        onClick={() => onSelect(agent.id)}
+                        onClick={() => onSelect(activeId === agent.id ? null : agent.id)}
                         className={cn(
                           "group relative flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-[13px] transition-all",
                           activeId === agent.id
@@ -90,8 +90,8 @@ export function AgentSidebar({
                       >
                         <span
                           className={cn(
-                            "absolute inset-y-2 left-0 w-0.5 rounded-full bg-transparent transition-colors",
-                            activeId === agent.id && "bg-zinc-950 dark:bg-white",
+                            "absolute inset-y-2.5 left-0 w-[2px] rounded-full bg-transparent transition-colors",
+                            activeId === agent.id && "bg-zinc-900/80 dark:bg-white/80",
                           )}
                         />
                         <span

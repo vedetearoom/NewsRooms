@@ -385,7 +385,16 @@
         "deleteThreadDesc": "Delete \"{title}\"? The thread entry, messages, tool logs, and confirmation cards will all be removed."
       },
       "retryPrompt": "Please regenerate a confirmation card for {actionType} with the following payload:\n{payload}"
-    }
+    },
+    "dashboardSubtitle": "Automated news pipeline · Click a node to configure",
+    "pipelineInput": "Intelligence Input",
+    "pipelineInputDesc": "RSS / API / Web scraping",
+    "pipelineExtract": "Content Extraction",
+    "pipelineWrite": "Article Writing",
+    "pipelineReview": "Quality Review",
+    "pipelineIllustrate": "Visual Illustration",
+    "pipelineOutput": "Publish Output",
+    "pipelineOutputDesc": "Multi-channel distribution"
   },
   "system": {
     "loading": "Loading...",

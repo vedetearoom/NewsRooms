@@ -204,9 +204,8 @@ export function Sidebar() {
                   onClick={() => {
                     if (item.subItems) {
                       setExpanded(prev => ({ ...prev, [item.href]: !prev[item.href] }));
-                    } else {
-                      router.push(getHrefWithParams(item.href));
                     }
+                    router.push(getHrefWithParams(item.href));
                   }}
                   className={cn(
                     "w-full flex items-center gap-2.5 px-2.5 py-[6px] rounded-lg text-[13px] font-medium transition-all cursor-pointer text-zinc-900 dark:text-zinc-100 relative",

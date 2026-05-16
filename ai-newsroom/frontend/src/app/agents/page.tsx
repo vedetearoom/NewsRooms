@@ -17,6 +17,7 @@ import { AgentKnowledgeSection, AgentProfileSection, AgentPromptSection } from "
 import { AgentSettingsCard } from "@/components/features/agents/agent-settings-card";
 import { PageShellFallback } from "@/components/shared/page-shell-fallback";
 import { AgentWorkbench } from "@/components/features/agents/agent-workbench";
+import { AgentDashboard } from "@/components/features/agents/agent-dashboard";
 import { cn } from "@/lib/utils";
 
 type AgentUpdatePayload = Partial<AgentWithAudio>;
@@ -356,7 +357,7 @@ function AgentStudioContent() {
   }, [mutate, mutatePlugins, pluginDeleteTarget, t]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#fbfbfa] dark:bg-[#08090b]">
+    <div className="flex h-screen overflow-hidden bg-background">
       <AgentSidebar
         agents={agents}
         isLoading={isLoading}
@@ -367,8 +368,19 @@ function AgentStudioContent() {
         onSelect={setActiveId}
       />
 
-      {/* ── Right Panel (Vercel Card-based Form) ── */}
+      {/* ── Right Panel ── */}
       <div className="flex-1 overflow-y-auto">
+        {activeId === null ? (
+          <AgentDashboard
+            agents={agents}
+            isLoading={isLoading}
+            roleGroups={roleGroups}
+            t={t}
+            getLocalizedAgentName={getLocalizedAgentName}
+            onSelect={setActiveId}
+          />
+        ) : (
+          <>
         <AgentPageHeader
           activeId={activeId}
           activeAgent={activeAgent}
@@ -622,6 +634,8 @@ function AgentStudioContent() {
             </div>
           )}
         </div>
+          </>
+        )}
       </div>
 
       <ConfirmModal

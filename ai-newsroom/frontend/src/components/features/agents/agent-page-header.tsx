@@ -32,7 +32,7 @@ export function AgentPageHeader({
   onDelete,
 }: AgentPageHeaderProps) {
   return (
-    <header className="sticky top-0 z-30 bg-[#fbfbfa]/88 backdrop-blur-xl dark:bg-[#0b0c0f]/88">
+    <header className="sticky top-0 z-30 border-b border-zinc-100/80 bg-background/88 backdrop-blur-xl dark:border-white/[0.04]">
       <div className="mx-auto flex h-[56px] max-w-5xl items-center justify-between px-10">
         <div className="flex min-h-8 items-center gap-2.5">
           <h1 className="text-[17px] font-semibold leading-8 text-foreground tracking-tight">
