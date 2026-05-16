@@ -1314,7 +1314,7 @@ export function LandingFooter({ accent = "#22d3ee" }: AccentProps) {
         </div>
 
         <div style={{ marginTop: 32, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.02em" }}>
-          <span>© 2026 Newsroom Labs · v2.4.1</span>
+          <span>© 2026 Newsroom Labs · v1.0</span>
           <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: accent, boxShadow: `0 0 6px ${accent}` }} />
             {t("landing.sections.statusOperational")}

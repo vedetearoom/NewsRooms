@@ -42,7 +42,7 @@ export function V2Navbar({ accent = "#ffffff", isAuthenticated, onLogin, onRegis
         />
         <span className="text-[14.5px] font-semibold tracking-[-0.02em] text-white">Newsroom</span>
         <span className="ml-2 rounded border border-white/[0.06] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-white/30">
-          v2.4
+          v1.0
         </span>
       </Link>
 
