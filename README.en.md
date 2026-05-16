@@ -47,7 +47,7 @@ NewsRoom/
 | Database | PostgreSQL 15 |
 | Object storage | MinIO, S3-compatible |
 | RSS | RSSHub |
-| AI models | Google Gemini, Qwen / DashScope, OpenAI-compatible APIs |
+| AI models | Google Gemini, Qwen / DashScope, DeepSeek, OpenAI-compatible APIs |
 | Web/video extraction | Playwright, yt-dlp, optional Jina Reader |
 | Authentication | Local accounts + optional Clerk JWT / webhook sync |
 
@@ -310,7 +310,8 @@ Celery worker split:
 celery_app.py          # Celery instance, task routing, global config
 workers/
 ├── tasks.py           # Task wrappers: retry policies, timeouts, logging
-├── cron_jobs.py       # APScheduler cron scheduling, enabled only in the backend process
+└── cron_jobs.py       # APScheduler cron scheduling, enabled only in the backend process
+services/
 └── worker_jobs.py     # Actual task execution logic
 ```
 

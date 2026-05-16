@@ -47,7 +47,7 @@ NewsRoom/
 | 数据库 | PostgreSQL 15 |
 | 对象存储 | MinIO，兼容 S3 |
 | RSS 源 | RSSHub |
-| AI 模型 | Google Gemini、通义千问 / DashScope、OpenAI 兼容接口 |
+| AI 模型 | Google Gemini、通义千问 / DashScope、DeepSeek、OpenAI 兼容接口 |
 | 网页与视频提取 | Playwright、yt-dlp、Jina Reader 可选 |
 | 认证 | 本地账号 + 可选 Clerk JWT / Webhook 同步 |
 
@@ -326,7 +326,8 @@ Celery Worker 拆分：
 celery_app.py          # Celery 实例定义、路由、全局配置
 workers/
 ├── tasks.py           # 任务外壳：重试策略、超时、日志
-├── cron_jobs.py       # APScheduler 定时调度，仅 backend 进程启用
+└── cron_jobs.py       # APScheduler 定时调度，仅 backend 进程启用
+services/
 └── worker_jobs.py     # 任务实际执行逻辑
 ```
 
