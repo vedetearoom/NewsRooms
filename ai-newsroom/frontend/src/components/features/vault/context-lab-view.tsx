@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { X, Wand2, Send, Rocket, Save, Bot, Newspaper, SearchCode } from "lucide-react";
+import { X, Wand2, Send, Rocket, Save, Bot } from "lucide-react";
 import { useVaultLabStore } from "@/store/vault-lab-store";
 import { api, type InspirationAsset } from "@/lib/api";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -15,7 +15,7 @@ interface ContextLabViewProps {
   selectedIds: number[];
 }
 
-function getTaskTypeForContextLabMode(mode: string): string {
+function getTaskTypeForContextLabMode(): string {
   return "multi_source_synthesis";
 }
 
@@ -142,13 +142,13 @@ export function ContextLabView({ inspirations, selectedIds }: ContextLabViewProp
                   accumulatedText += parsed.text;
                   setLabDraft(accumulatedText);
                 }
-              } catch (e) {}
+              } catch {}
             } else if (event === "error") {
               try {
                 const parsed = JSON.parse(data);
                 accumulatedText += `\n\n[Error: ${parsed.message}]`;
                 setLabDraft(accumulatedText);
-              } catch (e) {}
+              } catch {}
             } else if (event === "done") {
               return; // Stream ended
             }
@@ -170,7 +170,7 @@ export function ContextLabView({ inspirations, selectedIds }: ContextLabViewProp
   const handleConfirmAndEnter = async () => {
     try {
       const task = await api.createTask({
-        task_type: getTaskTypeForContextLabMode(activeAgent),
+        task_type: getTaskTypeForContextLabMode(),
         inspiration_ids: selectedIds,
         initial_draft: labDraft
       });
@@ -186,7 +186,7 @@ export function ContextLabView({ inspirations, selectedIds }: ContextLabViewProp
   const handleSaveOnly = async () => {
     try {
       await api.createTask({
-        task_type: getTaskTypeForContextLabMode(activeAgent),
+        task_type: getTaskTypeForContextLabMode(),
         inspiration_ids: selectedIds,
         initial_draft: labDraft
       });

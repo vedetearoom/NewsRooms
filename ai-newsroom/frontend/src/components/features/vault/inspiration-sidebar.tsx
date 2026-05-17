@@ -36,7 +36,7 @@ export function InspirationSidebar({
 }: InspirationSidebarProps) {
   const { t } = useTranslation();
   return (
-    <div className="w-[320px] shrink-0 border-r border-zinc-100 dark:border-white/5 bg-zinc-50/50 dark:bg-white/[0.01] flex flex-col h-full relative z-10">
+    <div className="w-[320px] shrink-0 bg-zinc-50/50 dark:bg-white/[0.01] flex flex-col h-full relative z-10">
       <div className="flex-1 overflow-y-auto px-6 py-8">
         {loading ? (
           <PageLoadingState compact label={t("common.loading", "Loading...")} />

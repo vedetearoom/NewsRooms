@@ -26,6 +26,7 @@ export function useCommandPaletteState({
 }: UseCommandPaletteStateParams) {
   const router = useRouter();
   const [loading, setLoading] = React.useState(false);
+  const [loadingAgentId, setLoadingAgentId] = React.useState<number | null>(null);
   const [step, setStep] = React.useState<CommandPaletteStep>("task_type");
   const [selectedTaskType, setSelectedTaskType] = React.useState<string | null>(null);
   const [query, setQuery] = React.useState("");
@@ -46,6 +47,7 @@ export function useCommandPaletteState({
         setSelectedTaskType(null);
         setQuery("");
         setLoading(false);
+        setLoadingAgentId(null);
         setTempSelectedCards([]);
         setTempSelectedInspirations([]);
       }, 200);
@@ -74,6 +76,7 @@ export function useCommandPaletteState({
   const handleDispatch = React.useCallback(async (taskType: string, agent: Agent | null) => {
     if (loading) return;
     setLoading(true);
+    setLoadingAgentId(agent?.id ?? null);
     try {
       const task = await api.createTask({
         task_type: taskType,
@@ -92,6 +95,7 @@ export function useCommandPaletteState({
       toast.error("任务创建失败", message);
       console.error("Failed to create task:", error);
       setLoading(false);
+      setLoadingAgentId(null);
     }
   }, [language, loading, onClose, router, sourceTaskIds, tempSelectedCards, tempSelectedInspirations]);
 
@@ -167,6 +171,7 @@ export function useCommandPaletteState({
   const panelState: CommandPalettePanelState = {
     step,
     loading,
+    loadingAgentId,
     inspirations,
     recentCards,
     writerAgents,
@@ -176,6 +181,7 @@ export function useCommandPaletteState({
 
   return {
     loading,
+    loadingAgentId,
     step,
     setStep,
     selectedTaskType,

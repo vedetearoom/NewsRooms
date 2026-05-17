@@ -28,7 +28,7 @@ export function AgentSettingsCard({
       )}
     >
       <div className="px-6 pt-6 pb-5">
-        <h3 className="text-[15px] font-semibold text-foreground tracking-tight">{title}</h3>
+        <h3 className="flex text-[15px] font-semibold text-foreground tracking-tight">{title}</h3>
         {description && (
           <p className="text-[13px] text-muted-foreground mt-1 leading-relaxed">{description}</p>
         )}

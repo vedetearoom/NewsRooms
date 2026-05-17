@@ -42,9 +42,6 @@ const countBadgeClass =
 const primaryButtonClass =
   "inline-flex items-center rounded-full bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-900 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-black dark:hover:bg-zinc-200";
 
-const topActionButtonClass =
-  "inline-flex items-center gap-1.5 overflow-hidden rounded-full bg-zinc-900 px-3.5 py-1.5 text-[13px] font-medium text-white shadow-sm transition-all hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-900 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100";
-
 const tableHeaderClass =
   "py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500";
 
@@ -57,7 +54,7 @@ const modalInputClass =
 const PAGE_SIZE = 10;
 
 export default function SystemUsersPage() {
-  const { ready, hasPermission, user: currentUser } = useAuthState();
+  const { ready, hasPermission } = useAuthState();
   const { t, language } = useTranslation();
   const [users, setUsers] = React.useState<CurrentUser[]>([]);
   const [roles, setRoles] = React.useState<Role[]>([]);

@@ -23,7 +23,6 @@ export function InboxToolbar({
   topTags,
   overflowTags,
   totalCount,
-  pinnedCount,
 }: InboxToolbarProps) {
   const { t } = useTranslation();
 

@@ -160,7 +160,7 @@ export function useAgentFormState({ activeId, activeAgent, getLocalizedAgentName
     if (!activeAgent) return false;
     const initial = getAgentFormState(activeAgent, getLocalizedAgentName, localizedPrompts);
     return systemPrompt !== initial.systemPrompt;
-  }, [activeAgent, activeId, systemPrompt, getLocalizedAgentName, localizedPrompts]);
+  }, [activeAgent, activeId, systemPrompt, getLocalizedAgentName, localizedPrompts, role]);
 
   const isKnowledgeDirty = React.useMemo(() => {
     if (activeId === "new") return contextText !== "";

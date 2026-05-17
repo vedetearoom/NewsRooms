@@ -34,6 +34,7 @@ export function CommandPalettePanels({
   const {
     step,
     loading,
+    loadingAgentId,
     inspirations,
     recentCards,
     writerAgents,
@@ -79,6 +80,7 @@ export function CommandPalettePanels({
   return (
     <AgentSelectionPanel
       loading={loading}
+      loadingAgentId={loadingAgentId}
       writerAgents={writerAgents}
       canSelectAgent={canSelectAgent}
       onSelectAgent={onSelectAgent}

@@ -169,7 +169,6 @@ export function clearLocalAuthStorage() {
 export function logout() {
   if (typeof window === "undefined") return;
   _cachedToken = null;
-  _clerkUser = null;
   window.localStorage.removeItem(AUTH_TOKEN_KEY);
   window.localStorage.removeItem(AUTH_USER_KEY);
   dispatchAuthChanged();
@@ -180,8 +179,7 @@ export function hasPermission(user: AuthUser | null | undefined, permission: str
   return user.permissions.includes(permission);
 }
 
-// --- Cached user from backend /api/auth/me ---
-let _clerkUser: AuthUser | null = null;
+// --- In-flight user request from backend /api/auth/me ---
 let _clerkUserFetchPromise: Promise<AuthUser> | null = null;
 
 export async function fetchAndCacheMeUser(options?: { throwOnError?: boolean }): Promise<AuthUser | null> {
@@ -189,11 +187,9 @@ export async function fetchAndCacheMeUser(options?: { throwOnError?: boolean }):
     _clerkUserFetchPromise = (async () => {
       try {
         const user = await api.auth.me();
-        _clerkUser = user;
         updateStoredUser(user);
         return user;
       } catch (error) {
-        _clerkUser = null;
         throw error;
       } finally {
         _clerkUserFetchPromise = null;

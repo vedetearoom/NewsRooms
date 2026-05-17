@@ -11,6 +11,7 @@ export type CommandPaletteStep =
 export interface CommandPalettePanelState {
   step: CommandPaletteStep;
   loading: boolean;
+  loadingAgentId: number | null;
   inspirations: InspirationAsset[];
   recentCards: IntelligenceCard[];
   writerAgents: Agent[];

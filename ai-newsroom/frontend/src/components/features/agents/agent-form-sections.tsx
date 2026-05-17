@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { Sparkles, Zap, Pen, Search, Image as ImageIcon } from "lucide-react";
 import { AgentCustomSelect, type AgentSelectOption } from "@/components/features/agents/agent-custom-select";
 import { AgentSettingsCard } from "@/components/features/agents/agent-settings-card";
-import { api, type ModelProvider } from "@/lib/api";
+import type { ModelProvider } from "@/lib/api";
 
 type SavingSection = "profile" | "prompt" | "knowledge" | "skills" | null;
 

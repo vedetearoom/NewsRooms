@@ -43,7 +43,7 @@ const primaryBtn =
   "inline-flex items-center rounded-full bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-900 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-black dark:hover:bg-zinc-200";
 
 export default function ModelProvidersPage() {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const mp = (key: string) => t(`agents.modelProviders.${key}`);
   const { providers, isLoading: loading, mutate } = useModelProviders();
   const [modalOpen, setModalOpen] = React.useState(false);
@@ -171,9 +171,12 @@ export default function ModelProvidersPage() {
         className="mb-10"
         innerClassName="px-8"
       >
-        <button onClick={openCreate} className={primaryBtn}>
-          <Plus className="mr-1.5 h-4 w-4" />
-          {mp("addProvider")}
+        <button
+          onClick={openCreate}
+          className="flex items-center gap-1.5 overflow-hidden rounded-full bg-zinc-900 px-3.5 py-1.5 text-[13px] font-medium text-white shadow-sm transition-all hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+        >
+          <Plus className="h-[14px] w-[14px] shrink-0" />
+          <span>{mp("addProvider")}</span>
         </button>
       </PageTopBar>
 

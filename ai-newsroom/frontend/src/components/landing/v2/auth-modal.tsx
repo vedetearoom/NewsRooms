@@ -33,7 +33,7 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
   const { t } = useTranslation();
   const clerk = useClerk();
   const { signIn, setActive: setSignInActive, isLoaded: signInLoaded } = useSignIn();
-  const { signUp, setActive: setSignUpActive, isLoaded: signUpLoaded } = useSignUp();
+  const { signUp, isLoaded: signUpLoaded } = useSignUp();
   const [username, setUsername] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -55,8 +55,6 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
   const registerInputRef = React.useRef<HTMLInputElement>(null);
   const modalScrollRef = React.useRef<HTMLDivElement>(null);
   const isPointerDownOnBackdrop = React.useRef(false);
-  const [pageHeight, setPageHeight] = React.useState(0);
-
   const updateCardHeight = React.useCallback(() => {
     const activeFace = mode === "login" ? loginFaceRef.current : registerFaceRef.current;
     if (activeFace) {

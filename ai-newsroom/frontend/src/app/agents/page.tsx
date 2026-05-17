@@ -9,7 +9,7 @@ import { toast } from "@/components/ui/use-toast";
 import { useTabsStore } from "@/store/tabs";
 import { useUrlTab } from "@/hooks/useUrlTab";
 import { Suspense } from "react";
-import { GitBranch, PlugZap, Zap, Pen, Search, Image as ImageIcon, Settings, Eye, EyeOff, X } from "lucide-react";
+import { GitBranch, PlugZap, Zap, Pen, Search, Image as ImageIcon, Settings, Eye, EyeOff } from "lucide-react";
 import { useAuthState, updateStoredUser } from "@/lib/auth";
 import { AgentSidebar } from "@/components/features/agents/agent-sidebar";
 import { AgentPageHeader } from "@/components/features/agents/agent-page-header";
@@ -97,7 +97,6 @@ function AgentStudioContent() {
     role,
     setRole,
     modelType,
-    setModelType,
     providerId,
     setProviderId,
     audioModelType,
@@ -345,7 +344,7 @@ function AgentStudioContent() {
     } finally {
       setIsInstallingPlugin(false);
     }
-  }, [mutatePlugins, pluginSourceUrl, t]);
+  }, [mutatePlugins, pluginSourceUrl, t, user?.github_token_set]);
 
   const handleTogglePluginBinding = React.useCallback(async (pluginId: number, attached: boolean) => {
     if (!activeAgent) return;

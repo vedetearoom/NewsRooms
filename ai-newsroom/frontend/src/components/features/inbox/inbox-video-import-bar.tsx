@@ -39,12 +39,7 @@ export function InboxVideoImportBar({
         className,
       )}
     >
-      <div className="mb-3 flex items-center gap-2">
-        <span className="inline-flex h-9 items-center gap-1.5 rounded-full bg-zinc-900 px-3 text-[12px] font-medium text-white shadow-sm dark:bg-white dark:text-zinc-900">
-          <Link2 className="h-3.5 w-3.5" />
-          {t("monitors.manualImportUrlTab")}
-        </span>
-      </div>
+
 
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-zinc-500 shadow-sm ring-1 ring-zinc-200/70 dark:bg-zinc-900 dark:text-zinc-300 dark:ring-white/[0.08]">

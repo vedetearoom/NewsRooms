@@ -148,6 +148,7 @@ export function FactSelectionPanel({
 
 interface AgentSelectionPanelProps {
   loading: boolean;
+  loadingAgentId: number | null;
   writerAgents: Agent[];
   canSelectAgent: boolean;
   onSelectAgent: (agent: Agent) => void;
@@ -155,37 +156,41 @@ interface AgentSelectionPanelProps {
 
 export function AgentSelectionPanel({
   loading,
+  loadingAgentId,
   writerAgents,
   canSelectAgent,
   onSelectAgent,
 }: AgentSelectionPanelProps) {
   return (
     <>
-      {writerAgents.map((agent) => (
-        <CommandPaletteOptionRow
-          key={agent.id}
-          onClick={() => onSelectAgent(agent)}
-          disabled={loading || !canSelectAgent}
-          icon={
-            <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-white/5 flex items-center justify-center shrink-0 text-muted-foreground">
-              {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
-              )}
-            </div>
-          }
-          title={agent.name}
-          description={`${agent.system_prompt.slice(0, 70)}...`}
-          trailing={
-            <kbd className="text-[10px] bg-zinc-100 dark:bg-white/10 rounded px-1.5 py-0.5 text-muted-foreground shrink-0">
-              Enter
-            </kbd>
-          }
-        />
-      ))}
+      {writerAgents.map((agent) => {
+        const isLoading = loadingAgentId === agent.id;
+        return (
+          <CommandPaletteOptionRow
+            key={agent.id}
+            onClick={() => onSelectAgent(agent)}
+            disabled={loading || !canSelectAgent}
+            icon={
+              <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-white/5 flex items-center justify-center shrink-0 text-muted-foreground">
+                {isLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                )}
+              </div>
+            }
+            title={agent.name}
+            description={`${agent.system_prompt.slice(0, 70)}...`}
+            trailing={
+              <kbd className="text-[10px] bg-zinc-100 dark:bg-white/10 rounded px-1.5 py-0.5 text-muted-foreground shrink-0">
+                Enter
+              </kbd>
+            }
+          />
+        );
+      })}
     </>
   );
 }
