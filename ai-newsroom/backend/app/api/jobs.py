@@ -40,16 +40,18 @@ async def trigger_scrape(
 
 @router.post("/trigger/process")
 async def trigger_process(
+    data: dict | None = None,
     db: AsyncSession = Depends(get_db),
     current_user=Depends(require_permission("network.view")),
 ):
     """Manually trigger article processing via Celery (returns immediately)."""
+    pin_created = bool(data.get("pin_created", False)) if data else False
     if not await has_unprocessed_articles(db, current_user.id):
         raise HTTPException(status_code=400, detail="没有可处理的未处理文章。")
     await ensure_resource_quota(db, current_user.id, ACTIVE_BACKGROUND_JOBS)
     await ensure_resource_quota(db, current_user.id, ARTICLE_CARDS)
     await consume_daily_quota(db, current_user.id, DAILY_ARTICLE_PROCESSES)
-    return await trigger_process_job(current_user.id)
+    return await trigger_process_job(current_user.id, pin_created=pin_created)
 
 
 @router.get("/jobs")

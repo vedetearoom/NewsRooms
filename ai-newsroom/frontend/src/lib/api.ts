@@ -647,7 +647,10 @@ export const api = {
   // Triggers
   seedDemo: () => fetchAPI("/api/seed", { method: "POST" }),
   triggerScrape: () => fetchAPI<{ ok: boolean; job_id: string }>("/api/trigger/scrape", { method: "POST" }),
-  triggerProcess: () => fetchAPI<{ ok: boolean; job_id: string }>("/api/trigger/process", { method: "POST" }),
+  triggerProcess: (pinCreated = false) => fetchAPI<{ ok: boolean; job_id: string }>("/api/trigger/process", {
+    method: "POST",
+    body: JSON.stringify({ pin_created: pinCreated }),
+  }),
 
   // Video Analysis
   analyzeVideo: (url: string) =>
@@ -662,10 +665,10 @@ export const api = {
     return fetchAPI<RawArticle[]>(`/api/raw-articles${qs}`);
   },
   getPipelineStats: () => fetchAPI<PipelineStats>("/api/raw-articles/stats"),
-  processSelected: (articleIds: number[]) =>
+  processSelected: (articleIds: number[], pinCreated = false) =>
     fetchAPI<{ ok: boolean; job_id: string }>("/api/raw-articles/process-selected", {
       method: "POST",
-      body: JSON.stringify({ article_ids: articleIds }),
+      body: JSON.stringify({ article_ids: articleIds, pin_created: pinCreated }),
     }),
   deleteRawArticle: (id: number) =>
     fetchAPI(`/api/raw-articles/${id}`, { method: "DELETE" }),

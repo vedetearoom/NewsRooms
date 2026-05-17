@@ -10,6 +10,7 @@ interface ConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void | Promise<void>;
+  onCancelAction?: () => void | Promise<void>;
   title: string;
   description: React.ReactNode;
   confirmText?: string;
@@ -21,6 +22,7 @@ export function ConfirmModal({
   isOpen,
   onClose,
   onConfirm,
+  onCancelAction,
   title,
   description,
   confirmText = "Confirm",
@@ -29,10 +31,10 @@ export function ConfirmModal({
 }: ConfirmModalProps) {
   const [isProcessing, setIsProcessing] = React.useState(false);
 
-  const handleConfirm = async () => {
+  const handleAction = async (action: () => void | Promise<void>) => {
     setIsProcessing(true);
     try {
-      await onConfirm();
+      await action();
       onClose();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "当前操作无法完成。";
@@ -41,6 +43,15 @@ export function ConfirmModal({
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleConfirm = () => handleAction(onConfirm);
+  const handleCancel = () => {
+    if (onCancelAction) {
+      void handleAction(onCancelAction);
+      return;
+    }
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -74,10 +85,11 @@ export function ConfirmModal({
         </div>
 
         <div className="flex gap-3 mt-8">
-          <Button 
-            variant="outline" 
-            className="flex-1 h-9 text-[13px] cursor-pointer" 
-            onClick={onClose}
+          <Button
+            variant="outline"
+            disabled={isProcessing}
+            className={cn("flex-1 h-9 text-[13px] cursor-pointer", isProcessing && "opacity-50 cursor-not-allowed")}
+            onClick={handleCancel}
           >
             {cancelText}
           </Button>

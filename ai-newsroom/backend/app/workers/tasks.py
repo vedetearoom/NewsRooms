@@ -81,15 +81,15 @@ def celery_scrape_task(owner_user_id: int):
 
 
 @celery_app.task(name="newsroom.process")
-def celery_process_task(owner_user_id: int):
+def celery_process_task(owner_user_id: int, pin_created: bool = False):
     """Run article processing as a Celery background task."""
-    return run_process_job(owner_user_id)
+    return run_process_job(owner_user_id, pin_created=pin_created)
 
 
 @celery_app.task(name="newsroom.process_selected")
-def celery_process_selected_task(article_ids: list[int], owner_user_id: int):
+def celery_process_selected_task(article_ids: list[int], owner_user_id: int, pin_created: bool = False):
     """Run article processing for specific articles as a Celery background task."""
-    return run_process_selected_job(article_ids, owner_user_id)
+    return run_process_selected_job(article_ids, owner_user_id, pin_created=pin_created)
 
 
 @celery_app.task(name="newsroom.analyze_video", bind=True, max_retries=2, default_retry_delay=60)

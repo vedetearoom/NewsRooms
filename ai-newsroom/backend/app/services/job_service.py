@@ -21,8 +21,8 @@ async def trigger_scrape_job(user_id: int) -> dict:
     return {"ok": True, "job_id": job_id}
 
 
-async def trigger_process_job(user_id: int) -> dict:
-    job_id = await dispatch_process_all_job(user_id)
+async def trigger_process_job(user_id: int, pin_created: bool = False) -> dict:
+    job_id = await dispatch_process_all_job(user_id, pin_created=pin_created)
     return {"ok": True, "job_id": job_id}
 
 

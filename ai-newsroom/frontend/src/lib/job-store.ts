@@ -12,6 +12,7 @@ export interface ActiveJob {
   name: string;
   articleIds: number[];   // which articles this job covers (pipeline)
   sourceId?: number;      // which source this is for (sources page)
+  shouldPinCreatedCards?: boolean;
   startTime: number;
   status: 'running' | 'completed' | 'failed';
   result?: unknown;
@@ -54,13 +55,14 @@ export const jobStore = {
    */
   submit(
     jobId: string,
-    meta: { name: string; articleIds?: number[]; sourceId?: number }
+    meta: { name: string; articleIds?: number[]; sourceId?: number; shouldPinCreatedCards?: boolean }
   ): ActiveJob {
     const job: ActiveJob = {
       jobId,
       name: meta.name,
       articleIds: meta.articleIds ?? [],
       sourceId: meta.sourceId,
+      shouldPinCreatedCards: meta.shouldPinCreatedCards,
       startTime: Date.now(),
       status: 'running',
     };

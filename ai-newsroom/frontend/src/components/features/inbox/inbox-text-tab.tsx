@@ -19,6 +19,7 @@ import { usePipelineJobNotifications } from "@/hooks/usePipelineJobNotifications
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type StatusFilter = "all" | "pending" | "processed";
+type ProcessTarget = { ids: number[]; selectedOnly: boolean };
 const PAGE_SIZE = 50;
 
 export function InboxTextTab({ onCountChange }: { onCountChange?: (count: number) => void }) {
@@ -33,6 +34,7 @@ export function InboxTextTab({ onCountChange }: { onCountChange?: (count: number
   const { selected: selectedIds, toggle: toggleSelect, replaceAll: replaceSelectedIds, clear: clearSelectedIds, remove: removeSelectedId } = useSelectableSet<number>();
   const [batchDeleting, setBatchDeleting] = React.useState(false);
   const [confirmBatchDelete, setConfirmBatchDelete] = React.useState(false);
+  const [processTarget, setProcessTarget] = React.useState<ProcessTarget | null>(null);
   const setSourceIdAction = useTabsStore(s => s.setInboxTextSourceId);
   const [activeSourceIdStr, setActiveSourceIdStr] = useUrlTab<string>("t_source", "all", (value) => {
     setSourceIdAction(value === "all" ? "all" : value ? Number(value) : null);
@@ -156,21 +158,22 @@ export function InboxTextTab({ onCountChange }: { onCountChange?: (count: number
     }
   };
 
-  const handleProcess = async () => {
+  const openProcessConfirm = () => {
     const targetIds = selectedIds.size > 0
       ? Array.from(selectedIds)
       : articles.filter(a => !a.is_processed).map(a => a.id);
     if (targetIds.length === 0) return;
+    setProcessTarget({ ids: targetIds, selectedOnly: selectedIds.size > 0 });
+  };
+
+  const handleProcess = async (shouldPinCreatedCards: boolean) => {
+    if (!processTarget) return;
 
     try {
-      let r: { ok: boolean; job_id: string };
-      if (selectedIds.size > 0) {
-        r = await api.processSelected(Array.from(selectedIds));
-      } else {
-        r = await api.triggerProcess();
-      }
-      submitJob(r.job_id, { name: 'process_batch', articleIds: targetIds });
-      // Toast will be shown by the useEffect when the job completes
+      const r = processTarget.selectedOnly
+        ? await api.processSelected(processTarget.ids, shouldPinCreatedCards)
+        : await api.triggerProcess(shouldPinCreatedCards);
+      submitJob(r.job_id, { name: 'process_batch', articleIds: processTarget.ids, shouldPinCreatedCards });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "AI processing encountered an error.";
       toast.error("Processing Failed", message);
@@ -254,7 +257,7 @@ export function InboxTextTab({ onCountChange }: { onCountChange?: (count: number
         onStatusFilterChange={setStatusFilter}
         onClearFilters={() => { setStatusFilter("all"); setFilterOpen(false); }}
         onSearchChange={setSearchQuery}
-        onProcess={handleProcess}
+        onProcess={openProcessConfirm}
       />
 
       {/* ── Main ── */}
@@ -378,9 +381,21 @@ export function InboxTextTab({ onCountChange }: { onCountChange?: (count: number
         processing={processing}
         t={t}
         onSelectAllVisible={handleSelectAllVisible}
-        onProcess={handleProcess}
+        onProcess={openProcessConfirm}
         onDelete={() => setConfirmBatchDelete(true)}
         onClear={clearSelectedIds}
+      />
+
+      <ConfirmModal
+        isOpen={!!processTarget}
+        onClose={() => setProcessTarget(null)}
+        onConfirm={() => handleProcess(true)}
+        onCancelAction={() => handleProcess(false)}
+        title={t('pipeline.confirmPinAfterProcessTitle')}
+        description={t('pipeline.confirmPinAfterProcessDesc')}
+        confirmText={t('pipeline.confirmPinAfterProcessBtn')}
+        cancelText={t('pipeline.processOnlyBtn')}
+        isDestructive={false}
       />
 
       {/* Delete Confirm (single) */}

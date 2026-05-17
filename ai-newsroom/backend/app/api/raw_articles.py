@@ -46,14 +46,15 @@ async def process_selected(
 ):
     """Process selected raw articles through the AI pipeline (background job)."""
     article_ids = data.get("article_ids", [])
+    pin_created = bool(data.get("pin_created", False))
     if not article_ids:
-        return await process_selected_articles(article_ids, current_user.id)
+        return await process_selected_articles(article_ids, current_user.id, pin_created=pin_created)
     if not await has_unprocessed_articles(db, current_user.id, article_ids):
         raise HTTPException(status_code=400, detail="没有可处理的未处理文章。")
     await ensure_resource_quota(db, current_user.id, ACTIVE_BACKGROUND_JOBS)
     await ensure_resource_quota(db, current_user.id, ARTICLE_CARDS)
     await consume_daily_quota(db, current_user.id, DAILY_ARTICLE_PROCESSES)
-    return await process_selected_articles(article_ids, current_user.id)
+    return await process_selected_articles(article_ids, current_user.id, pin_created=pin_created)
 
 
 @router.delete("/{article_id}")

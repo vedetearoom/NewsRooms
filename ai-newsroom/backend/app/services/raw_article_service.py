@@ -126,11 +126,11 @@ async def has_unprocessed_articles(
     return result.scalar_one_or_none() is not None
 
 
-async def process_selected_articles(article_ids: list[int], user_id: int) -> dict:
+async def process_selected_articles(article_ids: list[int], user_id: int, pin_created: bool = False) -> dict:
     if not article_ids:
         return {"ok": False, "error": "No articles selected"}
 
-    job_id = await dispatch_process_selected_job(article_ids, user_id)
+    job_id = await dispatch_process_selected_job(article_ids, user_id, pin_created=pin_created)
     return {"ok": True, "job_id": job_id}
 
 

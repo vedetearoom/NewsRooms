@@ -15,21 +15,25 @@ async def dispatch_scrape_all_job(owner_user_id: int) -> str:
     return await _track_celery_job("scrape_all", result.id, meta={"owner_user_id": owner_user_id})
 
 
-async def dispatch_process_all_job(owner_user_id: int) -> str:
+async def dispatch_process_all_job(owner_user_id: int, pin_created: bool = False) -> str:
     from app.workers.tasks import celery_process_task
 
-    result = celery_process_task.delay(owner_user_id)
-    return await _track_celery_job("process_all", result.id, meta={"owner_user_id": owner_user_id})
+    result = celery_process_task.delay(owner_user_id, pin_created)
+    return await _track_celery_job(
+        "process_all",
+        result.id,
+        meta={"owner_user_id": owner_user_id, "pin_created": pin_created},
+    )
 
 
-async def dispatch_process_selected_job(article_ids: list[int], owner_user_id: int) -> str:
+async def dispatch_process_selected_job(article_ids: list[int], owner_user_id: int, pin_created: bool = False) -> str:
     from app.workers.tasks import celery_process_selected_task
 
-    result = celery_process_selected_task.delay(article_ids, owner_user_id)
+    result = celery_process_selected_task.delay(article_ids, owner_user_id, pin_created)
     return await _track_celery_job(
         "process_selected",
         result.id,
-        meta={"article_ids": article_ids, "owner_user_id": owner_user_id},
+        meta={"article_ids": article_ids, "owner_user_id": owner_user_id, "pin_created": pin_created},
     )
 
 
