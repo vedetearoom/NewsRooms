@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
-from app.services.auth_service import require_permission
+from app.services.auth_service import require_permission, serialize_user
 from app.services.quota_service import ACTIVE_BACKGROUND_JOBS, ARTICLE_CARDS, DAILY_ARTICLE_PROCESSES, consume_daily_quota, ensure_resource_quota
 from app.services.raw_article_service import (
     delete_raw_article as delete_raw_article_service,
@@ -46,7 +46,9 @@ async def process_selected(
 ):
     """Process selected raw articles through the AI pipeline (background job)."""
     article_ids = data.get("article_ids", [])
-    pin_created = bool(data.get("pin_created", False))
+    user_out = await serialize_user(db, current_user)
+    is_super_admin = any(role.code == "super_admin" for role in user_out.roles)
+    pin_created = bool(data.get("pin_created", False)) if is_super_admin else False
     if not article_ids:
         return await process_selected_articles(article_ids, current_user.id, pin_created=pin_created)
     if not await has_unprocessed_articles(db, current_user.id, article_ids):

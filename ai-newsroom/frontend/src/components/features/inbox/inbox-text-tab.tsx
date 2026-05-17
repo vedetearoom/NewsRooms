@@ -1,6 +1,7 @@
 "use client";
 import * as React from "react";
 import { api, type RawArticle, type PipelineStats } from "@/lib/api";
+import { useAuthState } from "@/lib/auth";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useJobStore } from "@/hooks/useJobStore";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
@@ -24,6 +25,7 @@ const PAGE_SIZE = 50;
 
 export function InboxTextTab({ onCountChange }: { onCountChange?: (count: number) => void }) {
   const { t } = useTranslation();
+  const { user } = useAuthState();
   const [stats, setStats] = React.useState<PipelineStats | null>(null);
   const [articles, setArticles] = React.useState<RawArticle[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -149,6 +151,11 @@ export function InboxTextTab({ onCountChange }: { onCountChange?: (count: number
     return list.filter(a => !a.is_processed).length;
   }, [articles, activeSourceId]);
 
+  const isSuperAdmin = React.useMemo(
+    () => user?.roles?.some((role) => role.code === "super_admin") ?? false,
+    [user],
+  );
+
   const handleSelectAllVisible = () => {
     const allSelected = paginatedArticles.length > 0 && paginatedArticles.every(a => selectedIds.has(a.id));
     if (allSelected) {
@@ -158,26 +165,36 @@ export function InboxTextTab({ onCountChange }: { onCountChange?: (count: number
     }
   };
 
+  const runProcess = async (target: ProcessTarget, shouldPinCreatedCards: boolean) => {
+    try {
+      const r = target.selectedOnly
+        ? await api.processSelected(target.ids, shouldPinCreatedCards)
+        : await api.triggerProcess(shouldPinCreatedCards);
+      submitJob(r.job_id, { name: 'process_batch', articleIds: target.ids, shouldPinCreatedCards });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "AI processing encountered an error.";
+      toast.error("Processing Failed", message);
+    }
+  };
+
   const openProcessConfirm = () => {
     const targetIds = selectedIds.size > 0
       ? Array.from(selectedIds)
       : articles.filter(a => !a.is_processed).map(a => a.id);
     if (targetIds.length === 0) return;
-    setProcessTarget({ ids: targetIds, selectedOnly: selectedIds.size > 0 });
+
+    const target = { ids: targetIds, selectedOnly: selectedIds.size > 0 };
+    if (!isSuperAdmin) {
+      void runProcess(target, false);
+      return;
+    }
+
+    setProcessTarget(target);
   };
 
   const handleProcess = async (shouldPinCreatedCards: boolean) => {
     if (!processTarget) return;
-
-    try {
-      const r = processTarget.selectedOnly
-        ? await api.processSelected(processTarget.ids, shouldPinCreatedCards)
-        : await api.triggerProcess(shouldPinCreatedCards);
-      submitJob(r.job_id, { name: 'process_batch', articleIds: processTarget.ids, shouldPinCreatedCards });
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "AI processing encountered an error.";
-      toast.error("Processing Failed", message);
-    }
+    await runProcess(processTarget, shouldPinCreatedCards);
   };
 
   const handleProcessSingle = async (articleId: number) => {
@@ -387,7 +404,7 @@ export function InboxTextTab({ onCountChange }: { onCountChange?: (count: number
       />
 
       <ConfirmModal
-        isOpen={!!processTarget}
+        isOpen={isSuperAdmin && !!processTarget}
         onClose={() => setProcessTarget(null)}
         onConfirm={() => handleProcess(true)}
         onCancelAction={() => handleProcess(false)}

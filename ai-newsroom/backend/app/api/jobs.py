@@ -12,7 +12,7 @@ from app.services.job_service import (
     trigger_scrape_job,
 )
 from app.services.raw_article_service import has_unprocessed_articles
-from app.services.auth_service import require_permission, resolve_current_user
+from app.services.auth_service import require_permission, resolve_current_user, serialize_user
 from app.services.quota_service import (
     ACTIVE_BACKGROUND_JOBS,
     ARTICLE_CARDS,
@@ -45,7 +45,9 @@ async def trigger_process(
     current_user=Depends(require_permission("network.view")),
 ):
     """Manually trigger article processing via Celery (returns immediately)."""
-    pin_created = bool(data.get("pin_created", False)) if data else False
+    user_out = await serialize_user(db, current_user)
+    is_super_admin = any(role.code == "super_admin" for role in user_out.roles)
+    pin_created = bool(data.get("pin_created", False)) if data and is_super_admin else False
     if not await has_unprocessed_articles(db, current_user.id):
         raise HTTPException(status_code=400, detail="没有可处理的未处理文章。")
     await ensure_resource_quota(db, current_user.id, ACTIVE_BACKGROUND_JOBS)
