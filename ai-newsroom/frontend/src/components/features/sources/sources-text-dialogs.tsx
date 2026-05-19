@@ -113,11 +113,8 @@ export function SourcesTextDialogs({
 
               {sourceType === "web" && (
                 <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2">
-                  <label className="text-[13px] font-semibold text-foreground flex justify-between">
-                    <span>{t("sources.extractorPromptLabel", "AI Extractor Prompt (Optional)")}</span>
-                    <span className="text-muted-foreground font-normal text-[11px] bg-zinc-100 dark:bg-white/5 px-1.5 py-0.5 rounded">
-                      {t("sources.extractorPromptModel", "Gemini 2.5 Flash")}
-                    </span>
+                  <label className="text-[13px] font-semibold text-foreground">
+                    {t("sources.extractorPromptLabel", "AI Extractor Prompt (Optional)")}
                   </label>
                   <textarea
                     value={extractorPrompt}

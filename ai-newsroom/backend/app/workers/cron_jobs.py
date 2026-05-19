@@ -5,6 +5,7 @@ from apscheduler.triggers.cron import CronTrigger
 from app.config import get_settings
 from app.database import async_session
 from app.models import Source, User
+from app.model_defs.auth import Role, user_roles
 from app.services.quota_service import (
     ARTICLE_CARDS,
     DAILY_ARTICLE_PROCESSES,
@@ -28,6 +29,16 @@ async def _get_pipeline_user_ids() -> list[int]:
             .distinct()
         )
         return list(result.scalars().all())
+
+
+async def _is_super_admin(user_id: int) -> bool:
+    async with async_session() as db:
+        result = await db.execute(
+            select(Role.code)
+            .join(user_roles, user_roles.c.role_id == Role.id)
+            .where(user_roles.c.user_id == user_id)
+        )
+        return any(code == "super_admin" for code in result.scalars().all())
 
 
 async def _has_unprocessed_articles(owner_user_id: int) -> bool:
@@ -92,8 +103,14 @@ async def pipeline_job():
             resource_key=ARTICLE_CARDS,
         ):
             try:
-                process_result = celery_process_task.delay(owner_user_id)
-                logger.info("  📤 Process task dispatched for user %s: %s", owner_user_id, process_result.id)
+                pin_created = await _is_super_admin(owner_user_id)
+                process_result = celery_process_task.delay(owner_user_id, pin_created=pin_created)
+                logger.info(
+                    "  📤 Process task dispatched for user %s (pin=%s): %s",
+                    owner_user_id,
+                    pin_created,
+                    process_result.id,
+                )
             except Exception as e:
                 logger.error("  ❌ Process dispatch failed for user %s: %s", owner_user_id, e)
 
