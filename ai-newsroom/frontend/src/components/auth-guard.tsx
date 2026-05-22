@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthSafe, useClerkSafe } from "@/lib/clerk-safe";
-import { fetchAndCacheMeUser, getLocalAuthToken, hasPermission } from "@/lib/auth";
+import { clearLocalAuthStorage, fetchAndCacheMeUser, getLocalAuthToken, hasPermission } from "@/lib/auth";
 
 function getRouteRequirement(pathname: string | null): string | null {
   if (!pathname || pathname.startsWith("/landing")) return null;
@@ -35,11 +35,15 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     let cancelled = false;
 
     const run = async () => {
+      const isPublicRoute = pathname?.startsWith("/landing") || pathname?.startsWith("/sign-in") || pathname?.startsWith("/sign-up");
+
       // Public pages — no auth required
-      if (pathname?.startsWith("/landing") || pathname?.startsWith("/sign-in") || pathname?.startsWith("/sign-up")) {
+      if (isPublicRoute) {
         setReady(true);
         return;
       }
+
+      setReady(false);
 
       // Local token auth — bypass Clerk entirely
       if (hasLocalToken) {
@@ -56,7 +60,27 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             setReady(true);
           }
         } catch {
-          if (!cancelled) setReady(true);
+          clearLocalAuthStorage();
+          if (!cancelled) {
+            if (isLoaded && isSignedIn) {
+              try {
+                const user = await fetchAndCacheMeUser({ throwOnError: true });
+                if (user) {
+                  const requiredPermission = getRouteRequirement(pathname);
+                  if (requiredPermission && !hasPermission(user, requiredPermission)) {
+                    router.replace(getFallbackPath(user.permissions));
+                    return;
+                  }
+                }
+                setReady(true);
+              } catch {
+                if (clerk) await clerk.signOut();
+                router.replace("/landing");
+              }
+            } else {
+              router.replace("/landing");
+            }
+          }
         }
         return;
       }

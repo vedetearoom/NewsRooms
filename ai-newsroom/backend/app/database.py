@@ -74,6 +74,7 @@ async def init_db():
         await conn.run_sync(_drop_is_super_admin_column)
         await conn.run_sync(_ensure_model_providers_table)
         await conn.run_sync(_ensure_github_token_column)
+        await conn.run_sync(_ensure_activation_code_columns)
 
     from app.models import User
     from app.services.agent_service import ensure_default_agents_for_user
@@ -334,3 +335,13 @@ def _ensure_github_token_column(sync_conn) -> None:
             sync_conn.execute(text(
                 "UPDATE agents SET provider_id = :pid WHERE id = :aid AND (provider_id IS NULL)"
             ), {"pid": provider_id, "aid": agent_id})
+
+
+def _ensure_activation_code_columns(sync_conn) -> None:
+    inspector = inspect(sync_conn)
+    if "activation_codes" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("activation_codes")}
+    if "code_value" not in columns:
+        sync_conn.execute(text("ALTER TABLE activation_codes ADD COLUMN code_value VARCHAR(64)"))

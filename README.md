@@ -150,6 +150,7 @@ bash start-frontend.sh
 | `ENABLE_SCHEDULER` | `true` | 是否在 API 进程中运行 APScheduler |
 | `SCRAPE_CRON` | `0 */4 * * *` | 新闻源抓取计划，默认每 4 小时 |
 | `CLERK_ISSUER` | 空 | 可选，Clerk JWT issuer |
+| `CLERK_JWKS_URL` | 空 | 可选，显式 Clerk JWKS URL；为空时由 `CLERK_ISSUER` 推导 |
 | `CLERK_SECRET_KEY` | 空 | 可选，Clerk Backend API secret key |
 | `CLERK_WEBHOOK_SECRET` | 空 | 可选，Clerk/Svix webhook signing secret |
 | `CLERK_ADMIN_EMAILS` | 空 | 逗号分隔的管理员邮箱白名单，命中后自动分配 `super_admin` |
@@ -190,6 +191,34 @@ https://<your-domain>/api/webhooks/clerk
 - `user.deleted` 会将本地用户标记为 inactive，不会物理删除。
 - `CLERK_ADMIN_EMAILS` 中的邮箱会自动获得 `super_admin` 角色，从而显示系统管理入口。
 - 其他 Clerk 事件会返回成功但被忽略。
+
+## 注册码注册与 Clerk 邮箱验证码
+
+前端注册页使用自定义 Clerk 邮箱密码流程：
+
+1. 用户输入邮箱、用户名、密码、注册码和申请理由。
+2. 后端 `POST /api/auth/activation-code/approve` 验证注册码并记录申请。
+3. 前端调用 Clerk 注册并发送邮箱验证码（email code）。
+4. 用户在页面内输入验证码完成注册。
+5. Clerk webhook 或登录补偿会同步本地用户。
+
+注册码只限制本产品注册页的自助入口，不依赖 Clerk Allowlist，也不是身份层硬限制。如果用户已经通过 Clerk Dashboard、其他入口或未来开放注册创建成功，后端仍会信任 Clerk 并同步本地用户。
+
+Clerk Dashboard 需要确认：
+
+- 关闭 Waitlist mode 和 Restricted mode，保持普通注册流程可用。
+- 启用邮箱注册、邮箱登录和密码注册。
+- Verify at sign-up 使用 Email verification code / OTP，不使用 email link 作为主流程。
+- Webhook 继续订阅 `user.created`、`user.updated`、`user.deleted`。
+
+如果使用 Docker 部署，请从示例文件创建并填充：
+
+```bash
+cp docker/ai-newsroom/.env.example docker/ai-newsroom/.env
+cp docker/ai-newsroom/config/backend.env.example docker/ai-newsroom/config/backend.env
+```
+
+并把本地 `CLERK_SECRET_KEY`、`CLERK_WEBHOOK_SECRET`、`CLERK_ISSUER` / `CLERK_JWKS_URL` 与前端 `AI_NEWSROOM_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` 同步到对应文件。
 
 ## 前端环境变量
 

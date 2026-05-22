@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.schema_defs.activation_codes import ActivationCodeCreate, ActivationCodeOut, ActivationCodeRedemptionOut, ActivationCodeUpdate
 from app.schema_defs.auth import (
     PermissionOut,
     RoleCreate,
@@ -12,6 +13,12 @@ from app.schema_defs.auth import (
     UserResetPasswordRequest,
     UserStatusUpdate,
     UserUpdate,
+)
+from app.services.activation_code_service import (
+    create_activation_code,
+    list_activation_code_redemptions,
+    list_activation_codes,
+    update_activation_code,
 )
 from app.schema_defs.server import (
     RSSHubServerActionResult,
@@ -95,6 +102,42 @@ async def remove_user(
     current_user=Depends(require_permission("system.manage")),
 ):
     return await delete_user(user_id, current_user.id, db)
+
+
+@router.get("/activation-codes", response_model=list[ActivationCodeOut])
+async def get_activation_codes(
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("system.manage")),
+):
+    return await list_activation_codes(db)
+
+
+@router.post("/activation-codes", response_model=ActivationCodeOut)
+async def post_activation_code(
+    payload: ActivationCodeCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("system.manage")),
+):
+    return await create_activation_code(db, payload, created_by_user_id=current_user.id)
+
+
+@router.patch("/activation-codes/{code_id}", response_model=ActivationCodeOut)
+async def patch_activation_code(
+    code_id: int,
+    payload: ActivationCodeUpdate,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("system.manage")),
+):
+    return await update_activation_code(db, code_id, payload)
+
+
+@router.get("/activation-code-redemptions", response_model=list[ActivationCodeRedemptionOut])
+async def get_activation_code_redemptions(
+    activation_code_id: int | None = None,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("system.manage")),
+):
+    return await list_activation_code_redemptions(db, activation_code_id=activation_code_id)
 
 
 @router.get("/roles", response_model=list[RoleOut])

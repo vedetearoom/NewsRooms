@@ -47,6 +47,12 @@ def extract_primary_email(data: ClerkUserData) -> str | None:
 
 
 def extract_display_name(data: ClerkUserData, email: str | None) -> str:
+    metadata = data.get("unsafe_metadata") or data.get("public_metadata") or {}
+    if isinstance(metadata, dict):
+        newsroom_username = (metadata.get("newsroom_username") or "").strip()
+        if newsroom_username:
+            return newsroom_username
+
     first_name = (data.get("first_name") or "").strip()
     last_name = (data.get("last_name") or "").strip()
     full_name = " ".join(part for part in (first_name, last_name) if part)
@@ -64,6 +70,12 @@ def extract_display_name(data: ClerkUserData, email: str | None) -> str:
 
 
 def _base_username(data: ClerkUserData, email: str | None, clerk_user_id: str) -> str:
+    metadata = data.get("unsafe_metadata") or data.get("public_metadata") or {}
+    if isinstance(metadata, dict):
+        newsroom_username = (metadata.get("newsroom_username") or "").strip()
+        if newsroom_username:
+            return newsroom_username[:64]
+
     username = (data.get("username") or "").strip()
     if username:
         return username[:64]
@@ -93,6 +105,10 @@ async def derive_unique_username(
 
 async def sync_clerk_user_created_or_updated(db: AsyncSession, data: ClerkUserData) -> User | None:
     from app.services.agent_service import ensure_default_agents_for_user
+    from app.services.activation_code_service import (
+        activation_role_codes_for_email,
+        mark_redemption_completed_for_clerk_user,
+    )
     from app.services.auth_service import assign_roles_to_user
 
     clerk_user_id = data.get("id") or data.get("sub")
@@ -127,6 +143,7 @@ async def sync_clerk_user_created_or_updated(db: AsyncSession, data: ClerkUserDa
                 return email_user
 
     if user:
+        was_inactive = not user.is_active or user.clerk_deleted_at is not None
         user.clerk_user_id = clerk_user_id
         if email:
             user.email = email
@@ -135,11 +152,20 @@ async def sync_clerk_user_created_or_updated(db: AsyncSession, data: ClerkUserDa
         user.password_hash = None
         user.is_active = True
         user.clerk_deleted_at = None
+        role_codes = role_codes_for_clerk_email(email)
+        if "super_admin" not in role_codes:
+            activation_role_codes = await activation_role_codes_for_email(db, email)
+            if activation_role_codes and was_inactive:
+                await assign_roles_to_user(user.id, activation_role_codes, db)
         await ensure_default_agents_for_user(db, user.id)
+        await mark_redemption_completed_for_clerk_user(db, email, clerk_user_id)
         await db.flush()
         return user
 
     role_codes = role_codes_for_clerk_email(email)
+    if "super_admin" not in role_codes:
+        activation_role_codes = await activation_role_codes_for_email(db, email)
+        role_codes = activation_role_codes or role_codes
     username = await derive_unique_username(db, data, email, clerk_user_id)
     user = User(
         username=username,
@@ -155,6 +181,7 @@ async def sync_clerk_user_created_or_updated(db: AsyncSession, data: ClerkUserDa
     await db.flush()
     await assign_roles_to_user(user.id, role_codes, db)
     await ensure_default_agents_for_user(db, user.id)
+    await mark_redemption_completed_for_clerk_user(db, email, clerk_user_id)
     await db.flush()
     return user
 

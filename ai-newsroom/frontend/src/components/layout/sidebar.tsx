@@ -148,6 +148,7 @@ export function Sidebar() {
         subItems: [
           { label: t("sidebar.userManagement"), href: "/system/users" },
           { label: t("sidebar.roleManagement"), href: "/system/roles" },
+          { label: t("sidebar.activationCodeManagement"), href: "/system/activation-codes" },
         ],
       });
     }

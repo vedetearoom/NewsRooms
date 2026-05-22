@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.schema_defs.activation_codes import ActivationCodeApprovalRequest, ActivationCodeApprovalResponse
 from app.schema_defs.auth import AuthResponse, ChangePasswordRequest, CurrentUserOut, LoginRequest, ProfileUpdate, RegisterRequest
+from app.services.activation_code_service import approve_email_with_activation_code
 from app.services.auth_service import (
     authenticate_user,
     get_current_user_out,
@@ -18,6 +20,22 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 @router.post("/register", response_model=AuthResponse, deprecated=True)
 async def register(register_in: RegisterRequest, db: AsyncSession = Depends(get_db)):
     return await register_user(register_in, db)
+
+
+@router.post("/activation-code/approve", response_model=ActivationCodeApprovalResponse)
+async def approve_with_activation_code(
+    payload: ActivationCodeApprovalRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    forwarded_for = request.headers.get("x-forwarded-for", "").split(",", 1)[0].strip()
+    ip_address = forwarded_for or (request.client.host if request.client else None)
+    return await approve_email_with_activation_code(
+        db,
+        payload,
+        ip_address=ip_address,
+        user_agent=request.headers.get("user-agent"),
+    )
 
 
 @router.post("/login", response_model=AuthResponse, deprecated=True)

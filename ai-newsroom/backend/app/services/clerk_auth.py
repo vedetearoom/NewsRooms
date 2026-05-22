@@ -8,6 +8,7 @@ from app.config import get_settings
 
 _verified_user_cache: dict[str, tuple[float, dict]] = {}
 _VERIFIED_USER_CACHE_TTL_SECONDS = 60
+_JWT_CLOCK_SKEW_LEEWAY_SECONDS = 120
 _jwks_clients: dict[str, jwt.PyJWKClient] = {}
 
 
@@ -43,6 +44,7 @@ def _verify_token_with_jwks(token: str) -> dict:
         decode_kwargs = {
             "algorithms": ["RS256"],
             "options": decode_options,
+            "leeway": _JWT_CLOCK_SKEW_LEEWAY_SECONDS,
         }
         if settings.clerk_issuer:
             decode_kwargs["issuer"] = settings.clerk_issuer.rstrip("/")
@@ -69,6 +71,7 @@ def _decode_unverified_token(token: str) -> dict:
         return jwt.decode(
             token,
             options={"verify_signature": False, "verify_exp": True},
+            leeway=_JWT_CLOCK_SKEW_LEEWAY_SECONDS,
         )
     except jwt.ExpiredSignatureError:
         raise HTTPException(

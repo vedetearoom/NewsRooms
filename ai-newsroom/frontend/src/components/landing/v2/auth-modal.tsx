@@ -3,10 +3,10 @@
 import * as React from "react";
 import ReactDOM from "react-dom";
 import { useRouter } from "next/navigation";
-import { useClerk, useSignIn, useSignUp } from "@clerk/nextjs";
+import { useSignIn, useSignUp } from "@clerk/nextjs";
 import { useTranslation } from "@/hooks/useTranslation";
-import { api } from "@/lib/api";
-import { login as storeLogin } from "@/lib/auth";
+import { api, ApiError } from "@/lib/api";
+import { clearLocalAuthStorage, login as storeLogin } from "@/lib/auth";
 
 export type AuthMode = "login" | "register";
 
@@ -28,15 +28,32 @@ function getClerkErrorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 
+function getAuthErrorMessage(err: unknown, t: (path: string, fallback?: string) => string): string {
+  if (err instanceof ApiError) {
+    if (err.code) {
+      return t(`landing.auth.errors.${err.code}`, err.message);
+    }
+    if (err.status === 422) {
+      return t("landing.auth.errors.INVALID_REQUEST");
+    }
+    return err.message || t("landing.auth.failed");
+  }
+  return getClerkErrorMessage(err, t("landing.auth.failed"));
+}
+
 export function AuthModal({ mode, onClose, onModeChange, standalone = false }: AuthModalProps) {
   const router = useRouter();
   const { t } = useTranslation();
-  const clerk = useClerk();
   const { signIn, setActive: setSignInActive, isLoaded: signInLoaded } = useSignIn();
-  const { signUp, isLoaded: signUpLoaded } = useSignUp();
+  const { signUp, setActive: setSignUpActive, isLoaded: signUpLoaded } = useSignUp();
   const [username, setUsername] = React.useState("");
+  const [registerUsername, setRegisterUsername] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [confirmPassword, setConfirmPassword] = React.useState("");
+  const [activationCode, setActivationCode] = React.useState("");
+  const [emailVerificationCode, setEmailVerificationCode] = React.useState("");
+  const [registerStep, setRegisterStep] = React.useState<"details" | "verify">("details");
   const [error, setError] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [oauthLoading, setOauthLoading] = React.useState<AuthMode | null>(null);
@@ -48,7 +65,6 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
   const [cardHeight, setCardHeight] = React.useState<number | null>(null);
   const [isFlipping, setIsFlipping] = React.useState(false);
   const [useLocalAuth, setUseLocalAuth] = React.useState(false);
-  const [waitlistSubmitted, setWaitlistSubmitted] = React.useState(false);
   const loginFaceRef = React.useRef<HTMLDivElement>(null);
   const registerFaceRef = React.useRef<HTMLDivElement>(null);
   const loginInputRef = React.useRef<HTMLInputElement>(null);
@@ -64,7 +80,7 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
 
   React.useLayoutEffect(() => {
     updateCardHeight();
-  }, [mode, error, loading, oauthLoading, resetStep, updateCardHeight]);
+  }, [mode, error, loading, oauthLoading, registerStep, resetStep, updateCardHeight]);
 
   React.useLayoutEffect(() => {
     if (standalone) return;
@@ -107,6 +123,8 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
   const switchMode = (nextMode: AuthMode) => {
     if (nextMode === mode) return;
     setError("");
+    setRegisterStep("details");
+    setEmailVerificationCode("");
     setIsFlipping(true);
     window.setTimeout(() => setIsFlipping(false), 620);
     onModeChange(nextMode);
@@ -121,6 +139,7 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
       setLoading(false);
       return;
     }
+    clearLocalAuthStorage();
     await setter({ session: createdSessionId });
     router.push("/");
   };
@@ -142,15 +161,94 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
       await finishSignIn(result.createdSessionId, setSignInActive);
       return;
     }
-    setError("This sign-in requires an additional verification step. Please use the full sign-in page.");
+    setError(t("landing.auth.additionalVerificationRequired"));
     setLoading(false);
   };
 
   const handleRegister = async () => {
-    await clerk.joinWaitlist({ emailAddress: email });
-    setError(t("landing.auth.waitlistSuccess"));
-    setWaitlistSubmitted(true);
+    if (!signUpLoaded || !signUp) {
+      setLoading(false);
+      return;
+    }
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedUsername = registerUsername.trim();
+    const normalizedActivationCode = activationCode.trim();
+    if (normalizedUsername.length < 4) {
+      setError(t("landing.auth.usernameTooShort"));
+      setLoading(false);
+      return;
+    }
+    if (!/^[A-Za-z0-9_.-]+$/.test(normalizedUsername) || /^\d+$/.test(normalizedUsername)) {
+      setError(t("landing.auth.usernameInvalid"));
+      setLoading(false);
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError(t("landing.auth.passwordMismatch"));
+      setLoading(false);
+      return;
+    }
+    if (normalizedActivationCode.length < 4) {
+      setError(t("landing.auth.activationCodeTooShort"));
+      setLoading(false);
+      return;
+    }
+    const activation = await api.auth.approveWithActivationCode({
+      email: normalizedEmail,
+      username: normalizedUsername,
+      activation_code: normalizedActivationCode,
+      reason: null,
+    });
+    await signUp.create({
+      emailAddress: normalizedEmail,
+      password,
+      username: normalizedUsername,
+      firstName: normalizedUsername,
+      unsafeMetadata: {
+        newsroom_username: normalizedUsername,
+        activation_code_id: activation.activation_code_id,
+        activation_redemption_id: activation.redemption_id,
+      },
+    });
+    await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+    setRegisterStep("verify");
+    setError(t("landing.auth.verificationSent"));
     setLoading(false);
+  };
+
+  const handleVerifySignUp = async () => {
+    if (!signUpLoaded || !signUp) {
+      setLoading(false);
+      return;
+    }
+    const result = await signUp.attemptEmailAddressVerification({ code: emailVerificationCode });
+    if (result.status === "complete") {
+      await finishSignIn(result.createdSessionId, setSignUpActive);
+      return;
+    }
+    setError(t("landing.auth.registrationIncomplete"));
+    setLoading(false);
+  };
+
+  const handleResendVerification = async () => {
+    if (!signUpLoaded || !signUp) return;
+    setError("");
+    setLoading(true);
+    try {
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      setError(t("landing.auth.verificationSent"));
+    } catch (err) {
+      setError(getClerkErrorMessage(err, t("landing.auth.failed")));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExitRegister = () => {
+    setRegisterStep("details");
+    setEmailVerificationCode("");
+    setError("");
+    onClose();
   };
 
   const handleSubmit = async (event: React.FormEvent, submitMode: AuthMode) => {
@@ -161,11 +259,13 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
     try {
       if (submitMode === "login") {
         await handleLogin();
+      } else if (registerStep === "verify") {
+        await handleVerifySignUp();
       } else {
         await handleRegister();
       }
     } catch (err) {
-      setError(getClerkErrorMessage(err, t("landing.auth.failed")));
+      setError(getAuthErrorMessage(err, t));
       setLoading(false);
     }
   };
@@ -299,12 +399,18 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
       </div>
 
       <h2 className="mb-1 text-[20px] font-bold tracking-tight text-white">
-        {faceMode === "login" ? t("landing.auth.welcomeBack") : t("landing.auth.joinWaitlist")}
+        {faceMode === "login"
+          ? t("landing.auth.welcomeBack")
+          : registerStep === "verify"
+            ? t("landing.auth.verifyEmailTitle")
+            : t("landing.auth.createAccount")}
       </h2>
       <p className="mb-7 text-[13px] text-white/40">
         {faceMode === "login"
           ? t("landing.auth.loginDescription")
-          : t("landing.auth.waitlistDescription")}
+          : registerStep === "verify"
+            ? t("landing.auth.verifyEmailSubtitle")
+            : t("landing.auth.registerDescription")}
       </p>
     </>
   );
@@ -431,6 +537,81 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
       );
     }
 
+    if (faceMode === "register" && registerStep === "verify") {
+      return (
+        <form onSubmit={(event) => handleSubmit(event, faceMode)} className="space-y-4">
+          <p className="text-[13px] leading-relaxed text-white/40">
+            {t("landing.auth.emailCodeDescription").replace("{email}", email)}
+          </p>
+          <div>
+            <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-widest text-white/35">
+              {t("landing.auth.verificationCode")}
+            </label>
+            <input
+              type="text"
+              value={emailVerificationCode}
+              onChange={(event) => setEmailVerificationCode(event.target.value)}
+              placeholder="000000"
+              autoComplete="one-time-code"
+              inputMode="numeric"
+              maxLength={6}
+              tabIndex={mode === faceMode ? 0 : -1}
+              className="w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3.5 py-3 text-[13px] text-white outline-none transition-all placeholder:text-white/20 focus:border-white/20 focus:bg-white/[0.06] focus:shadow-[0_0_0_1px_rgba(255,255,255,0.1)]"
+            />
+          </div>
+
+          {mode === faceMode && error ? (
+            <p className={`rounded-xl px-3 py-2.5 text-[12px] leading-relaxed ${error === t("landing.auth.verificationSent") ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+              {error}
+            </p>
+          ) : null}
+
+          <button
+            type="submit"
+            disabled={loading || emailVerificationCode.length < 4}
+            tabIndex={mode === faceMode ? 0 : -1}
+            className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-[13px] font-semibold tracking-tight text-black transition-all hover:-translate-y-px hover:bg-white/90 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {loading && mode === faceMode ? (
+              <>
+                <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                {t("landing.auth.verifying")}
+              </>
+            ) : (
+              t("landing.auth.verifyAndEnter")
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleResendVerification}
+            disabled={loading}
+            tabIndex={mode === faceMode ? 0 : -1}
+            className="mt-1 w-full text-center text-[13px] text-white/40 transition-colors hover:text-white/75 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {t("landing.auth.resendCode")}
+          </button>
+          <button
+            type="button"
+            onClick={handleExitRegister}
+            tabIndex={mode === faceMode ? 0 : -1}
+            className="mt-1 w-full text-center text-[11px] text-white/25 transition-colors hover:text-white/50"
+          >
+            {t("landing.auth.exitRegistration")}
+          </button>
+        </form>
+      );
+    }
+
+    const renderFieldLabel = (label: string) => (
+      <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-widest text-white/35">
+        {label}
+      </label>
+    );
+
     return (
     <form onSubmit={(event) => handleSubmit(event, faceMode)} className="space-y-4">
       {faceMode === "login" && !useLocalAuth ? renderGoogleButton(faceMode) : null}
@@ -438,16 +619,14 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
       {faceMode === "login" && !useLocalAuth ? (
         <div className="flex items-center gap-3 py-1">
           <div className="h-px flex-1 bg-white/[0.08]" />
-          <span className="text-[11px] text-white/30">or</span>
+          <span className="text-[11px] text-white/30">{t("landing.auth.or")}</span>
           <div className="h-px flex-1 bg-white/[0.08]" />
         </div>
       ) : null}
 
       {faceMode === "login" ? (
         <div>
-          <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-widest text-white/35">
-            {useLocalAuth ? t("landing.auth.username") : t("landing.auth.emailOrUsername")}
-          </label>
+          {renderFieldLabel(useLocalAuth ? t("landing.auth.username") : t("landing.auth.emailOrUsername"))}
           <input
             ref={loginInputRef}
             type="text"
@@ -462,28 +641,74 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
       ) : null}
 
       {faceMode === "register" ? (
-        <div>
-          <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-widest text-white/35">
-            {t("landing.auth.email")}
-          </label>
-          <input
-            ref={registerInputRef}
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder={t("landing.auth.emailPlaceholder")}
-            autoComplete="email"
-            tabIndex={mode === faceMode ? 0 : -1}
-            className="w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3.5 py-3 text-[13px] text-white outline-none transition-all placeholder:text-white/20 focus:border-white/20 focus:bg-white/[0.06] focus:shadow-[0_0_0_1px_rgba(255,255,255,0.1)]"
-          />
-        </div>
+        <>
+          <div>
+            {renderFieldLabel(t("landing.auth.email"))}
+            <input
+              ref={registerInputRef}
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder={t("landing.auth.emailPlaceholder")}
+              autoComplete="email"
+              tabIndex={mode === faceMode ? 0 : -1}
+              className="w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3.5 py-3 text-[13px] text-white outline-none transition-all placeholder:text-white/20 focus:border-white/20 focus:bg-white/[0.06] focus:shadow-[0_0_0_1px_rgba(255,255,255,0.1)]"
+            />
+          </div>
+          <div>
+            {renderFieldLabel(t("landing.auth.username"))}
+            <input
+              type="text"
+              value={registerUsername}
+              onChange={(event) => setRegisterUsername(event.target.value)}
+              placeholder={t("landing.auth.usernamePlaceholder")}
+              autoComplete="username"
+              tabIndex={mode === faceMode ? 0 : -1}
+              className="w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3.5 py-3 text-[13px] text-white outline-none transition-all placeholder:text-white/20 focus:border-white/20 focus:bg-white/[0.06] focus:shadow-[0_0_0_1px_rgba(255,255,255,0.1)]"
+            />
+          </div>
+          <div>
+            {renderFieldLabel(t("landing.auth.password"))}
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder={t("landing.auth.passwordPlaceholder")}
+              autoComplete="new-password"
+              tabIndex={mode === faceMode ? 0 : -1}
+              className="w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3.5 py-3 text-[13px] text-white outline-none transition-all placeholder:text-white/20 focus:border-white/20 focus:bg-white/[0.06] focus:shadow-[0_0_0_1px_rgba(255,255,255,0.1)]"
+            />
+          </div>
+          <div>
+            {renderFieldLabel(t("landing.auth.confirmPassword"))}
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              placeholder={t("landing.auth.passwordPlaceholder")}
+              autoComplete="new-password"
+              tabIndex={mode === faceMode ? 0 : -1}
+              className="w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3.5 py-3 text-[13px] text-white outline-none transition-all placeholder:text-white/20 focus:border-white/20 focus:bg-white/[0.06] focus:shadow-[0_0_0_1px_rgba(255,255,255,0.1)]"
+            />
+          </div>
+          <div>
+            {renderFieldLabel(t("landing.auth.activationCode"))}
+            <input
+              type="text"
+              value={activationCode}
+              onChange={(event) => setActivationCode(event.target.value)}
+              placeholder={t("landing.auth.activationCodePlaceholder")}
+              autoComplete="off"
+              tabIndex={mode === faceMode ? 0 : -1}
+              className="w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3.5 py-3 text-[13px] text-white outline-none transition-all placeholder:text-white/20 focus:border-white/20 focus:bg-white/[0.06] focus:shadow-[0_0_0_1px_rgba(255,255,255,0.1)]"
+            />
+          </div>
+        </>
       ) : null}
 
       {faceMode === "login" ? (
         <div>
-          <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-widest text-white/35">
-            {t("landing.auth.password")}
-          </label>
+          {renderFieldLabel(t("landing.auth.password"))}
           <input
             type="password"
             value={password}
@@ -505,14 +730,14 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
       ) : null}
 
       {mode === faceMode && error ? (
-        <p className={`rounded-xl px-3 py-2.5 text-[12px] leading-relaxed ${error === t("landing.auth.waitlistSuccess") ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+        <p className={`rounded-xl px-3 py-2.5 text-[12px] leading-relaxed ${error === t("landing.auth.verificationSent") ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
           {error}
         </p>
       ) : null}
 
       <button
         type="submit"
-        disabled={loading || (faceMode === "login" ? !username || !password : !email || waitlistSubmitted)}
+        disabled={loading || (faceMode === "login" ? !username || !password : !email || !registerUsername || !password || !confirmPassword || !activationCode)}
         tabIndex={mode === faceMode ? 0 : -1}
         className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-[13px] font-semibold tracking-tight text-black transition-all hover:-translate-y-px hover:bg-white/90 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-40"
       >
@@ -527,7 +752,7 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
         ) : faceMode === "login" ? (
           t("landing.auth.continue")
         ) : (
-          t("landing.auth.joinWaitlist")
+          t("landing.auth.createAccount")
         )}
       </button>
 
@@ -604,14 +829,6 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
       </div>
     </div>
   );
-
-  if (standalone) {
-    return (
-      <div className="w-full max-w-[400px]" style={{ animation: "authCardIn 360ms cubic-bezier(0.16,1,0.3,1) forwards" }}>
-        {card}
-      </div>
-    );
-  }
 
   if (standalone) {
     return (

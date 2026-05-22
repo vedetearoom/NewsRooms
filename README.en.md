@@ -150,6 +150,7 @@ Common variables:
 | `ENABLE_SCHEDULER` | `true` | Whether APScheduler runs in the API process |
 | `SCRAPE_CRON` | `0 */4 * * *` | Source ingestion cron, every 4 hours by default |
 | `CLERK_ISSUER` | empty | Optional Clerk JWT issuer |
+| `CLERK_JWKS_URL` | empty | Optional explicit Clerk JWKS URL; derived from `CLERK_ISSUER` when empty |
 | `CLERK_SECRET_KEY` | empty | Optional Clerk Backend API secret key |
 | `CLERK_WEBHOOK_SECRET` | empty | Optional Clerk/Svix webhook signing secret |
 | `CLERK_ADMIN_EMAILS` | empty | Comma-separated admin email allowlist; matching users receive `super_admin` |
@@ -190,6 +191,34 @@ Sync behavior:
 - `user.deleted` marks the local user inactive; it does not physically delete the row.
 - Emails listed in `CLERK_ADMIN_EMAILS` automatically receive the `super_admin` role, which enables System Management UI access.
 - Other Clerk events return success and are ignored.
+
+## Activation code sign-up and Clerk email code
+
+The frontend sign-up page uses a custom Clerk email/password flow:
+
+1. The user enters email, username, password, activation code, and access reason.
+2. The backend `POST /api/auth/activation-code/approve` validates the activation code and records the request.
+3. The frontend starts Clerk sign-up and sends an email verification code.
+4. The user enters the code in the page to finish registration.
+5. Clerk webhook or login-time sync creates the local user.
+
+Activation codes only gate this product's own self-service sign-up page. They do not depend on Clerk Allowlist and are not a hard identity-layer restriction. If a user is created successfully through Clerk Dashboard, another entry point, or a future open sign-up flow, the backend still trusts Clerk and syncs the local user.
+
+Confirm these Clerk Dashboard settings:
+
+- Waitlist mode and Restricted mode are disabled so the normal sign-up flow can run.
+- Email sign-up, email sign-in, and password sign-up are enabled.
+- Verify at sign-up uses Email verification code / OTP, not email link as the primary flow.
+- Webhook still subscribes to `user.created`, `user.updated`, and `user.deleted`.
+
+For Docker deployments, create and fill the runtime config files:
+
+```bash
+cp docker/ai-newsroom/.env.example docker/ai-newsroom/.env
+cp docker/ai-newsroom/config/backend.env.example docker/ai-newsroom/config/backend.env
+```
+
+Then copy the local Clerk values into the corresponding backend and frontend Docker settings.
 
 ## Frontend environment variables
 

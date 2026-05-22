@@ -1,5 +1,5 @@
 from app.model_defs.agents import Agent
-from app.model_defs.auth import Permission, Role, User, role_permissions, user_roles
+from app.model_defs.auth import ActivationCode, ActivationCodeRedemption, Permission, Role, User, role_permissions, user_roles
 from app.model_defs.content import IntelligenceCard, RawArticle, Source
 from app.model_defs.inspirations import InspirationAsset
 from app.model_defs.monitors import ManualVideoInboxItem, MonitorTarget, UserPlatformCredential
@@ -16,6 +16,8 @@ __all__ = [
     "AgentActionProposal",
     "AgentMessage",
     "AgentThread",
+    "ActivationCode",
+    "ActivationCodeRedemption",
     "Critique",
     "CustomPlugin",
     "Draft",

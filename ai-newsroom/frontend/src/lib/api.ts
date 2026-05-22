@@ -39,7 +39,10 @@ async function parseAPIErrorResponse(res: Response): Promise<{ message: string; 
     const errData = await res.json();
     if (errData && (errData.detail || errData.error)) {
       detail = errData.detail || errData.error;
-      if (typeof detail === "object" && detail !== null && "message" in detail) {
+      if (Array.isArray(detail)) {
+        message = "Invalid request parameters";
+        detail = "VALIDATION_ERROR";
+      } else if (typeof detail === "object" && detail !== null && "message" in detail) {
         message = String(detail.message || message);
       } else {
         message = typeof detail === "string" ? detail : JSON.stringify(detail);
@@ -53,7 +56,12 @@ async function parseAPIErrorResponse(res: Response): Promise<{ message: string; 
 }
 
 function isPublicApiPath(path: string): boolean {
-  return path.startsWith("/api/auth/login") || path.startsWith("/api/auth/register") || path.startsWith("/api/health");
+  return (
+    path.startsWith("/api/auth/login") ||
+    path.startsWith("/api/auth/register") ||
+    path.startsWith("/api/auth/activation-code/approve") ||
+    path.startsWith("/api/health")
+  );
 }
 
 function isTokenRefreshableError(detail: ApiErrorDetail | string | null): boolean {
@@ -506,6 +514,48 @@ export type Role = AuthRole;
 export type CurrentUser = AuthUser;
 export type AuthResponse = AuthSession;
 
+export interface ActivationCode {
+  id: number;
+  name: string;
+  code_value?: string | null;
+  code_hint: string;
+  plain_code?: string | null;
+  max_uses: number | null;
+  used_count: number;
+  remaining_uses: number | null;
+  expires_at: string | null;
+  is_active: boolean;
+  default_role_code: string;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ActivationCodeRedemption {
+  id: number;
+  activation_code_id: number;
+  activation_code_name?: string | null;
+  email: string;
+  username: string;
+  reason: string | null;
+  status: string;
+  clerk_user_id: string | null;
+  failure_reason: string | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ActivationCodeApprovalResponse {
+  ok: boolean;
+  redemption_id: number;
+  activation_code_id: number;
+  status: string;
+  email: string;
+  username: string;
+}
+
 /** Polls a background job until it completes or fails. Returns the final job state. */
 async function pollJob(
   jobId: string,
@@ -531,6 +581,8 @@ export const api = {
       fetchAPI<AuthResponse>("/api/auth/login", { method: "POST", body: JSON.stringify(data) }),
     register: (data: { username: string; email: string; display_name: string; password: string }) =>
       fetchAPI<AuthResponse>("/api/auth/register", { method: "POST", body: JSON.stringify(data) }),
+    approveWithActivationCode: (data: { email: string; username: string; activation_code: string; reason?: string | null }) =>
+      fetchAPI<ActivationCodeApprovalResponse>("/api/auth/activation-code/approve", { method: "POST", body: JSON.stringify(data) }),
     me: () => fetchAPI<CurrentUser>("/api/auth/me"),
     updateMe: (data: { display_name?: string; github_token?: string | null }) =>
       fetchAPI<CurrentUser>("/api/auth/me", { method: "PATCH", body: JSON.stringify(data) }),
@@ -569,6 +621,13 @@ export const api = {
       fetchAPI<RSSHubServerActionResult>("/api/admin/server/rsshub/restart", {
         method: "POST",
       }),
+    getActivationCodes: () => fetchAPI<ActivationCode[]>("/api/admin/activation-codes"),
+    createActivationCode: (data: { name?: string | null; code?: string | null; max_uses?: number | null; expires_at?: string | null; default_role_code: string; note?: string | null }) =>
+      fetchAPI<ActivationCode>("/api/admin/activation-codes", { method: "POST", body: JSON.stringify(data) }),
+    updateActivationCode: (id: number, data: Partial<{ name: string; max_uses: number | null; expires_at: string | null; is_active: boolean; default_role_code: string; note: string | null }>) =>
+      fetchAPI<ActivationCode>(`/api/admin/activation-codes/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    getActivationCodeRedemptions: (activationCodeId?: number) =>
+      fetchAPI<ActivationCodeRedemption[]>(`/api/admin/activation-code-redemptions${activationCodeId ? `?activation_code_id=${activationCodeId}` : ""}`),
   },
 
   // Jobs
