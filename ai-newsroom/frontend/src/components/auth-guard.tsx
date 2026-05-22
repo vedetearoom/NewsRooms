@@ -31,6 +31,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = React.useState(false);
   const hasLocalToken = Boolean(getLocalAuthToken());
 
+  const markReady = React.useCallback(() => {
+    setReady(true);
+  }, []);
+
   React.useEffect(() => {
     let cancelled = false;
 
@@ -39,11 +43,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
       // Public pages — no auth required
       if (isPublicRoute) {
-        setReady(true);
+        markReady();
         return;
       }
-
-      setReady(false);
 
       // Local token auth — bypass Clerk entirely
       if (hasLocalToken) {
@@ -57,7 +59,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
                 return;
               }
             }
-            setReady(true);
+            markReady();
           }
         } catch {
           clearLocalAuthStorage();
@@ -72,7 +74,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
                     return;
                   }
                 }
-                setReady(true);
+                markReady();
               } catch {
                 if (clerk) await clerk.signOut();
                 router.replace("/landing");
@@ -104,7 +106,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
               return;
             }
           }
-          setReady(true);
+          markReady();
         }
       } catch {
         if (!cancelled) {
@@ -118,16 +120,16 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [pathname, router, isLoaded, isSignedIn, clerk, hasLocalToken]);
+  }, [pathname, router, isLoaded, isSignedIn, clerk, hasLocalToken, markReady]);
 
   React.useEffect(() => {
     if (pathname?.startsWith("/landing") || pathname?.startsWith("/sign-in") || pathname?.startsWith("/sign-up")) {
-      setReady(true);
+      markReady();
     }
-  }, [pathname]);
+  }, [pathname, markReady]);
 
   if (!ready) {
-    return null;
+    return <div className="min-h-screen flex-1 bg-background" />;
   }
 
   return <>{children}</>;
