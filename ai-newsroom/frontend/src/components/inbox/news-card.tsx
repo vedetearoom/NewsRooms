@@ -20,6 +20,15 @@ interface NewsCardProps {
   selectable?: boolean;
 }
 
+type CardCoverSize = "large" | "wide" | "tall" | "normal";
+
+const CARD_COVER_POOL_COUNTS: Record<CardCoverSize, number> = {
+  large: 40,
+  wide: 60,
+  tall: 40,
+  normal: 60,
+};
+
 /* Score color */
 function scoreColor(score: number): string {
   if (score >= 0.8) return "text-rose-400";
@@ -27,11 +36,36 @@ function scoreColor(score: number): string {
   return "text-emerald-400";
 }
 
-/* Deterministic image based on id */
-function getImageUrl(card: IntelligenceCard): string {
+function stableHash(value: string): number {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
+  }
+  return hash;
+}
+
+function getCardLayout(card: IntelligenceCard, isFeatured: boolean): { spanClass: string; coverSize: CardCoverSize } {
+  if (isFeatured || card.importance_score >= 0.95) {
+    return { spanClass: "col-span-2 row-span-2", coverSize: "large" };
+  }
+  if (card.importance_score >= 0.8) {
+    return { spanClass: "col-span-2 row-span-1", coverSize: "wide" };
+  }
+  if (card.importance_score >= 0.7) {
+    return { spanClass: "col-span-1 row-span-2", coverSize: "tall" };
+  }
+  return { spanClass: "col-span-1 row-span-1", coverSize: "normal" };
+}
+
+function getLocalCoverUrl(card: IntelligenceCard, coverSize: CardCoverSize): string {
+  const poolCount = CARD_COVER_POOL_COUNTS[coverSize];
+  const imageNumber = (stableHash(`${coverSize}:${card.id}`) % poolCount) + 1;
+  return `/card-covers/${coverSize}/${String(imageNumber).padStart(3, "0")}.jpg`;
+}
+
+function getImageUrl(card: IntelligenceCard, coverSize: CardCoverSize): string {
   if (card.cover_image) return card.cover_image;
-  // Use a predictable seed for the image based on card ID
-  return `https://picsum.photos/seed/news_${card.id}/800/600`;
+  return getLocalCoverUrl(card, coverSize);
 }
 
 export function NewsCard({ card, isSelected, onToggle, onClick, isFeatured = false, canPin, canSaveInspiration, onTogglePin, selectable = true }: NewsCardProps) {
@@ -39,17 +73,9 @@ export function NewsCard({ card, isSelected, onToggle, onClick, isFeatured = fal
   const meta = (card.extra_data || {}) as Record<string, unknown>;
   const author = (meta.author as string) || "";
   const templateSkeleton = (meta.template_skeleton as string) || card.summary || "";
-  // Determine spans based on importance score
-  let spanClass = "col-span-1 row-span-1";
-  if (isFeatured || card.importance_score >= 0.95) {
-    spanClass = "col-span-2 row-span-2";
-  } else if (card.importance_score >= 0.8) {
-    spanClass = "col-span-2 row-span-1";
-  } else if (card.importance_score >= 0.7) {
-    spanClass = "col-span-1 row-span-2";
-  }
+  const { spanClass, coverSize } = getCardLayout(card, isFeatured);
 
-  const imageUrl = getImageUrl(card);
+  const imageUrl = getImageUrl(card, coverSize);
 
   const [isSavedInspiration, setIsSavedInspiration] = React.useState(false);
   const [isSavingInspiration, setIsSavingInspiration] = React.useState(false);
