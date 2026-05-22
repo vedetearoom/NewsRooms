@@ -172,7 +172,7 @@ export function NewsCard({ card, isSelected, onToggle, onClick, isFeatured = fal
       <div className="absolute top-3 left-3 right-3 flex justify-between items-start z-10">
         <div className="flex items-center gap-1.5">
           <span className="px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/10 text-[10px] font-medium tracking-wide text-white/90 shadow-sm flex items-center gap-1.5">
-            {t(`categories.${card.category || "Other"}`) === `categories.${card.category || "Other"}` ? (card.category || "Other") : t(`categories.${card.category || "Other"}`)}
+            {t(`categories.${card.category || "Other"}`, card.category || "Other")}
           </span>
         </div>
         {selectable ? (

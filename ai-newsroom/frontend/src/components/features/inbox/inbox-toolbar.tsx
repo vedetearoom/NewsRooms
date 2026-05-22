@@ -144,7 +144,7 @@ export function InboxToolbar({
                     : "text-muted-foreground hover:text-foreground hover:bg-[var(--pill-hover-bg)]"
                 )}
               >
-                {t(`categories.${tag}`) === `categories.${tag}` ? tag : t(`categories.${tag}`)}
+                {t(`categories.${tag}`, tag)}
                 <span className={cn(
                   "ml-1 text-[10px] tabular-nums",
                   activeTag === tag ? "opacity-50" : "opacity-30"
@@ -186,7 +186,7 @@ export function InboxToolbar({
                             : "text-muted-foreground hover:text-foreground hover:bg-zinc-50 dark:hover:bg-white/5"
                         )}
                       >
-                        <span>{t(`categories.${tag}`) === `categories.${tag}` ? tag : t(`categories.${tag}`)}</span>
+                        <span>{t(`categories.${tag}`, tag)}</span>
                         <span className="text-[10px] tabular-nums opacity-40">{count}</span>
                       </button>
                     ))}

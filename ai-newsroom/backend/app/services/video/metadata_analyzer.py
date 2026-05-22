@@ -19,7 +19,7 @@ from app.services.processor_support import (
 )
 from app.services.quota_service import VIDEO_CARDS, ensure_resource_quota
 from app.services.video.downloader import detect_platform, fetch_video_metadata
-from app.services.video.thumbnail_utils import choose_better_thumbnail
+from app.services.video.thumbnail_utils import choose_better_thumbnail, normalize_thumbnail_url
 from app.services.video.url_utils import canonicalize_video_source_url, get_video_source_identity
 
 logger = logging.getLogger(__name__)
@@ -189,7 +189,7 @@ def _build_metadata_text(metadata: dict[str, Any], metadata_fetch_error: str | N
         "favorite_count": metadata.get("favorite_count"),
         "comment_count": metadata.get("comment_count"),
         "tags": metadata.get("tags"),
-        "thumbnail_url": metadata.get("thumbnail"),
+        "thumbnail_url": normalize_thumbnail_url(metadata.get("thumbnail")),
         "metadata_fetch_error": metadata_fetch_error,
         "availability_note": "No video, audio, frames, or transcript were downloaded or analyzed.",
     }
@@ -292,6 +292,8 @@ async def analyze_video_metadata(
         source_urls.insert(0, normalized_url)
 
     analyzed_at = datetime.now(timezone.utc)
+    thumbnail_url = normalize_thumbnail_url(metadata.get("thumbnail"))
+
     extra_data = {
         "metadata_only": True,
         "analysis_mode": "metadata_only",
@@ -299,7 +301,7 @@ async def analyze_video_metadata(
         "video_url": normalized_url,
         "platform": metadata.get("platform"),
         "author": metadata.get("author") or metadata.get("channel"),
-        "thumbnail_url": metadata.get("thumbnail"),
+        "thumbnail_url": thumbnail_url,
         "description": metadata.get("description"),
         "duration_seconds": _clean_int(metadata.get("duration_seconds")),
         "view_count": _clean_int(metadata.get("view_count")),
@@ -335,7 +337,7 @@ async def analyze_video_metadata(
             tags=_string_list(analysis_data.get("tags")) or ["视频线索"],
             category=_clean_str(analysis_data.get("category")) or "Video",
             importance_score=importance_score,
-            cover_image=_clean_str(metadata.get("thumbnail")) or None,
+            cover_image=thumbnail_url or None,
             content_type="video",
             extra_data=extra_data,
             published_date=date.today(),
@@ -350,7 +352,7 @@ async def analyze_video_metadata(
         card.tags = _string_list(analysis_data.get("tags")) or ["视频线索"]
         card.category = _clean_str(analysis_data.get("category")) or "Video"
         card.importance_score = float(analysis_data.get("importance_score") or _score_from_metrics(metadata))
-        card.cover_image = _clean_str(metadata.get("thumbnail")) or None
+        card.cover_image = thumbnail_url or None
         card.content_type = "video"
         card.extra_data = extra_data
         card.audio_url = None

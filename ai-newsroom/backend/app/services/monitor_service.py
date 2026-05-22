@@ -37,6 +37,7 @@ from app.services.quota_service import (
     get_resource_remaining,
 )
 from app.services.video.metadata_analyzer import get_configured_video_extractor_or_raise
+from app.services.video.thumbnail_utils import normalize_thumbnail_url
 from app.services.video.url_utils import canonicalize_video_source_url, get_video_source_identity
 
 logger = logging.getLogger(__name__)
@@ -334,6 +335,10 @@ def _sync_cached_video_analysis_state(
     for video in cached_videos:
         if not isinstance(video, dict):
             continue
+        normalized_thumbnail = normalize_thumbnail_url(video.get("thumbnail"))
+        if normalized_thumbnail != (video.get("thumbnail") or ""):
+            video["thumbnail"] = normalized_thumbnail
+            dirty = True
         url = str(video.get("url") or "").strip()
         meta = _lookup_analyzed_video_meta(analyzed_video_meta, url)
         next_already_analyzed = meta is not None
@@ -368,7 +373,7 @@ async def build_discovered_videos(
                 title=video["title"],
                 url=video["url"],
                 published=video.get("published", ""),
-                thumbnail=video.get("thumbnail", ""),
+                thumbnail=normalize_thumbnail_url(video.get("thumbnail")),
                 is_sticky=bool(video.get("is_sticky")),
                 note_type=video.get("note_type"),
                 already_analyzed=card_meta is not None,
@@ -543,7 +548,7 @@ def _monitor_video_seed_metadata(target: MonitorTarget, video: dict) -> dict:
         "author": target.name,
         "title": video.get("title"),
         "published": video.get("published"),
-        "thumbnail": video.get("thumbnail"),
+        "thumbnail": normalize_thumbnail_url(video.get("thumbnail")),
         "duration_seconds": video.get("duration_seconds"),
         "view_count": video.get("view_count"),
         "like_count": video.get("like_count"),

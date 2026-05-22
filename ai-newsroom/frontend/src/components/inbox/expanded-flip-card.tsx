@@ -134,7 +134,7 @@ export function ExpandedFlipCard({ card, originRect, onClose, onSelect, isSelect
           <div className="flex-1 overflow-y-auto px-8 py-8">
             <div className="flex items-center gap-3 mb-4">
               <span className="px-3 py-1 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-bold uppercase tracking-wider shadow-sm">
-                {card.category ? (t(`categories.${card.category}`) === `categories.${card.category}` ? card.category : t(`categories.${card.category}`)) : t('cardDetails.uncategorized')}
+                {card.category ? t(`categories.${card.category}`, card.category) : t('cardDetails.uncategorized')}
               </span>
               <span className="text-[11px] text-muted-foreground/60 font-medium font-mono">
                 {t('cardDetails.score')}: {card.importance_score.toFixed(2)}

@@ -21,7 +21,7 @@ from app.services.credential_service import (
     parse_cookie_pairs,
 )
 from app.services.rss_monitor import RSSMonitor, build_rss_url
-from app.services.video.thumbnail_utils import upgrade_xiaohongshu_thumbnail_url
+from app.services.video.thumbnail_utils import normalize_thumbnail_url, upgrade_xiaohongshu_thumbnail_url
 from app.services.video.url_utils import canonicalize_video_source_url
 
 logger = logging.getLogger(__name__)
@@ -289,10 +289,10 @@ def _resolve_bilibili_cover(url: str) -> str:
     if not text:
         return ""
     if text.startswith("//"):
-        return f"https:{text}"
+        return normalize_thumbnail_url(f"https:{text}")
     if text.startswith("/"):
-        return f"https://i0.hdslb.com{text}"
-    return text
+        return normalize_thumbnail_url(f"https://i0.hdslb.com{text}")
+    return normalize_thumbnail_url(text)
 
 
 def _format_bilibili_published(created_at: Any) -> str:

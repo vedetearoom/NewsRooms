@@ -13,9 +13,31 @@ def _is_xiaohongshu_thumbnail(url: str) -> bool:
     return "xhscdn.com" in host or "xhscdn.net" in host or "xiaohongshu.com" in host
 
 
+def _is_bilibili_thumbnail(url: str) -> bool:
+    host = (urlparse(url).hostname or "").lower()
+    return host == "hdslb.com" or host.endswith(".hdslb.com")
+
+
 XIAOHONGSHU_PREVIEW_SUFFIX_RE = re.compile(
     r"!(?:nd_prv_[^/?#]+|nc_n_(?:webp|jpg)_(?:prv|mw)_[^/?#]+)$"
 )
+
+
+def upgrade_bilibili_thumbnail_url(url: str | None) -> str:
+    normalized = _normalize_url(url)
+    if not normalized:
+        return normalized
+
+    if normalized.startswith("//"):
+        normalized = f"https:{normalized}"
+
+    if not _is_bilibili_thumbnail(normalized):
+        return normalized
+
+    parsed = urlparse(normalized)
+    if parsed.scheme == "http":
+        return urlunparse(parsed._replace(scheme="https"))
+    return normalized
 
 
 def upgrade_xiaohongshu_thumbnail_url(url: str | None) -> str:
@@ -30,8 +52,12 @@ def upgrade_xiaohongshu_thumbnail_url(url: str | None) -> str:
     return urlunparse(parsed._replace(path=upgraded_path))
 
 
+def normalize_thumbnail_url(url: str | None) -> str:
+    return upgrade_bilibili_thumbnail_url(url)
+
+
 def thumbnail_quality_score(url: str | None) -> int:
-    normalized = _normalize_url(url)
+    normalized = upgrade_bilibili_thumbnail_url(url)
     if not normalized:
         return 0
 
@@ -49,8 +75,8 @@ def thumbnail_quality_score(url: str | None) -> int:
 
 
 def choose_better_thumbnail(current: str | None, candidate: str | None) -> str:
-    current_normalized = _normalize_url(current)
-    candidate_normalized = _normalize_url(candidate)
-    if thumbnail_quality_score(candidate_normalized) > thumbnail_quality_score(current_normalized):
+    current_normalized = normalize_thumbnail_url(current)
+    candidate_normalized = normalize_thumbnail_url(candidate)
+    if thumbnail_quality_score(candidate) > thumbnail_quality_score(current):
         return candidate_normalized
     return current_normalized

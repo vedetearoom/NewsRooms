@@ -2,7 +2,9 @@ import unittest
 
 from app.services.video.thumbnail_utils import (
     choose_better_thumbnail,
+    normalize_thumbnail_url,
     thumbnail_quality_score,
+    upgrade_bilibili_thumbnail_url,
     upgrade_xiaohongshu_thumbnail_url,
 )
 
@@ -23,7 +25,17 @@ class ThumbnailUtilsTests(unittest.TestCase):
 
     def test_empty_candidate_does_not_replace_existing(self):
         existing = "http://i1.hdslb.com/bfs/archive/example.jpg"
-        self.assertEqual(choose_better_thumbnail(existing, ""), existing)
+        self.assertEqual(choose_better_thumbnail(existing, ""), "https://i1.hdslb.com/bfs/archive/example.jpg")
+
+    def test_upgrade_bilibili_thumbnail_uses_https(self):
+        self.assertEqual(
+            upgrade_bilibili_thumbnail_url("http://i1.hdslb.com/bfs/archive/example.jpg"),
+            "https://i1.hdslb.com/bfs/archive/example.jpg",
+        )
+        self.assertEqual(
+            normalize_thumbnail_url("//i2.hdslb.com/bfs/archive/example.jpg"),
+            "https://i2.hdslb.com/bfs/archive/example.jpg",
+        )
 
     def test_upgrade_xiaohongshu_preview_thumbnail_strips_preview_suffix(self):
         preview = (

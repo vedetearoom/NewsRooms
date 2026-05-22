@@ -40,9 +40,11 @@ async def _hydrate_video_card_thumbnails(
     for card in cards:
         if card.content_type != "video":
             continue
+        original_cover = card.cover_image
+        original_extra_thumbnail = (card.extra_data or {}).get("thumbnail_url")
         current_thumbnail = choose_better_thumbnail(
-            card.cover_image,
-            (card.extra_data or {}).get("thumbnail_url"),
+            original_cover,
+            original_extra_thumbnail,
         )
         replacement = current_thumbnail
         for source_url in card.source_urls or []:
@@ -51,7 +53,7 @@ async def _hydrate_video_card_thumbnails(
                 thumbnail_index.get(get_video_source_identity(str(source_url))),
             )
 
-        if replacement and replacement != current_thumbnail:
+        if replacement and (replacement != (original_cover or "") or replacement != (original_extra_thumbnail or "")):
             card.cover_image = replacement
             extra_data = dict(card.extra_data or {})
             extra_data["thumbnail_url"] = replacement

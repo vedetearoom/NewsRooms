@@ -30,6 +30,7 @@ from app.services.video.metadata_analyzer import get_configured_video_extractor_
 from app.services.upload_service import s3_client, settings
 from app.services.video.downloader import detect_platform, fetch_video_metadata
 from app.services.video.local_video import store_uploaded_manual_video
+from app.services.video.thumbnail_utils import normalize_thumbnail_url
 from app.services.video.url_utils import canonicalize_video_source_url, get_video_source_identity
 
 logger = logging.getLogger(__name__)
@@ -106,7 +107,7 @@ def _serialize_manual_item(
         mime_type=item.mime_type,
         file_size_bytes=item.file_size_bytes,
         published=item.published,
-        thumbnail=item.thumbnail or "",
+        thumbnail=normalize_thumbnail_url(item.thumbnail),
         duration_seconds=item.duration_seconds,
         view_count=item.view_count,
         like_count=item.like_count,
@@ -200,7 +201,7 @@ async def import_manual_video_urls(
                 author=metadata["author"],
                 title=metadata["title"] or normalized_url,
                 published=metadata["published"],
-                thumbnail=metadata["thumbnail"],
+                thumbnail=normalize_thumbnail_url(metadata["thumbnail"]),
                 duration_seconds=metadata["duration_seconds"],
                 view_count=metadata["view_count"],
                 like_count=metadata["like_count"],
@@ -219,7 +220,7 @@ async def import_manual_video_urls(
             item.mime_type = None
             item.file_size_bytes = None
             item.published = metadata["published"]
-            item.thumbnail = metadata["thumbnail"]
+            item.thumbnail = normalize_thumbnail_url(metadata["thumbnail"])
             item.duration_seconds = metadata["duration_seconds"]
             item.view_count = metadata["view_count"]
             item.like_count = metadata["like_count"]
@@ -294,7 +295,7 @@ async def enqueue_monitor_videos_to_inbox(
                 author=target.name,
                 title=str(video.get("title") or normalized_url),
                 published=str(video.get("published") or "") or None,
-                thumbnail=str(video.get("thumbnail") or ""),
+                thumbnail=normalize_thumbnail_url(video.get("thumbnail")),
                 duration_seconds=video.get("duration_seconds"),
                 view_count=video.get("view_count"),
                 like_count=video.get("like_count"),
@@ -311,7 +312,7 @@ async def enqueue_monitor_videos_to_inbox(
             item.author = item.author or target.name
             item.title = str(video.get("title") or item.title or normalized_url)
             item.published = str(video.get("published") or "") or item.published
-            item.thumbnail = str(video.get("thumbnail") or item.thumbnail or "")
+            item.thumbnail = normalize_thumbnail_url(video.get("thumbnail") or item.thumbnail)
             item.duration_seconds = video.get("duration_seconds")
             item.view_count = video.get("view_count")
             item.like_count = video.get("like_count")
@@ -355,7 +356,7 @@ async def import_manual_video_file(
         mime_type=str(metadata["mime_type"]),
         file_size_bytes=int(metadata["file_size_bytes"]),
         published=None,
-        thumbnail=str(metadata["thumbnail"]),
+        thumbnail=normalize_thumbnail_url(metadata["thumbnail"]),
         duration_seconds=(
             int(metadata["duration_seconds"])
             if metadata.get("duration_seconds") is not None
@@ -394,7 +395,7 @@ def _manual_item_seed_metadata(item: ManualVideoInboxItem) -> dict:
         "author": item.author,
         "title": item.title,
         "published": item.published,
-        "thumbnail": item.thumbnail,
+        "thumbnail": normalize_thumbnail_url(item.thumbnail),
         "duration_seconds": item.duration_seconds,
         "view_count": item.view_count,
         "like_count": item.like_count,

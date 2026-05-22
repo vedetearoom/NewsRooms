@@ -18,6 +18,7 @@ from app.services.processor_support import (
     repair_cards_output_language,
 )
 from app.services.quota_service import VIDEO_CARDS, ensure_resource_quota
+from app.services.video.thumbnail_utils import normalize_thumbnail_url
 
 logger = logging.getLogger(__name__)
 
@@ -191,12 +192,14 @@ async def analyze_video_transcript(
         else:
             raise ValueError("Agent requires Chinese output, but video card did not pass the Chinese output gate.")
 
+    thumbnail_url = normalize_thumbnail_url(video_info.get("thumbnail", ""))
+
     extra_data = {
         "platform": video_info.get("platform", ""),
         "author": video_info.get("author", ""),
         "video_url": video_info.get("video_url", ""),
         "duration_seconds": video_info.get("duration", 0),
-        "thumbnail_url": video_info.get("thumbnail", ""),
+        "thumbnail_url": thumbnail_url,
         "transcript": transcript,
         "hook_analysis": analysis_data.get("hook_analysis", {}),
         "narrative_arc": analysis_data.get("narrative_arc", []),
@@ -232,7 +235,7 @@ async def analyze_video_transcript(
             tags=analysis_data.get("tags", []),
             category=analysis_data.get("category", "Other"),
             importance_score=importance_score,
-            cover_image=video_info.get("thumbnail", ""),
+            cover_image=thumbnail_url,
             content_type="video",
             extra_data=extra_data,
             audio_url=audio_url,
@@ -249,7 +252,7 @@ async def analyze_video_transcript(
         card.tags = analysis_data.get("tags", [])
         card.category = analysis_data.get("category", "Other")
         card.importance_score = analysis_data.get("importance_score", 0.5)
-        card.cover_image = video_info.get("thumbnail", "")
+        card.cover_image = thumbnail_url
         card.content_type = "video"
         card.extra_data = extra_data
         card.audio_url = audio_url
