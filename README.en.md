@@ -2,6 +2,10 @@
 
 AI Newsroom is an AI-assisted content production workbench for editors and content teams. It connects source ingestion, material processing, intelligence cards, draft generation, review/rewrite workflows, video monitoring, image generation, and access control into a configurable private content pipeline.
 
+## Official Deployment
+
+Visit [https://newsroom.vedegeek.com](https://newsroom.vedegeek.com) to try the official deployment.
+
 中文文档: [README.md](README.md)
 
 ## Features

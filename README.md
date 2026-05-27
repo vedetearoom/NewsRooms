@@ -2,6 +2,10 @@
 
 AI Newsroom 是一套面向新闻编辑和内容团队的 AI 内容生产工作台。它把新闻源抓取、素材处理、智能卡片、草稿生成、审稿改写、视频监控、图片生成和权限管理串成一条可配置的生产流程，适合在本地或私有环境里搭建一套可控的内容系统。
 
+## 官方部署界面
+
+访问 [https://newsroom.vedegeek.com](https://newsroom.vedegeek.com) 体验官方部署版本。
+
 English documentation: [README.en.md](README.en.md)
 
 ## 主要功能
