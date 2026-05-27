@@ -6,6 +6,25 @@ AI Newsroom 是一套面向新闻编辑和内容团队的 AI 内容生产工作�
 
 访问 [https://newsroom.vedegeek.com](https://newsroom.vedegeek.com) 体验官方部署版本。
 
+## 界面展示
+
+### 官方首页与登录入口
+
+![官方首页与登录入口](docs/images/login.png)
+
+### 核心工作台
+
+| 资讯全景 | 灵感库 |
+|---|---|
+| ![资讯全景](docs/images/cards.png) | ![灵感库](docs/images/library.png) |
+| 汇总推荐内容、分类筛选和评分排序，帮助编辑快速发现高价值选题。 | 从资讯素材中挑选内容，形成上下文矩阵，为后续写作提供输入。 |
+
+### 在线编辑与 AI 审稿
+
+![在线编辑与 AI 审稿](docs/images/edit.png)
+
+在编辑器中完成日报、研报或文章草稿，并通过侧边栏查看审稿评分、修改建议和可接受的改写结果。
+
 English documentation: [README.en.md](README.en.md)
 
 ## 主要功能

@@ -6,6 +6,25 @@ AI Newsroom is an AI-assisted content production workbench for editors and conte
 
 Visit [https://newsroom.vedegeek.com](https://newsroom.vedegeek.com) to try the official deployment.
 
+## Interface Preview
+
+### Official Landing And Access
+
+![Official landing and access](docs/images/login.png)
+
+### Core Workspace
+
+| Intelligence Panorama | Inspiration Library |
+|---|---|
+| ![Intelligence Panorama](docs/images/cards.png) | ![Inspiration Library](docs/images/library.png) |
+| Review recommended stories with category filters and relevance scores to surface high-value topics quickly. | Select source material into a context matrix that can be used as input for downstream writing. |
+
+### Online Editing And AI Review
+
+![Online editing and AI review](docs/images/edit.png)
+
+Draft reports and long-form articles in the editor, then review scores, critique notes, and accepted rewrite suggestions from the side panel.
+
 中文文档: [README.md](README.md)
 
 ## Features
