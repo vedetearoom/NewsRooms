@@ -6,5 +6,5 @@ export const metadata: Metadata = {
 };
 
 export default function LandingLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return <div className="landing-route-shell">{children}</div>;
 }

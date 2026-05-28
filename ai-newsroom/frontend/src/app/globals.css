@@ -143,6 +143,12 @@ html {
   scrollbar-color: transparent var(--background);
 }
 
+html:has(.landing-route-shell),
+body:has(.landing-route-shell) {
+  background: #08090b;
+  scrollbar-color: transparent #08090b;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -159,6 +165,8 @@ body {
 /* ── Scrollbar ─────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: var(--background); }
+html:has(.landing-route-shell)::-webkit-scrollbar-track,
+body:has(.landing-route-shell)::-webkit-scrollbar-track { background: #08090b; }
 ::-webkit-scrollbar-thumb { background: transparent; border-radius: 10px; }
 *:hover > ::-webkit-scrollbar-thumb,
 ::-webkit-scrollbar-thumb:hover { background: rgba(128,128,128,0.2); }
