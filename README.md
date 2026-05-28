@@ -225,6 +225,12 @@ https://<your-domain>/api/webhooks/clerk
 4. 用户在页面内输入验证码完成注册。
 5. Clerk webhook 或登录补偿会同步本地用户。
 
+当前可用注册码如下，每个注册码支持 50 个用户：
+
+- `NR-3FA0-015E-502C`
+- `NR-98BA-B7BC-1042`
+- `NR-9E04-CB1B-CA02`
+
 注册码只限制本产品注册页的自助入口，不依赖 Clerk Allowlist，也不是身份层硬限制。如果用户已经通过 Clerk Dashboard、其他入口或未来开放注册创建成功，后端仍会信任 Clerk 并同步本地用户。
 
 Clerk Dashboard 需要确认：
