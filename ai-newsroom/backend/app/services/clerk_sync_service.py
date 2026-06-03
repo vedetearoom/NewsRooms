@@ -2,7 +2,7 @@ import logging
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.model_defs.auth import User
@@ -103,6 +103,30 @@ async def derive_unique_username(
     return f"u_{clerk_user_id[:8]}_{int(datetime.now(UTC).timestamp())}"[:64]
 
 
+async def _lock_clerk_sync_identity(
+    db: AsyncSession,
+    clerk_user_id: str,
+    email: str | None,
+    username_seed: str,
+) -> None:
+    bind = db.get_bind()
+    if not bind or bind.dialect.name != "postgresql":
+        return
+
+    lock_keys = {
+        f"clerk-sync:id:{clerk_user_id}",
+        f"clerk-sync:username:{username_seed.lower()}",
+    }
+    if email:
+        lock_keys.add(f"clerk-sync:email:{email.lower()}")
+
+    for lock_key in sorted(lock_keys):
+        await db.execute(
+            text("SELECT pg_advisory_xact_lock(hashtext(:lock_key))"),
+            {"lock_key": lock_key},
+        )
+
+
 async def sync_clerk_user_created_or_updated(db: AsyncSession, data: ClerkUserData) -> User | None:
     from app.services.agent_service import ensure_default_agents_for_user
     from app.services.activation_code_service import (
@@ -118,6 +142,7 @@ async def sync_clerk_user_created_or_updated(db: AsyncSession, data: ClerkUserDa
 
     email = extract_primary_email(data)
     display_name = extract_display_name(data, email)
+    await _lock_clerk_sync_identity(db, clerk_user_id, email, _base_username(data, email, clerk_user_id))
 
     result = await db.execute(select(User).where(User.clerk_user_id == clerk_user_id))
     user = result.scalars().first()

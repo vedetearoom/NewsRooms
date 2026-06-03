@@ -50,6 +50,7 @@ load_local_dev_env() {
   export INTERNAL_API_URL="${INTERNAL_API_URL:-http://127.0.0.1:${BACKEND_PORT}}"
   export INTERNAL_ASSET_URL="${INTERNAL_ASSET_URL:-$INTERNAL_API_URL}"
   export NEXT_PUBLIC_MINIO_BUCKET="${NEXT_PUBLIC_MINIO_BUCKET:-${MINIO_BUCKET:-newsroom-images}}"
+  export CORS_ORIGINS="${CORS_ORIGINS:-http://localhost:${FRONTEND_PORT},http://127.0.0.1:${FRONTEND_PORT}}"
   mkdir -p "$NEWSROOM_TENANT_ROOT"
 }
 

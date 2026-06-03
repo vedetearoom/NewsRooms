@@ -221,14 +221,14 @@ https://<your-domain>/api/webhooks/clerk
 - `CLERK_ADMIN_EMAILS` 中的邮箱会自动获得 `super_admin` 角色，从而显示系统管理入口。
 - 其他 Clerk 事件会返回成功但被忽略。
 
-## 注册码注册与 Clerk 邮箱验证码
+## 注册码注册与 Clerk 邮箱验证
 
 前端注册页使用自定义 Clerk 邮箱密码流程：
 
 1. 用户输入邮箱、用户名、密码、注册码和申请理由。
 2. 后端 `POST /api/auth/activation-code/approve` 验证注册码并记录申请。
-3. 前端调用 Clerk 注册并发送邮箱验证码（email code）。
-4. 用户在页面内输入验证码完成注册。
+3. 前端调用 Clerk 注册。
+4. 如果 Clerk Dashboard 开启 Verify at sign-up，前端会发送邮箱验证码（email code）并等待用户输入；如果关闭，则直接完成注册并登录。
 5. Clerk webhook 或登录补偿会同步本地用户。
 
 注册码只限制本产品注册页的自助入口，不依赖 Clerk Allowlist，也不是身份层硬限制。如果用户已经通过 Clerk Dashboard、其他入口或未来开放注册创建成功，后端仍会信任 Clerk 并同步本地用户。
@@ -237,7 +237,8 @@ Clerk Dashboard 需要确认：
 
 - 关闭 Waitlist mode 和 Restricted mode，保持普通注册流程可用。
 - 启用邮箱注册、邮箱登录和密码注册。
-- Verify at sign-up 使用 Email verification code / OTP，不使用 email link 作为主流程。
+- 如果需要邮箱验证，Verify at sign-up 使用 Email verification code / OTP，不使用 email link 作为主流程；如果不需要邮箱验证，可以关闭 Verify at sign-up。
+- 如果开启 Bot sign-up protection / Smart CAPTCHA，前端需要设置 `NEXT_PUBLIC_CLERK_CAPTCHA_ENABLED=true`；如果关闭 Bot sign-up protection，则保持 `false` 或不配置。
 - Webhook 继续订阅 `user.created`、`user.updated`、`user.deleted`。
 
 如果使用 Docker 部署，请从示例文件创建并填充：

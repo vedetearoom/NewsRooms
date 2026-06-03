@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://:metalm2024@localhost:23013/0"
     enable_scheduler: bool = True
     gemini_api_key: str = ""
-    cors_origins: str = "http://localhost:3000"
+    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
     scrape_cron: str = "0 */4 * * *"  # Pipeline job: scrape → process every 4 hours
     jina_api_key: str = ""  # Optional: enables Jina Reader for web URL extraction
     qwen_api_key: str = ""  # Optional: Qwen/DashScope API key for Alibaba models

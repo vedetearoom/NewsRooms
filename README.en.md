@@ -215,14 +215,14 @@ Sync behavior:
 - Emails listed in `CLERK_ADMIN_EMAILS` automatically receive the `super_admin` role, which enables System Management UI access.
 - Other Clerk events return success and are ignored.
 
-## Activation code sign-up and Clerk email code
+## Activation code sign-up and Clerk email verification
 
 The frontend sign-up page uses a custom Clerk email/password flow:
 
 1. The user enters email, username, password, activation code, and access reason.
 2. The backend `POST /api/auth/activation-code/approve` validates the activation code and records the request.
-3. The frontend starts Clerk sign-up and sends an email verification code.
-4. The user enters the code in the page to finish registration.
+3. The frontend starts Clerk sign-up.
+4. If Verify at sign-up is enabled in the Clerk Dashboard, the frontend sends an email verification code and waits for the user to enter it. If it is disabled, registration completes and signs in directly.
 5. Clerk webhook or login-time sync creates the local user.
 
 Activation codes only gate this product's own self-service sign-up page. They do not depend on Clerk Allowlist and are not a hard identity-layer restriction. If a user is created successfully through Clerk Dashboard, another entry point, or a future open sign-up flow, the backend still trusts Clerk and syncs the local user.
@@ -231,7 +231,8 @@ Confirm these Clerk Dashboard settings:
 
 - Waitlist mode and Restricted mode are disabled so the normal sign-up flow can run.
 - Email sign-up, email sign-in, and password sign-up are enabled.
-- Verify at sign-up uses Email verification code / OTP, not email link as the primary flow.
+- If email verification is required, Verify at sign-up uses Email verification code / OTP, not email link as the primary flow. If email verification is not required, Verify at sign-up can be disabled.
+- If Bot sign-up protection / Smart CAPTCHA is enabled, set `NEXT_PUBLIC_CLERK_CAPTCHA_ENABLED=true` in the frontend. If Bot sign-up protection is disabled, keep it `false` or unset.
 - Webhook still subscribes to `user.created`, `user.updated`, and `user.deleted`.
 
 For Docker deployments, create and fill the runtime config files:

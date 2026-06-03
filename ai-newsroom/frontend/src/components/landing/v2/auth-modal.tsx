@@ -41,6 +41,10 @@ function getAuthErrorMessage(err: unknown, t: (path: string, fallback?: string) 
   return getClerkErrorMessage(err, t("landing.auth.failed"));
 }
 
+function isClerkCaptchaEnabled() {
+  return process.env.NEXT_PUBLIC_CLERK_CAPTCHA_ENABLED === "true";
+}
+
 export function AuthModal({ mode, onClose, onModeChange, standalone = false }: AuthModalProps) {
   const router = useRouter();
   const { t } = useTranslation();
@@ -199,7 +203,7 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
       activation_code: normalizedActivationCode,
       reason: null,
     });
-    await signUp.create({
+    const result = await signUp.create({
       emailAddress: normalizedEmail,
       password,
       username: normalizedUsername,
@@ -210,9 +214,21 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
         activation_redemption_id: activation.redemption_id,
       },
     });
-    await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-    setRegisterStep("verify");
-    setError(t("landing.auth.verificationSent"));
+
+    if (result.status === "complete") {
+      await finishSignIn(result.createdSessionId, setSignUpActive);
+      return;
+    }
+
+    if (result.unverifiedFields.includes("email_address")) {
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      setRegisterStep("verify");
+      setError(t("landing.auth.verificationSent"));
+      setLoading(false);
+      return;
+    }
+
+    setError(t("landing.auth.registrationIncomplete"));
     setLoading(false);
   };
 
@@ -703,6 +719,7 @@ export function AuthModal({ mode, onClose, onModeChange, standalone = false }: A
               className="w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3.5 py-3 text-[13px] text-white outline-none transition-all placeholder:text-white/20 focus:border-white/20 focus:bg-white/[0.06] focus:shadow-[0_0_0_1px_rgba(255,255,255,0.1)]"
             />
           </div>
+          {isClerkCaptchaEnabled() ? <div id="clerk-captcha" className="flex justify-center" /> : null}
         </>
       ) : null}
 
